@@ -25,6 +25,7 @@ fun FabMenu(
     onNewAppListClick: () -> Unit,
     onNewLinkClick: () -> Unit,
     onNewContactClick: () -> Unit,
+    onNewImageClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val menuItems = listOf(
@@ -59,6 +60,7 @@ fun FabMenu(
                             "New app list" -> onNewAppListClick()
                             "New link" -> onNewLinkClick()
                             "New contact" -> onNewContactClick()
+                            "New image" -> onNewImageClick()
                         }
                         onDismiss()
                     }

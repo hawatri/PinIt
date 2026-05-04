@@ -18,7 +18,8 @@ fun PinItApp() {
                 onNavigateToNewQR = { navController.navigate("new_qr") },
                 onNavigateToNewAppList = { navController.navigate("new_app_list") },
                 onNavigateToNewLink = { navController.navigate("new_link") },
-                onNavigateToNewContact = { navController.navigate("new_contact") } // Added navigation action
+                onNavigateToNewContact = { navController.navigate("new_contact") },
+                onNavigateToNewImage = { navController.navigate("new_image") } // Add route callback
             )
         }
         composable("new_note") { NewNoteScreen(onNavigateBack = { navController.popBackStack() }) }
@@ -27,6 +28,7 @@ fun PinItApp() {
         composable("new_qr") { NewQRScreen(onNavigateBack = { navController.popBackStack() }) }
         composable("new_app_list") { NewAppListScreen(onNavigateBack = { navController.popBackStack() }) }
         composable("new_link") { NewLinkScreen(onNavigateBack = { navController.popBackStack() }) }
-        composable("new_contact") { NewContactScreen(onNavigateBack = { navController.popBackStack() }) } // Added route
+        composable("new_contact") { NewContactScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable("new_image") { NewImageScreen(onNavigateBack = { navController.popBackStack() }) } // Add screen
     }
 }
