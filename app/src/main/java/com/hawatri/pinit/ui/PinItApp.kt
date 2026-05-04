@@ -14,7 +14,9 @@ fun PinItApp() {
             HomeScreen(
                 onNavigateToNewNote = { navController.navigate("new_note") },
                 onNavigateToNewList = { navController.navigate("new_list") },
-                onNavigateToNewLocation = { navController.navigate("new_location") } // Add this
+                onNavigateToNewLocation = { navController.navigate("new_location") },
+                onNavigateToNewQR = { navController.navigate("new_qr") },
+                onNavigateToNewAppList = { navController.navigate("new_app_list") } // Added navigation action
             )
         }
         composable("new_note") {
@@ -23,8 +25,14 @@ fun PinItApp() {
         composable("new_list") {
             NewListScreen(onNavigateBack = { navController.popBackStack() })
         }
-        composable("new_location") { // Add this block
+        composable("new_location") {
             NewLocationScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable("new_qr") {
+            NewQRScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable("new_app_list") { // Added route
+            NewAppListScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

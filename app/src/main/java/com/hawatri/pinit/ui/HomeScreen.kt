@@ -23,7 +23,9 @@ import androidx.compose.ui.unit.sp
 fun HomeScreen(
     onNavigateToNewNote: () -> Unit,
     onNavigateToNewList: () -> Unit,
-    onNavigateToNewLocation: () -> Unit
+    onNavigateToNewLocation: () -> Unit,
+    onNavigateToNewQR: () -> Unit,
+    onNavigateToNewAppList: () -> Unit
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var selectedBottomTab by remember { mutableIntStateOf(0) }
@@ -112,6 +114,8 @@ fun HomeScreen(
                     onNewNoteClick = onNavigateToNewNote,
                     onNewListClick = onNavigateToNewList,
                     onNewLocationClick = onNavigateToNewLocation,
+                    onNewQRClick = onNavigateToNewQR,
+                    onNewAppListClick = onNavigateToNewAppList,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 88.dp)
                 )
             }

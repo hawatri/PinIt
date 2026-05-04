@@ -21,6 +21,8 @@ fun FabMenu(
     onNewNoteClick: () -> Unit,
     onNewListClick: () -> Unit,
     onNewLocationClick: () -> Unit,
+    onNewQRClick: () -> Unit,
+    onNewAppListClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val menuItems = listOf(
@@ -51,6 +53,8 @@ fun FabMenu(
                             "New note" -> onNewNoteClick()
                             "New list" -> onNewListClick()
                             "New location" -> onNewLocationClick()
+                            "New QR" -> onNewQRClick()
+                            "New app list" -> onNewAppListClick()
                         }
                         onDismiss()
                     }
