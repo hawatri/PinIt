@@ -1,18 +1,28 @@
 package com.hawatri.pinit.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.hawatri.pinit.data.NoteDatabase
 import com.hawatri.pinit.viewmodel.PinItViewModel
+import com.hawatri.pinit.viewmodel.PinItViewModelFactory
 
 @Composable
 fun PinItApp() {
     val navController = rememberNavController()
+    val context = LocalContext.current
 
-    // Create ONE shared ViewModel that lives as long as the app is running
-    val sharedViewModel: PinItViewModel = viewModel()
+    // 1. Initialize the Room Database and grab the Dao
+    val database = NoteDatabase.getDatabase(context)
+    val dao = database.noteDao()
+
+    // 2. Create the shared ViewModel using our new Factory
+    val sharedViewModel: PinItViewModel = viewModel(
+        factory = PinItViewModelFactory(dao)
+    )
 
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
@@ -25,13 +35,13 @@ fun PinItApp() {
                 onNavigateToNewLink = { navController.navigate("new_link") },
                 onNavigateToNewContact = { navController.navigate("new_contact") },
                 onNavigateToNewImage = { navController.navigate("new_image") },
-                viewModel = sharedViewModel // Pass the shared brain here
+                viewModel = sharedViewModel
             )
         }
         composable("new_note") {
             NewNoteScreen(
                 onNavigateBack = { navController.popBackStack() },
-                viewModel = sharedViewModel // Pass the exact same shared brain here
+                viewModel = sharedViewModel
             )
         }
         composable("new_list") { NewListScreen(onNavigateBack = { navController.popBackStack() }) }
