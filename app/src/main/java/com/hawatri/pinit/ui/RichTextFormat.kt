@@ -56,3 +56,22 @@ class RichTextVisualTransformation(
         return TransformedText(builder.toAnnotatedString(), OffsetMapping.Identity)
     }
 }
+
+// Helper function to draw formatted text on normal Text() composables
+fun buildFormattedString(text: String, formatRanges: List<FormatRange>): AnnotatedString {
+    val builder = AnnotatedString.Builder(text)
+
+    for (range in formatRanges) {
+        val safeStart = range.start.coerceIn(0, text.length)
+        val safeEnd = range.end.coerceIn(0, text.length)
+        if (safeStart >= safeEnd) continue
+
+        when (range.type) {
+            FormatType.BOLD -> builder.addStyle(SpanStyle(fontWeight = FontWeight.Bold), safeStart, safeEnd)
+            FormatType.ITALIC -> builder.addStyle(SpanStyle(fontStyle = FontStyle.Italic), safeStart, safeEnd)
+            FormatType.STRIKETHROUGH -> builder.addStyle(SpanStyle(textDecoration = TextDecoration.LineThrough), safeStart, safeEnd)
+            FormatType.HEADING -> builder.addStyle(SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold), safeStart, safeEnd)
+        }
+    }
+    return builder.toAnnotatedString()
+}

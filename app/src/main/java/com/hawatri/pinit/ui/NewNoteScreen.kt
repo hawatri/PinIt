@@ -19,10 +19,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel // New Import
+import com.hawatri.pinit.data.Note // New Import
+import com.hawatri.pinit.viewmodel.PinItViewModel // New Import
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewNoteScreen(onNavigateBack: () -> Unit) {
+fun NewNoteScreen(
+    onNavigateBack: () -> Unit,
+    viewModel: PinItViewModel = viewModel() // Injecting the ViewModel
+) {
     var title by remember { mutableStateOf("") }
     var noteText by remember { mutableStateOf(TextFieldValue("")) }
     var isBodyFocused by remember { mutableStateOf(false) }
@@ -86,7 +92,24 @@ fun NewNoteScreen(onNavigateBack: () -> Unit) {
                     IconButton(onClick = { }) { Icon(Icons.Filled.PushPin, contentDescription = "Pin", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                     IconButton(onClick = { }) { Icon(Icons.Filled.Notifications, contentDescription = "Reminder", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                     IconButton(onClick = { }) { Icon(Icons.Filled.Label, contentDescription = "Label", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+
+                    // SAVE BUTTON UPDATED
+                    IconButton(
+                        onClick = {
+                            // Only save if there is actually some text or a title
+                            if (title.isNotBlank() || noteText.text.isNotBlank()) {
+                                val newNote = Note(
+                                    title = title,
+                                    text = noteText.text,
+                                    formatRanges = formatRanges
+                                )
+                                viewModel.addNote(newNote)
+                            }
+                            onNavigateBack()
+                        }
+                    ) {
+                        Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -151,8 +174,6 @@ fun NewNoteScreen(onNavigateBack: () -> Unit) {
 
                                     if (lengthDiff > 0) {
                                         if (start >= editPos) start += lengthDiff
-                                        // FIX 1: Changed to strictly greater than (>).
-                                        // This stops the format from auto-stretching when typing at the boundary.
                                         if (end > editPos) end += lengthDiff
                                     } else {
                                         val delEnd = editPos - lengthDiff
@@ -168,8 +189,6 @@ fun NewNoteScreen(onNavigateBack: () -> Unit) {
                                     }
                                 }
 
-                                // FIX 2: Merge overlapping/adjacent blocks of the same format
-                                // This prevents hundreds of 1-letter format blocks from crashing the visual engine.
                                 val mergedRanges = mutableListOf<FormatRange>()
                                 FormatType.values().forEach { type ->
                                     val typeRanges = updatedRanges.filter { it.type == type }.sortedBy { it.start }

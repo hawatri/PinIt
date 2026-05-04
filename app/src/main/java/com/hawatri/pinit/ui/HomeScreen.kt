@@ -1,14 +1,11 @@
 package com.hawatri.pinit.ui
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,8 +14,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hawatri.pinit.data.Note
+import com.hawatri.pinit.viewmodel.PinItViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,14 +32,14 @@ fun HomeScreen(
     onNavigateToNewAppList: () -> Unit,
     onNavigateToNewLink: () -> Unit,
     onNavigateToNewContact: () -> Unit,
-    onNavigateToNewImage: () -> Unit
+    onNavigateToNewImage: () -> Unit,
+    viewModel: PinItViewModel = viewModel() // Inject ViewModel
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var selectedBottomTab by remember { mutableIntStateOf(0) }
 
-    var hasNotes by remember { mutableStateOf(false) }
-    var hasPinnedNotes by remember { mutableStateOf(false) }
-    var hasLabels by remember { mutableStateOf(false) }
+    // Read the master list of notes from the ViewModel
+    val allNotes by viewModel.notes.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -54,11 +56,7 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = "Add",
-                        modifier = Modifier.size(36.dp)
-                    )
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = "Add", modifier = Modifier.size(36.dp))
                 }
             }
         }
@@ -71,38 +69,21 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp)
             ) {
+                Spacer(modifier = Modifier.height(16.dp))
                 TopSearchBar()
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Animated Tab Switching
-                AnimatedContent(
-                    targetState = selectedBottomTab,
-                    transitionSpec = {
-                        // Compare the target tab to the initial tab to determine slide direction
-                        if (targetState > initialState) {
-                            // Slide left
-                            (slideInHorizontally(animationSpec = tween(300)) { width -> width } + fadeIn()).togetherWith(
-                                slideOutHorizontally(animationSpec = tween(300)) { width -> -width } + fadeOut()
-                            )
-                        } else {
-                            // Slide right
-                            (slideInHorizontally(animationSpec = tween(300)) { width -> -width } + fadeIn()).togetherWith(
-                                slideOutHorizontally(animationSpec = tween(300)) { width -> width } + fadeOut()
-                            )
-                        }
-                    },
-                    label = "Tab Transition"
-                ) { targetTab ->
-                    when (targetTab) {
-                        0 -> HomeView(hasItems = hasNotes)
-                        1 -> PinnedView(hasItems = hasPinnedNotes)
-                        2 -> LabelsView(hasItems = hasLabels)
-                    }
+                // Pass the filtered data into the views
+                when (selectedBottomTab) {
+                    0 -> HomeView(notes = allNotes)
+                    1 -> PinnedView(notes = allNotes.filter { it.isPinned })
+                    2 -> LabelsView(hasItems = false) // Labels logic comes later
                 }
             }
 
+            // FAB Menu Overlay
             if (showFabMenu && selectedBottomTab == 0) {
                 Box(
                     modifier = Modifier
@@ -129,21 +110,21 @@ fun HomeScreen(
     }
 }
 
-// --- Isolated Content Views ---
+// --- Content Views ---
 
 @Composable
-fun HomeView(hasItems: Boolean) {
-    if (hasItems) {
-        NoteCard()
+fun HomeView(notes: List<Note>) {
+    if (notes.isNotEmpty()) {
+        NotesGrid(notes = notes)
     } else {
         EmptyStateView(icon = Icons.Filled.Article, message = "No items")
     }
 }
 
 @Composable
-fun PinnedView(hasItems: Boolean) {
-    if (hasItems) {
-        NoteCard()
+fun PinnedView(notes: List<Note>) {
+    if (notes.isNotEmpty()) {
+        NotesGrid(notes = notes)
     } else {
         EmptyStateView(icon = Icons.Filled.PushPin, message = "No pinned items")
     }
@@ -152,13 +133,68 @@ fun PinnedView(hasItems: Boolean) {
 @Composable
 fun LabelsView(hasItems: Boolean) {
     if (hasItems) {
-        // Build your Labels list UI here later
+        // Labels UI
     } else {
         EmptyStateView(icon = Icons.Outlined.Label, message = "No labels")
     }
 }
 
-// --- Reusable Components ---
+// --- The Staggered Grid ---
+
+@Composable
+fun NotesGrid(notes: List<Note>) {
+    LazyVerticalStaggeredGrid(
+        columns = StaggeredGridCells.Fixed(2),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 88.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalItemSpacing = 8.dp
+    ) {
+        items(notes, key = { it.id }) { note ->
+            NoteCard(note = note)
+        }
+    }
+}
+
+@Composable
+fun NoteCard(note: Note) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { /* TODO: Open Note for Editing */ },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            if (note.title.isNotBlank()) {
+                Text(
+                    text = note.title,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            if (note.text.isNotBlank()) {
+                Text(
+                    // Format the text using our helper function!
+                    text = buildFormattedString(note.text, note.formatRanges),
+                    fontSize = 14.sp,
+                    maxLines = 8,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+// --- Reusable Components (Unchanged) ---
 
 @Composable
 fun EmptyStateView(icon: androidx.compose.ui.graphics.vector.ImageVector, message: String) {
