@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 fun FabMenu(
     onDismiss: () -> Unit,
     onNewNoteClick: () -> Unit,
+    onNewListClick: () -> Unit, // Added parameter
     modifier: Modifier = Modifier
 ) {
     val menuItems = listOf(
@@ -44,8 +45,10 @@ fun FabMenu(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        if (item.text == "New note") {
-                            onNewNoteClick()
+                        // Updated logic to handle different actions
+                        when (item.text) {
+                            "New note" -> onNewNoteClick()
+                            "New list" -> onNewListClick()
                         }
                         onDismiss()
                     }

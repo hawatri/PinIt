@@ -20,7 +20,10 @@ import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onNavigateToNewNote: () -> Unit) {
+fun HomeScreen(
+    onNavigateToNewNote: () -> Unit,
+    onNavigateToNewList: () -> Unit
+) {
     var showFabMenu by remember { mutableStateOf(false) }
     var selectedBottomTab by remember { mutableIntStateOf(0) }
 
@@ -106,9 +109,8 @@ fun HomeScreen(onNavigateToNewNote: () -> Unit) {
                 FabMenu(
                     onDismiss = { showFabMenu = false },
                     onNewNoteClick = onNavigateToNewNote,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 88.dp)
+                    onNewListClick = onNavigateToNewList, // Add this
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 88.dp)
                 )
             }
         }

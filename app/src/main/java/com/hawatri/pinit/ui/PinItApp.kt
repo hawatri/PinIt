@@ -14,11 +14,21 @@ fun PinItApp() {
             HomeScreen(
                 onNavigateToNewNote = {
                     navController.navigate("new_note")
+                },
+                onNavigateToNewList = {
+                    navController.navigate("new_list")
                 }
             )
         }
         composable("new_note") {
             NewNoteScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable("new_list") {
+            NewListScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
