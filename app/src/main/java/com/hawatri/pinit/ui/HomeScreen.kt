@@ -25,7 +25,8 @@ fun HomeScreen(
     onNavigateToNewList: () -> Unit,
     onNavigateToNewLocation: () -> Unit,
     onNavigateToNewQR: () -> Unit,
-    onNavigateToNewAppList: () -> Unit
+    onNavigateToNewAppList: () -> Unit,
+    onNavigateToNewLink: () -> Unit
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var selectedBottomTab by remember { mutableIntStateOf(0) }
@@ -116,6 +117,7 @@ fun HomeScreen(
                     onNewLocationClick = onNavigateToNewLocation,
                     onNewQRClick = onNavigateToNewQR,
                     onNewAppListClick = onNavigateToNewAppList,
+                    onNewLinkClick = onNavigateToNewLink,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 88.dp)
                 )
             }

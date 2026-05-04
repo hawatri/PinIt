@@ -16,23 +16,15 @@ fun PinItApp() {
                 onNavigateToNewList = { navController.navigate("new_list") },
                 onNavigateToNewLocation = { navController.navigate("new_location") },
                 onNavigateToNewQR = { navController.navigate("new_qr") },
-                onNavigateToNewAppList = { navController.navigate("new_app_list") } // Added navigation action
+                onNavigateToNewAppList = { navController.navigate("new_app_list") },
+                onNavigateToNewLink = { navController.navigate("new_link") } // Added navigation action
             )
         }
-        composable("new_note") {
-            NewNoteScreen(onNavigateBack = { navController.popBackStack() })
-        }
-        composable("new_list") {
-            NewListScreen(onNavigateBack = { navController.popBackStack() })
-        }
-        composable("new_location") {
-            NewLocationScreen(onNavigateBack = { navController.popBackStack() })
-        }
-        composable("new_qr") {
-            NewQRScreen(onNavigateBack = { navController.popBackStack() })
-        }
-        composable("new_app_list") { // Added route
-            NewAppListScreen(onNavigateBack = { navController.popBackStack() })
-        }
+        composable("new_note") { NewNoteScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable("new_list") { NewListScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable("new_location") { NewLocationScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable("new_qr") { NewQRScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable("new_app_list") { NewAppListScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable("new_link") { NewLinkScreen(onNavigateBack = { navController.popBackStack() }) } // Added route
     }
 }
