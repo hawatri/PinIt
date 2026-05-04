@@ -118,7 +118,12 @@ fun NewListScreen(onNavigateBack: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FormatIcon(icon = Icons.Filled.GridView, description = "Layout")
+                FormatIcon(
+                    icon = Icons.Filled.GridView,
+                    isActive = false, // Changed from alpha to isActive
+                    isEnabled = true,
+                    onClick = { /* Handle grid layout toggle later */ }
+                )
             }
         }
     }
@@ -132,9 +137,15 @@ fun EditableChecklistItem(
     onRemove: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
-    ) {
+    )
+
+    {
+
         Icon(
             imageVector = Icons.Filled.DragIndicator,
             contentDescription = "Drag",

@@ -1,18 +1,20 @@
 package com.hawatri.pinit.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Article
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Label
-import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -33,8 +35,9 @@ fun HomeScreen(
     var showFabMenu by remember { mutableStateOf(false) }
     var selectedBottomTab by remember { mutableIntStateOf(0) }
 
-    // Toggle this to true later when implementing list logic
-    var hasItems by remember { mutableStateOf(false) }
+    var hasNotes by remember { mutableStateOf(false) }
+    var hasPinnedNotes by remember { mutableStateOf(false) }
+    var hasLabels by remember { mutableStateOf(false) }
 
     Scaffold(
         bottomBar = {
@@ -71,36 +74,31 @@ fun HomeScreen(
                     .padding(16.dp)
             ) {
                 TopSearchBar()
+                Spacer(modifier = Modifier.height(24.dp))
 
-                if (hasItems) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    if (selectedBottomTab == 0 || selectedBottomTab == 1) {
-                        NoteCard()
-                    }
-                } else {
-                    // Empty State
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Article,
-                                contentDescription = "No items",
-                                modifier = Modifier.size(80.dp),
-                                tint = MaterialTheme.colorScheme.surfaceVariant
+                // Animated Tab Switching
+                AnimatedContent(
+                    targetState = selectedBottomTab,
+                    transitionSpec = {
+                        // Compare the target tab to the initial tab to determine slide direction
+                        if (targetState > initialState) {
+                            // Slide left
+                            (slideInHorizontally(animationSpec = tween(300)) { width -> width } + fadeIn()).togetherWith(
+                                slideOutHorizontally(animationSpec = tween(300)) { width -> -width } + fadeOut()
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "No items",
-                                fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            // Slide right
+                            (slideInHorizontally(animationSpec = tween(300)) { width -> -width } + fadeIn()).togetherWith(
+                                slideOutHorizontally(animationSpec = tween(300)) { width -> width } + fadeOut()
                             )
                         }
+                    },
+                    label = "Tab Transition"
+                ) { targetTab ->
+                    when (targetTab) {
+                        0 -> HomeView(hasItems = hasNotes)
+                        1 -> PinnedView(hasItems = hasPinnedNotes)
+                        2 -> LabelsView(hasItems = hasLabels)
                     }
                 }
             }
@@ -122,9 +120,65 @@ fun HomeScreen(
                     onNewLinkClick = onNavigateToNewLink,
                     onNewContactClick = onNavigateToNewContact,
                     onNewImageClick = onNavigateToNewImage,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 88.dp)
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 88.dp)
                 )
             }
+        }
+    }
+}
+
+// --- Isolated Content Views ---
+
+@Composable
+fun HomeView(hasItems: Boolean) {
+    if (hasItems) {
+        NoteCard()
+    } else {
+        EmptyStateView(icon = Icons.Filled.Article, message = "No items")
+    }
+}
+
+@Composable
+fun PinnedView(hasItems: Boolean) {
+    if (hasItems) {
+        NoteCard()
+    } else {
+        EmptyStateView(icon = Icons.Filled.PushPin, message = "No pinned items")
+    }
+}
+
+@Composable
+fun LabelsView(hasItems: Boolean) {
+    if (hasItems) {
+        // Build your Labels list UI here later
+    } else {
+        EmptyStateView(icon = Icons.Outlined.Label, message = "No labels")
+    }
+}
+
+// --- Reusable Components ---
+
+@Composable
+fun EmptyStateView(icon: androidx.compose.ui.graphics.vector.ImageVector, message: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = icon,
+                contentDescription = message,
+                modifier = Modifier.size(80.dp),
+                tint = MaterialTheme.colorScheme.surfaceVariant
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = message,
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
