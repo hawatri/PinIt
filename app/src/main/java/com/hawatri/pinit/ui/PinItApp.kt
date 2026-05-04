@@ -3,9 +3,11 @@ package com.hawatri.pinit.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.hawatri.pinit.data.NoteDatabase
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import com.hawatri.pinit.viewmodel.PinItViewModelFactory
@@ -15,11 +17,9 @@ fun PinItApp() {
     val navController = rememberNavController()
     val context = LocalContext.current
 
-    // 1. Initialize the Room Database and grab the Dao
     val database = NoteDatabase.getDatabase(context)
     val dao = database.noteDao()
 
-    // 2. Create the shared ViewModel using our new Factory
     val sharedViewModel: PinItViewModel = viewModel(
         factory = PinItViewModelFactory(dao)
     )
@@ -27,6 +27,8 @@ fun PinItApp() {
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
             HomeScreen(
+                // Pass the Note ID when clicking an existing note
+                onNoteClick = { noteId -> navController.navigate("new_note?noteId=$noteId") },
                 onNavigateToNewNote = { navController.navigate("new_note") },
                 onNavigateToNewList = { navController.navigate("new_list") },
                 onNavigateToNewLocation = { navController.navigate("new_location") },
@@ -38,8 +40,18 @@ fun PinItApp() {
                 viewModel = sharedViewModel
             )
         }
-        composable("new_note") {
+        // Updated Route: Accepts optional noteId
+        composable(
+            route = "new_note?noteId={noteId}",
+            arguments = listOf(navArgument("noteId") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getString("noteId")
             NewNoteScreen(
+                noteId = noteId,
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = sharedViewModel
             )

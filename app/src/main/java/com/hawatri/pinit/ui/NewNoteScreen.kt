@@ -19,15 +19,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel // New Import
-import com.hawatri.pinit.data.Note // New Import
-import com.hawatri.pinit.viewmodel.PinItViewModel // New Import
+import com.hawatri.pinit.data.Note
+import com.hawatri.pinit.viewmodel.PinItViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewNoteScreen(
+    noteId: String? = null, // Added to accept existing notes
     onNavigateBack: () -> Unit,
-    viewModel: PinItViewModel = viewModel() // Injecting the ViewModel
+    viewModel: PinItViewModel
 ) {
     var title by remember { mutableStateOf("") }
     var noteText by remember { mutableStateOf(TextFieldValue("")) }
@@ -35,6 +35,24 @@ fun NewNoteScreen(
 
     var formatRanges by remember { mutableStateOf(listOf<FormatRange>()) }
     var activeFormats by remember { mutableStateOf(setOf<FormatType>()) }
+
+    // --- NEW: Load Existing Note Logic ---
+    val notesList by viewModel.notes.collectAsState()
+    var isInitialized by remember { mutableStateOf(false) }
+
+    LaunchedEffect(notesList, noteId) {
+        if (noteId != null && !isInitialized && notesList.isNotEmpty()) {
+            val existingNote = notesList.find { it.id == noteId }
+            if (existingNote != null) {
+                title = existingNote.title
+                // Load text and set cursor to the very end
+                noteText = TextFieldValue(existingNote.text, selection = TextRange(existingNote.text.length))
+                formatRanges = existingNote.formatRanges
+                isInitialized = true
+            }
+        }
+    }
+    // -------------------------------------
 
     fun toggleFormat(type: FormatType) {
         val selection = noteText.selection
@@ -93,23 +111,35 @@ fun NewNoteScreen(
                     IconButton(onClick = { }) { Icon(Icons.Filled.Notifications, contentDescription = "Reminder", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                     IconButton(onClick = { }) { Icon(Icons.Filled.Label, contentDescription = "Label", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
 
-                    // SAVE BUTTON UPDATED
+                    // --- NEW: Save vs Update Logic ---
                     IconButton(
                         onClick = {
-                            // Only save if there is actually some text or a title
                             if (title.isNotBlank() || noteText.text.isNotBlank()) {
-                                val newNote = Note(
-                                    title = title,
-                                    text = noteText.text,
-                                    formatRanges = formatRanges
-                                )
-                                viewModel.addNote(newNote)
+                                if (noteId != null) {
+                                    // Update existing note
+                                    val existingNote = notesList.find { it.id == noteId }
+                                    if (existingNote != null) {
+                                        viewModel.updateNote(existingNote.copy(
+                                            title = title,
+                                            text = noteText.text,
+                                            formatRanges = formatRanges
+                                        ))
+                                    }
+                                } else {
+                                    // Create new note
+                                    viewModel.addNote(Note(
+                                        title = title,
+                                        text = noteText.text,
+                                        formatRanges = formatRanges
+                                    ))
+                                }
                             }
                             onNavigateBack()
                         }
                     ) {
                         Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    // ---------------------------------
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
