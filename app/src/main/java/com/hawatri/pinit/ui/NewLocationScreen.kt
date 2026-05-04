@@ -6,7 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,6 +17,11 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewLocationScreen(onNavigateBack: () -> Unit) {
+    // State to hold location data. Defaulting to null simulates failing to pull a location.
+    // Change these to actual strings (e.g., "Kalyani") to see the card appear.
+    var locationName by remember { mutableStateOf<String?>(null) }
+    var locationAddress by remember { mutableStateOf<String?>(null) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -39,10 +44,9 @@ fun NewLocationScreen(onNavigateBack: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // Map placeholder background color
                 .background(Color(0xFF4A525E))
         ) {
-            // Map content placeholder (Simulating the map grid/buildings)
+            // Map pin placeholder
             Icon(
                 imageVector = Icons.Filled.LocationOn,
                 contentDescription = "Center Pin",
@@ -50,52 +54,54 @@ fun NewLocationScreen(onNavigateBack: () -> Unit) {
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(36.dp)
-                    .offset(y = (-18).dp) // Shift up slightly so the tip is at center
+                    .offset(y = (-18).dp)
             )
 
-            // Bottom Location Details Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-                    .padding(bottom = paddingValues.calculateBottomPadding()), // Account for system navigation bar
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Row(
+            // The card will only render if both location variables have data
+            if (locationName != null && locationAddress != null) {
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.LocationOn,
-                        contentDescription = "Location",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .padding(top = 4.dp)
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .padding(bottom = paddingValues.calculateBottomPadding()),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column {
-                        Text(
-                            text = "Kalyani",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.LocationOn,
+                            contentDescription = "Location",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .padding(top = 4.dp)
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "XC7X+2XW, JIS Exit Rd Connector, Block A5, Kalyani, West Bengal 741235, India",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 16.sp
-                        )
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Column {
+                            Text(
+                                text = locationName!!,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = locationAddress!!,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 16.sp
+                            )
+                        }
                     }
                 }
             }

@@ -12,27 +12,19 @@ fun PinItApp() {
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
             HomeScreen(
-                onNavigateToNewNote = {
-                    navController.navigate("new_note")
-                },
-                onNavigateToNewList = {
-                    navController.navigate("new_list")
-                }
+                onNavigateToNewNote = { navController.navigate("new_note") },
+                onNavigateToNewList = { navController.navigate("new_list") },
+                onNavigateToNewLocation = { navController.navigate("new_location") } // Add this
             )
         }
         composable("new_note") {
-            NewNoteScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
+            NewNoteScreen(onNavigateBack = { navController.popBackStack() })
         }
         composable("new_list") {
-            NewListScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
+            NewListScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable("new_location") { // Add this block
+            NewLocationScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

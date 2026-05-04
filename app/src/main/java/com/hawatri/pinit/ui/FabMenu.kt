@@ -19,7 +19,8 @@ import androidx.compose.ui.unit.sp
 fun FabMenu(
     onDismiss: () -> Unit,
     onNewNoteClick: () -> Unit,
-    onNewListClick: () -> Unit, // Added parameter
+    onNewListClick: () -> Unit,
+    onNewLocationClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val menuItems = listOf(
@@ -49,6 +50,7 @@ fun FabMenu(
                         when (item.text) {
                             "New note" -> onNewNoteClick()
                             "New list" -> onNewListClick()
+                            "New location" -> onNewLocationClick()
                         }
                         onDismiss()
                     }
