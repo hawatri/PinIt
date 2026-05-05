@@ -1,25 +1,68 @@
 package com.hawatri.pinit.ui
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.FormatBold
+import androidx.compose.material.icons.filled.FormatItalic
+import androidx.compose.material.icons.filled.FormatListBulleted
+import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.StrikethroughS
+import androidx.compose.material.icons.filled.Title
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hawatri.pinit.data.Note
+import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.viewmodel.PinItViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,9 +72,13 @@ fun NewNoteScreen(
     onNavigateBack: () -> Unit,
     viewModel: PinItViewModel
 ) {
+    val context = LocalContext.current
+    val notificationHelper = remember(context) { NotificationHelper(context) }
+
     var title by remember { mutableStateOf("") }
     var noteText by remember { mutableStateOf(TextFieldValue("")) }
     var isBodyFocused by remember { mutableStateOf(false) }
+    var currentNoteId by remember(noteId) { mutableStateOf(noteId) }
 
     var formatRanges by remember { mutableStateOf(listOf<FormatRange>()) }
     var activeFormats by remember { mutableStateOf(setOf<FormatType>()) }
@@ -39,6 +86,41 @@ fun NewNoteScreen(
     // --- NEW: Load Existing Note Logic ---
     val notesList by viewModel.notes.collectAsState()
     var isInitialized by remember { mutableStateOf(false) }
+
+    fun saveOrUpdateNote(pinOverride: Boolean? = null): String? {
+        val idToUse = currentNoteId ?: noteId ?: java.util.UUID.randomUUID().toString()
+
+        if (title.isBlank() && noteText.text.isBlank()) {
+            return null
+        }
+
+        val existing = notesList.find { it.id == idToUse }
+        val isPinned = pinOverride ?: existing?.isPinned ?: false
+        val noteToPersist = Note(
+            id = idToUse,
+            title = title,
+            text = noteText.text,
+            formatRanges = formatRanges,
+            isPinned = isPinned
+        )
+
+        if (existing != null) {
+            viewModel.updateNote(noteToPersist)
+        } else {
+            viewModel.addNote(noteToPersist)
+        }
+
+        currentNoteId = idToUse
+        return idToUse
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) return@rememberLauncherForActivityResult
+        val savedNoteId = saveOrUpdateNote(pinOverride = true) ?: return@rememberLauncherForActivityResult
+        notificationHelper.pinNoteToNotification(savedNoteId, title, noteText.text)
+    }
 
     LaunchedEffect(notesList, noteId) {
         if (noteId != null && !isInitialized && notesList.isNotEmpty()) {
@@ -107,33 +189,35 @@ fun NewNoteScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { }) { Icon(Icons.Filled.PushPin, contentDescription = "Pin", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    IconButton(
+                        onClick = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                val hasNotificationPermission = ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                                if (hasNotificationPermission) {
+                                    val noteToPinId = saveOrUpdateNote(pinOverride = true) ?: return@IconButton
+                                    notificationHelper.pinNoteToNotification(noteToPinId, title, noteText.text)
+                                } else {
+                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            } else {
+                                val noteToPinId = saveOrUpdateNote(pinOverride = true) ?: return@IconButton
+                                notificationHelper.pinNoteToNotification(noteToPinId, title, noteText.text)
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Filled.PushPin, contentDescription = "Pin", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     IconButton(onClick = { }) { Icon(Icons.Filled.Notifications, contentDescription = "Reminder", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                     IconButton(onClick = { }) { Icon(Icons.Filled.Label, contentDescription = "Label", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
 
                     // --- NEW: Save vs Update Logic ---
                     IconButton(
                         onClick = {
-                            if (title.isNotBlank() || noteText.text.isNotBlank()) {
-                                if (noteId != null) {
-                                    // Update existing note
-                                    val existingNote = notesList.find { it.id == noteId }
-                                    if (existingNote != null) {
-                                        viewModel.updateNote(existingNote.copy(
-                                            title = title,
-                                            text = noteText.text,
-                                            formatRanges = formatRanges
-                                        ))
-                                    }
-                                } else {
-                                    // Create new note
-                                    viewModel.addNote(Note(
-                                        title = title,
-                                        text = noteText.text,
-                                        formatRanges = formatRanges
-                                    ))
-                                }
-                            }
+                            saveOrUpdateNote()
                             onNavigateBack()
                         }
                     ) {
