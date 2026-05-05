@@ -16,7 +16,9 @@ class NotificationHelper(private val context: Context) {
 
     companion object {
         const val ACTION_REMOVE_PIN = "ACTION_REMOVE_PIN"
+        const val ACTION_COPY_TEXT = "ACTION_COPY_TEXT" // New Action
         const val EXTRA_NOTE_ID = "EXTRA_NOTE_ID"
+        const val EXTRA_NOTE_TEXT = "EXTRA_NOTE_TEXT"   // New Extra
     }
 
     init {
@@ -28,7 +30,7 @@ class NotificationHelper(private val context: Context) {
             val channel = NotificationChannel(
                 channelId,
                 "Pinned Notes",
-                NotificationManager.IMPORTANCE_LOW // Low importance prevents sound/vibration every time
+                NotificationManager.IMPORTANCE_LOW
             )
             manager.createNotificationChannel(channel)
         }
@@ -49,13 +51,26 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Intent for the "Copy" button
+        val copyIntent = Intent(context, NotificationReceiver::class.java).apply {
+            action = ACTION_COPY_TEXT
+            putExtra(EXTRA_NOTE_TEXT, text)
+        }
+        val copyPendingIntent = PendingIntent.getBroadcast(
+            context,
+            (noteId + "_copy").hashCode(), // Different request code to prevent overriding
+            copyIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(displayTitle)
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-            .setOngoing(true) // THIS is what makes it stick to the notification bar
-            .addAction(android.R.drawable.ic_delete, "Remove", removePendingIntent)
+            .setOngoing(true)
+            .addAction(0, "Copy", copyPendingIntent) // Add Copy Action
+            .addAction(android.R.drawable.ic_delete, "Remove", removePendingIntent) // Existing Remove Action
 
         manager.notify(noteId.hashCode(), builder.build())
     }
