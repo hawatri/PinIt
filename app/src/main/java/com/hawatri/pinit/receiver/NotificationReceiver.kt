@@ -19,11 +19,12 @@ import kotlinx.coroutines.launch
 
 class NotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val noteId = intent.getStringExtra(NotificationHelper.EXTRA_NOTE_ID) ?: return
+        val noteId = intent.getStringExtra(NotificationHelper.EXTRA_NOTE_ID)
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         when (intent.action) {
             NotificationHelper.ACTION_REMOVE_PIN -> {
+                if (noteId == null) return
                 manager.cancel(noteId.hashCode())
             }
             NotificationHelper.ACTION_COPY_TEXT -> {
@@ -35,6 +36,7 @@ class NotificationReceiver : BroadcastReceiver() {
             NotificationHelper.ACTION_TOGGLE_ITEM, 
             NotificationHelper.ACTION_CHECK_ALL,
             NotificationHelper.ACTION_ADD_TASK -> {
+                if (noteId == null) return
                 // Keep the receiver alive long enough to hit the database
                 val pendingResult = goAsync() 
                 

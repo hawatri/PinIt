@@ -8,9 +8,12 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.google.gson.Gson
+import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.viewmodel.PinItViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -21,6 +24,8 @@ fun ArchiveScreen(
     onListClick: (String) -> Unit, // <-- NEW PARAMETER
     viewModel: PinItViewModel
 ) {
+    val context = LocalContext.current
+    val notificationHelper = remember(context) { NotificationHelper(context) }
     val allNotes by viewModel.notes.collectAsState()
     val archivedNotes = allNotes.filter { it.isArchived }
 
@@ -80,7 +85,34 @@ fun ArchiveScreen(
                         }
                     },
                     onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
-                    onPinClick = { note -> viewModel.togglePin(note) } 
+                    onPinClick = { note ->
+                        val willBePinned = !note.isPinned
+                        viewModel.togglePin(note)
+                        if (willBePinned) {
+                            notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList)
+                        } else {
+                            notificationHelper.unpinNoteFromNotification(note.id)
+                        }
+                    },
+                    onCopyClick = { text ->
+                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Copied Note", text))
+                        android.widget.Toast.makeText(context, "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    onToggleAllClick = { note ->
+                        val items = try {
+                            Gson().fromJson(note.text, Array<ChecklistItemData>::class.java).toList()
+                        } catch (_: Exception) {
+                            emptyList()
+                        }
+                        val allChecked = items.isNotEmpty() && items.all { it.isChecked }
+                        val newItems = items.map { it.copy(isChecked = !allChecked) }
+                        val updated = note.copy(text = Gson().toJson(newItems))
+                        viewModel.updateNote(updated)
+                        if (updated.isPinned) {
+                            notificationHelper.pinNoteToNotification(updated.id, updated.title, updated.text, true)
+                        }
+                    }
                 )
             } else {
                 EmptyStateView(icon = Icons.Filled.Archive, message = "Archive is empty")

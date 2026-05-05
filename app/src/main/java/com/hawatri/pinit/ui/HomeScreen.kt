@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Label
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -144,6 +144,25 @@ fun HomeScreen(
                             } else {
                                 notificationHelper.unpinNoteFromNotification(note.id)
                             }
+                        },
+                        onCopyClick = { text ->
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            val clip = android.content.ClipData.newPlainText("Copied Note", text)
+                            clipboard.setPrimaryClip(clip)
+                            android.widget.Toast.makeText(context, "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                        onToggleAllClick = { note ->
+                            val gson = com.google.gson.Gson()
+                            val items = try {
+                                gson.fromJson(note.text, Array<com.hawatri.pinit.ui.ChecklistItemData>::class.java).toList()
+                            } catch (e: Exception) { emptyList() }
+                            val allChecked = items.isNotEmpty() && items.all { it.isChecked }
+                            val newItems = items.map { it.copy(isChecked = !allChecked) }
+                            val newNote = note.copy(text = gson.toJson(newItems))
+                            viewModel.updateNote(newNote)
+                            if (newNote.isPinned) {
+                                notificationHelper.pinNoteToNotification(newNote.id, newNote.title, newNote.text, isList = true)
+                            }
                         }
                     )
                 } else {
@@ -179,7 +198,9 @@ fun NotesGrid(
     isSelectionMode: Boolean,
     onNoteClick: (String) -> Unit,
     onNoteLongClick: (String) -> Unit,
-    onPinClick: (Note) -> Unit
+    onPinClick: (Note) -> Unit,
+    onCopyClick: (String) -> Unit,
+    onToggleAllClick: (Note) -> Unit
 ) {
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(2),
@@ -194,7 +215,9 @@ fun NotesGrid(
                 isSelected = selectedNoteIds.contains(note.id),
                 onClick = { onNoteClick(note.id) },
                 onLongClick = { onNoteLongClick(note.id) },
-                onPinClick = { onPinClick(note) }
+                onPinClick = { onPinClick(note) },
+                onCopyClick = onCopyClick,
+                onToggleAllClick = onToggleAllClick
             )
         }
     }
@@ -207,7 +230,9 @@ fun NoteCard(
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onPinClick: () -> Unit
+    onPinClick: () -> Unit,
+    onCopyClick: (String) -> Unit = {},
+    onToggleAllClick: (Note) -> Unit = {}
 ) {
     val borderStroke = if (isSelected) BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
     else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -293,6 +318,76 @@ fun NoteCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+
+            if (note.reminderText != null) {
+                Row(
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Notifications,
+                        contentDescription = "Alarm",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = note.reminderText!!,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Divider
+            HorizontalDivider(
+                modifier = Modifier.padding(top = 8.dp),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+            )
+
+            // Bottom Action Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        if (note.isList) onToggleAllClick(note) else onCopyClick(note.text)
+                    }
+                    .padding(top = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (note.isList) {
+                    val items = try {
+                        Gson().fromJson(note.text, Array<ChecklistItemData>::class.java).toList()
+                    } catch (e: Exception) { emptyList() }
+                    val allChecked = items.isNotEmpty() && items.all { it.isChecked }
+
+                    Text(
+                        text = if (allChecked) "Uncheck all" else "Check All",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Icon(
+                        imageVector = if (allChecked) Icons.Outlined.Close else Icons.Outlined.Checklist, 
+                        contentDescription = "Toggle All",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Text(
+                        text = "Copy",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Icon(
+                        imageVector = Icons.Outlined.ContentCopy,
+                        contentDescription = "Copy",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

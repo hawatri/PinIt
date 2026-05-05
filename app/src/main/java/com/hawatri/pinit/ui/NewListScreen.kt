@@ -46,6 +46,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.hawatri.pinit.util.NotificationHelper
+import com.hawatri.pinit.util.cancelAlarm
+import com.hawatri.pinit.util.formatAlarmText
 import com.google.gson.Gson
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -93,6 +95,7 @@ fun NewListScreen(
     val notesList by viewModel.notes.collectAsState()
     var isInitialized by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId) }
+    var currentReminderText by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(notesList, noteId) {
         if (noteId != null && !isInitialized && notesList.isNotEmpty()) {
@@ -105,6 +108,7 @@ fun NewListScreen(
                 
                 checklistItems.clear()
                 checklistItems.addAll(items)
+                currentReminderText = existingNote.reminderText
                 isInitialized = true
             }
         }
@@ -131,7 +135,8 @@ fun NewListScreen(
             formatRanges = emptyList(),
             isPinned = isPinned,
             isArchived = isArchived,
-            isList = true
+            isList = true,
+            reminderText = currentReminderText
         )
 
         if (existing != null) {
@@ -230,11 +235,22 @@ fun NewListScreen(
                                 onClick = {
                                     showReminderMenu = false
                                     val noteToPinId = saveList() ?: return@DropdownMenuItem
-                                    com.hawatri.pinit.util.setTomorrowAlarm(
+                                    val scheduled = com.hawatri.pinit.util.setTomorrowAlarm(
                                         context = context,
                                         noteId = noteToPinId,
                                         noteTitle = title
                                     )
+                                    if (scheduled) {
+                                        currentReminderText = formatAlarmText(
+                                            java.util.Calendar.getInstance().apply {
+                                                add(java.util.Calendar.DAY_OF_YEAR, 1)
+                                                set(java.util.Calendar.HOUR_OF_DAY, 8)
+                                                set(java.util.Calendar.MINUTE, 0)
+                                                set(java.util.Calendar.SECOND, 0)
+                                            }
+                                        )
+                                        saveList()
+                                    }
                                 }
                             )
                             DropdownMenuItem(
@@ -313,6 +329,40 @@ fun NewListScreen(
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
+                        if (currentReminderText != null) {
+                            AssistChip(
+                                onClick = { showReminderMenu = true },
+                                label = { Text(currentReminderText!!) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Filled.Notifications,
+                                        contentDescription = "Alarm",
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                },
+                                trailingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = "Remove Alarm",
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clickable {
+                                                val idToCancel = currentNoteId ?: noteId
+                                                if (idToCancel != null) {
+                                                    cancelAlarm(context, idToCancel)
+                                                }
+                                                currentReminderText = null
+                                                saveList()
+                                            }
+                                    )
+                                },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                border = null,
+                                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+                            )
+                        }
                     }
 
                     // Checklist Items loop
@@ -326,8 +376,7 @@ fun NewListScreen(
                         EditableChecklistItem(
                             item = item,
                             isDragging = isDragging, // Pass this down
-                            // FIX: Only animate items you AREN'T holding so they slide out of the way smoothly
-                            modifier = if (isDragging) Modifier else Modifier.animateItem(), 
+                            modifier = Modifier,
                             onDragStart = { draggedItemId = item.id },
                             onDragEnd = { draggedItemId = null },
                             onTextChange = { newText -> 
@@ -432,9 +481,17 @@ fun NewListScreen(
                 TextButton(
                     onClick = {
                         showTimePicker = false
+                        
+                        val calendar = java.util.Calendar.getInstance()
+                        calendar.timeInMillis = selectedDateMillis ?: System.currentTimeMillis()
+                        calendar.set(java.util.Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        calendar.set(java.util.Calendar.MINUTE, timePickerState.minute)
+                        val sdf = java.text.SimpleDateFormat("MMM dd, h:mm a", java.util.Locale.getDefault())
+                        currentReminderText = sdf.format(calendar.time)
+                        
                         val noteToPinId = saveList() ?: return@TextButton
                         
-                        com.hawatri.pinit.util.scheduleCustomAlarm(
+                        val scheduled = com.hawatri.pinit.util.scheduleCustomAlarm(
                             context = context,
                             noteId = noteToPinId,
                             noteTitle = title,
@@ -442,6 +499,9 @@ fun NewListScreen(
                             hour = timePickerState.hour,
                             minute = timePickerState.minute
                         )
+                        if (!scheduled) return@TextButton
+                        currentReminderText = formatAlarmText(calendar)
+                        saveList()
                     }
                 ) {
                     Text("OK")

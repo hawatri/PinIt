@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatListBulleted
@@ -72,6 +73,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.util.NotificationHelper
+import com.hawatri.pinit.util.cancelAlarm
+import com.hawatri.pinit.util.formatAlarmText
 import com.hawatri.pinit.viewmodel.PinItViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -105,6 +108,7 @@ fun NewNoteScreen(
     // --- NEW: Load Existing Note Logic ---
     val notesList by viewModel.notes.collectAsState()
     var isInitialized by remember { mutableStateOf(false) }
+    var currentReminderText by remember { mutableStateOf<String?>(null) }
 
     fun saveOrUpdateNote(pinOverride: Boolean? = null): String? {
         val idToUse = currentNoteId ?: noteId ?: java.util.UUID.randomUUID().toString()
@@ -120,7 +124,8 @@ fun NewNoteScreen(
             title = title,
             text = noteText.text,
             formatRanges = formatRanges,
-            isPinned = isPinned
+            isPinned = isPinned,
+            reminderText = currentReminderText
         )
 
         if (existing != null) {
@@ -163,6 +168,7 @@ fun NewNoteScreen(
                 // Load text and set cursor to the very end
                 noteText = TextFieldValue(existingNote.text, selection = TextRange(existingNote.text.length))
                 formatRanges = existingNote.formatRanges
+                currentReminderText = existingNote.reminderText
                 isInitialized = true
             }
         }
@@ -264,12 +270,24 @@ fun NewNoteScreen(
                                 text = { Text("Tomorrow (8:00 AM)") },
                                 onClick = {
                                     showReminderMenu = false
+                                    currentReminderText = "Tomorrow, 8:00 AM"
                                     val noteToPinId = saveOrUpdateNote() ?: return@DropdownMenuItem
-                                    com.hawatri.pinit.util.setTomorrowAlarm(
+                                    val scheduled = com.hawatri.pinit.util.setTomorrowAlarm(
                                         context = context,
                                         noteId = noteToPinId,
                                         noteTitle = title
                                     )
+                                    if (scheduled) {
+                                        currentReminderText = formatAlarmText(
+                                            java.util.Calendar.getInstance().apply {
+                                                add(java.util.Calendar.DAY_OF_YEAR, 1)
+                                                set(java.util.Calendar.HOUR_OF_DAY, 8)
+                                                set(java.util.Calendar.MINUTE, 0)
+                                                set(java.util.Calendar.SECOND, 0)
+                                            }
+                                        )
+                                        saveOrUpdateNote()
+                                    }
                                 }
                             )
                             DropdownMenuItem(
@@ -339,6 +357,41 @@ fun NewNoteScreen(
                             .fillMaxWidth()
                             .onFocusChanged { focusState -> if (focusState.isFocused) isBodyFocused = false }
                     )
+
+                    if (currentReminderText != null) {
+                        androidx.compose.material3.AssistChip(
+                            onClick = { showReminderMenu = true },
+                            label = { Text(currentReminderText!!) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Notifications,
+                                    contentDescription = "Alarm",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "Remove Alarm",
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clickable {
+                                            val idToCancel = currentNoteId ?: noteId
+                                            if (idToCancel != null) {
+                                                cancelAlarm(context, idToCancel)
+                                            }
+                                            currentReminderText = null
+                                            saveOrUpdateNote()
+                                        }
+                                )
+                            },
+                            colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            border = null,
+                            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+                        )
+                    }
 
                     TextField(
                         value = noteText,
@@ -498,9 +551,17 @@ fun NewNoteScreen(
                 TextButton(
                     onClick = {
                         showTimePicker = false
+                        
+                        val calendar = java.util.Calendar.getInstance()
+                        calendar.timeInMillis = selectedDateMillis ?: System.currentTimeMillis()
+                        calendar.set(java.util.Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        calendar.set(java.util.Calendar.MINUTE, timePickerState.minute)
+                        val sdf = java.text.SimpleDateFormat("MMM dd, h:mm a", java.util.Locale.getDefault())
+                        currentReminderText = sdf.format(calendar.time)
+                        
                         val noteToPinId = saveOrUpdateNote() ?: return@TextButton
                         
-                        com.hawatri.pinit.util.scheduleCustomAlarm(
+                        val scheduled = com.hawatri.pinit.util.scheduleCustomAlarm(
                             context = context,
                             noteId = noteToPinId,
                             noteTitle = title,
@@ -508,6 +569,9 @@ fun NewNoteScreen(
                             hour = timePickerState.hour,
                             minute = timePickerState.minute
                         )
+                        if (!scheduled) return@TextButton
+                        currentReminderText = formatAlarmText(calendar)
+                        saveOrUpdateNote()
                     }
                 ) {
                     Text("OK")

@@ -170,6 +170,32 @@ class NotificationHelper(private val context: Context) {
         manager.notify(noteId.hashCode(), builder.build())
     }
 
+    fun showReminderNotification(noteId: String, title: String, text: String, isList: Boolean = false) {
+        val displayTitle = if (title.isBlank()) "Reminder" else "Reminder: $title"
+        val content = if (isList) "Open to view your checklist items" else text
+
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val openAppPendingIntent = PendingIntent.getActivity(
+            context,
+            (noteId + "_reminder_open").hashCode(),
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(displayTitle)
+            .setContentText(content.ifBlank { "It's time for your reminder" })
+            .setStyle(NotificationCompat.BigTextStyle().bigText(content.ifBlank { "It's time for your reminder" }))
+            .setAutoCancel(true)
+            .setContentIntent(openAppPendingIntent)
+            .build()
+
+        manager.notify((noteId + "_reminder").hashCode(), notification)
+    }
+
     fun unpinNoteFromNotification(noteId: String) {
         manager.cancel(noteId.hashCode())
     }

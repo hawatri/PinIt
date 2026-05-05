@@ -2,13 +2,33 @@ package com.hawatri.pinit.util
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.pm.PackageManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.hawatri.pinit.receiver.AlarmReceiver
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 import java.util.TimeZone
+
+const val EXTRA_NOTE_ID = "EXTRA_NOTE_ID"
+const val EXTRA_NOTE_TITLE = "EXTRA_NOTE_TITLE"
+
+fun formatAlarmText(calendar: Calendar): String {
+    val formatter = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault())
+    return formatter.format(calendar.time)
+}
+
+private fun hasNotificationPermission(context: Context): Boolean {
+    return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+}
 
 fun scheduleCustomAlarm(
     context: Context, 
@@ -17,16 +37,19 @@ fun scheduleCustomAlarm(
     dateMillis: Long?, 
     hour: Int, 
     minute: Int
-) {
-    if (dateMillis == null) return
+): Boolean {
+    if (dateMillis == null) return false
+
+    if (!hasNotificationPermission(context)) {
+        Toast.makeText(context, "Please allow notifications for reminders", Toast.LENGTH_LONG).show()
+        return false
+    }
 
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     // Android 12+ Security Check
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-        Toast.makeText(context, "Please grant Exact Alarm permission in app settings", Toast.LENGTH_LONG).show()
-        // Optional: Launch Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-        return
+        Toast.makeText(context, "Exact alarm permission missing. Reminder may be delayed.", Toast.LENGTH_LONG).show()
     }
 
     // Material 3 DatePicker returns milliseconds in UTC. 
@@ -48,12 +71,12 @@ fun scheduleCustomAlarm(
     // Don't set alarms in the past
     if (localCalendar.timeInMillis <= System.currentTimeMillis()) {
         Toast.makeText(context, "Cannot set reminder in the past", Toast.LENGTH_SHORT).show()
-        return
+        return false
     }
 
     val intent = Intent(context, AlarmReceiver::class.java).apply {
-        putExtra("EXTRA_NOTE_ID", noteId)
-        putExtra("EXTRA_NOTE_TITLE", noteTitle)
+        putExtra(EXTRA_NOTE_ID, noteId)
+        putExtra(EXTRA_NOTE_TITLE, noteTitle)
     }
 
     // Use the noteId's hashcode so an alarm for a specific note can be updated or overwritten
@@ -64,17 +87,31 @@ fun scheduleCustomAlarm(
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 
-    // Fires the alarm exactly at the given time, waking up the device if necessary
-    alarmManager.setExactAndAllowWhileIdle(
-        AlarmManager.RTC_WAKEUP,
-        localCalendar.timeInMillis,
-        pendingIntent
-    )
+    // Use exact alarms when available; otherwise fall back to inexact while-idle.
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            localCalendar.timeInMillis,
+            pendingIntent
+        )
+    } else {
+        alarmManager.setAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            localCalendar.timeInMillis,
+            pendingIntent
+        )
+    }
     
     Toast.makeText(context, "Reminder set!", Toast.LENGTH_SHORT).show()
+    return true
 }
 
-fun setTomorrowAlarm(context: Context, noteId: String, noteTitle: String) {
+fun setTomorrowAlarm(context: Context, noteId: String, noteTitle: String): Boolean {
+    if (!hasNotificationPermission(context)) {
+        Toast.makeText(context, "Please allow notifications for reminders", Toast.LENGTH_LONG).show()
+        return false
+    }
+
     // Get exactly 8:00 AM tomorrow in local time
     val tomorrow = Calendar.getInstance().apply {
         add(Calendar.DAY_OF_YEAR, 1) // Add one day
@@ -90,13 +127,12 @@ fun setTomorrowAlarm(context: Context, noteId: String, noteTitle: String) {
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-        Toast.makeText(context, "Please grant Exact Alarm permission", Toast.LENGTH_SHORT).show()
-        return
+        Toast.makeText(context, "Exact alarm permission missing. Reminder may be delayed.", Toast.LENGTH_LONG).show()
     }
 
     val intent = Intent(context, AlarmReceiver::class.java).apply {
-        putExtra("EXTRA_NOTE_ID", noteId)
-        putExtra("EXTRA_NOTE_TITLE", noteTitle)
+        putExtra(EXTRA_NOTE_ID, noteId)
+        putExtra(EXTRA_NOTE_TITLE, noteTitle)
     }
 
     val pendingIntent = PendingIntent.getBroadcast(
@@ -106,11 +142,32 @@ fun setTomorrowAlarm(context: Context, noteId: String, noteTitle: String) {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 
-    alarmManager.setExactAndAllowWhileIdle(
-        AlarmManager.RTC_WAKEUP,
-        tomorrow.timeInMillis,
-        pendingIntent
-    )
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            tomorrow.timeInMillis,
+            pendingIntent
+        )
+    } else {
+        alarmManager.setAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            tomorrow.timeInMillis,
+            pendingIntent
+        )
+    }
 
     Toast.makeText(context, "Reminder set for tomorrow at 8:00 AM", Toast.LENGTH_SHORT).show()
+    return true
+}
+
+fun cancelAlarm(context: Context, noteId: String) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    val intent = Intent(context, AlarmReceiver::class.java)
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        noteId.hashCode(),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    alarmManager.cancel(pendingIntent)
 }

@@ -15,5 +15,6 @@ data class Note(
     val isPinned: Boolean = false,
     val isArchived: Boolean = false, // NEW FIELD
     val isList: Boolean = false, // <-- NEW FIELD
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val reminderText: String? = null // NEW: Stores formatted alarm time
 )
