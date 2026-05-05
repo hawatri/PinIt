@@ -18,6 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 
 import android.Manifest
 import android.os.Build
@@ -172,17 +177,14 @@ fun NewListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .imePadding(),
-            verticalArrangement = Arrangement.Bottom
+                .imePadding()
         ) {
-            Spacer(modifier = Modifier.weight(1f))
-
             // Input Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-                    .weight(1f, fill = false), // <-- 1. ADD THIS: Restricts card height to available space
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                    .weight(1f), 
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
             ) {
@@ -230,19 +232,48 @@ fun NewListScreen(
                                 item = item,
                                 onTextChange = { newText -> checklistItems[index] = item.copy(text = newText) },
                                 onCheckedChange = { checked -> checklistItems[index] = item.copy(isChecked = checked) },
-                                onRemove = { checklistItems.removeAt(index) }
+                                onRemove = { checklistItems.removeAt(index) },
+                                onMoveUp = {
+                                    if (index > 0) {
+                                        val temp = checklistItems[index]
+                                        checklistItems[index] = checklistItems[index - 1]
+                                        checklistItems[index - 1] = temp
+                                    }
+                                },
+                                onMoveDown = {
+                                    if (index < checklistItems.size - 1) {
+                                        val temp = checklistItems[index]
+                                        checklistItems[index] = checklistItems[index + 1]
+                                        checklistItems[index + 1] = temp
+                                    }
+                                }
                             )
                         }
                     }
 
-                    Text(
-                        text = "Add item",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        fontSize = 16.sp,
+                    // CHANGED: The Add Item button is now bold and prominent
+                    Row(
                         modifier = Modifier
                             .padding(start = 48.dp, top = 8.dp, bottom = 8.dp)
+                            .clip(RoundedCornerShape(8.dp))
                             .clickable { checklistItems.add(ChecklistItemData()) }
-                    )
+                            .padding(vertical = 8.dp, horizontal = 4.dp), // Extra touch padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Add",
+                            tint = MaterialTheme.colorScheme.primary, // Uses your active app color
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Add item",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp
+                        )
+                    }
                 }
             }
 
@@ -270,23 +301,45 @@ fun EditableChecklistItem(
     item: ChecklistItemData,
     onTextChange: (String) -> Unit,
     onCheckedChange: (Boolean) -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onMoveUp: () -> Unit,     // <-- NEW
+    onMoveDown: () -> Unit    // <-- NEW
 ) {
+    // NEW: Variables to track the drag gesture
+    var offsetY by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current.density
+    val swapThreshold = 40 * density // How far to drag before it snaps to the next position
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
-    )
-
-    {
-
+    ) {
         Icon(
             imageVector = Icons.Filled.DragIndicator,
             contentDescription = "Drag",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            modifier = Modifier.size(24.dp)
+            tint = MaterialTheme.colorScheme.onSurfaceVariant, // Removed the alpha fade so it looks active
+            modifier = Modifier
+                .size(24.dp)
+                // NEW: Intercept drags and swap items when dragged far enough
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragEnd = { offsetY = 0f },
+                        onDragCancel = { offsetY = 0f }
+                    ) { change, dragAmount ->
+                        change.consume()
+                        offsetY += dragAmount
+                        if (offsetY > swapThreshold) {
+                            onMoveDown()
+                            offsetY = 0f // Reset after swap
+                        } else if (offsetY < -swapThreshold) {
+                            onMoveUp()
+                            offsetY = 0f
+                        }
+                    }
+                }
         )
         Checkbox(
             checked = item.isChecked,
