@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.viewmodel.PinItViewModel
+import androidx.compose.ui.platform.LocalContext
+import com.hawatri.pinit.util.NotificationHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +47,10 @@ fun HomeScreen(
     // 1. Selection State
     var selectedNoteIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedNoteIds.isNotEmpty()
+
+    // NEW: Initialize Notification Helper
+    val context = LocalContext.current
+    val notificationHelper = remember(context) { NotificationHelper(context) }
 
     Scaffold(
         bottomBar = {
@@ -115,7 +121,18 @@ fun HomeScreen(
                                 onNoteClick(id)
                             }
                         },
-                        onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id }
+                        onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
+                        onPinClick = { note -> 
+                            // NEW: Update DB and Notification
+                            val willBePinned = !note.isPinned
+                            viewModel.togglePin(note)
+                            
+                            if (willBePinned) {
+                                notificationHelper.pinNoteToNotification(note.id, note.title, note.text)
+                            } else {
+                                notificationHelper.unpinNoteFromNotification(note.id)
+                            }
+                        }
                     )
                 } else {
                     val icon = if (selectedBottomTab == 1) Icons.Filled.PushPin else Icons.Filled.Article
@@ -149,7 +166,8 @@ fun NotesGrid(
     selectedNoteIds: Set<String>,
     isSelectionMode: Boolean,
     onNoteClick: (String) -> Unit,
-    onNoteLongClick: (String) -> Unit
+    onNoteLongClick: (String) -> Unit,
+    onPinClick: (Note) -> Unit
 ) {
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(2),
@@ -163,7 +181,8 @@ fun NotesGrid(
                 note = note,
                 isSelected = selectedNoteIds.contains(note.id),
                 onClick = { onNoteClick(note.id) },
-                onLongClick = { onNoteLongClick(note.id) }
+                onLongClick = { onNoteLongClick(note.id) },
+                onPinClick = { onPinClick(note) }
             )
         }
     }
@@ -175,7 +194,8 @@ fun NoteCard(
     note: Note,
     isSelected: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    onPinClick: () -> Unit
 ) {
     // 3. Highlight the border if selected
     val borderStroke = if (isSelected) BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
@@ -193,17 +213,40 @@ fun NoteCard(
         border = borderStroke
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            if (note.title.isNotBlank()) {
-                Text(
-                    text = note.title,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                if (note.title.isNotBlank()) {
+                    Text(
+                        text = note.title,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
+                IconButton(
+                    onClick = onPinClick,
+                    modifier = Modifier.size(28.dp) // slightly larger for better touch target
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.PushPin,
+                        contentDescription = "Toggle Pin",
+                        tint = if (note.isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
+
             if (note.text.isNotBlank()) {
                 Text(
                     text = buildFormattedString(note.text, note.formatRanges),
