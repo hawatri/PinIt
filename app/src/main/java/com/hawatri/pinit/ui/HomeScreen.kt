@@ -165,7 +165,7 @@ fun HomeScreen(
                     onNewLinkClick = onNavigateToNewLink,
                     onNewContactClick = onNavigateToNewContact,
                     onNewImageClick = onNavigateToNewImage,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 88.dp)
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 120.dp)
                 )
             }
         }

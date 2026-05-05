@@ -47,6 +47,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.hawatri.pinit.util.NotificationHelper
 import com.google.gson.Gson
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.viewmodel.PinItViewModel
 
@@ -65,6 +74,16 @@ fun NewListScreen(
 ) {
     val context = LocalContext.current
     val notificationHelper = remember(context) { NotificationHelper(context) }
+
+    // State for dialogs and menus
+    var showReminderMenu by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    // States for pickers
+    val datePickerState = rememberDatePickerState()
+    val timePickerState = rememberTimePickerState()
+    var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
 
     var title by remember { mutableStateOf("") }
     val checklistItems = remember { mutableStateListOf<ChecklistItemData>() }
@@ -134,6 +153,20 @@ fun NewListScreen(
         notificationHelper.pinNoteToNotification(savedNoteId, title, jsonText, isList = true)
     }
 
+    val reminderPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            android.widget.Toast.makeText(context, "Reminders won't show without notification permission", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            reminderPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -176,6 +209,43 @@ fun NewListScreen(
                         onNavigateBack()
                     }) { Icon(Icons.Filled.Archive, contentDescription = "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                     
+                    Box {
+                        IconButton(onClick = { 
+                            checkNotificationPermission()
+                            showReminderMenu = true 
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Notifications,
+                                contentDescription = "Set Reminder",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showReminderMenu,
+                            onDismissRequest = { showReminderMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Tomorrow (8:00 AM)") },
+                                onClick = {
+                                    showReminderMenu = false
+                                    val noteToPinId = saveList() ?: return@DropdownMenuItem
+                                    com.hawatri.pinit.util.setTomorrowAlarm(
+                                        context = context,
+                                        noteId = noteToPinId,
+                                        noteTitle = title
+                                    )
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Pick date and time") },
+                                onClick = {
+                                    showReminderMenu = false
+                                    showDatePicker = true
+                                }
+                            )
+                        }
+                    }
                     IconButton(onClick = { }) { Icon(Icons.Filled.Label, contentDescription = "Label", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                     
                     // SAVE BUTTON
@@ -323,6 +393,66 @@ fun NewListScreen(
                 )
             }
         }
+    }
+
+    // Date Picker Dialog
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        selectedDateMillis = datePickerState.selectedDateMillis
+                        showDatePicker = false
+                        showTimePicker = true // Open TimePicker immediately after DatePicker
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // Time Picker Dialog
+    if (showTimePicker) {
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Select time") },
+            text = {
+                TimePicker(state = timePickerState)
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showTimePicker = false
+                        val noteToPinId = saveList() ?: return@TextButton
+                        
+                        com.hawatri.pinit.util.scheduleCustomAlarm(
+                            context = context,
+                            noteId = noteToPinId,
+                            noteTitle = title,
+                            dateMillis = selectedDateMillis,
+                            hour = timePickerState.hour,
+                            minute = timePickerState.minute
+                        )
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
