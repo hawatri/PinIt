@@ -37,6 +37,7 @@ fun PinItApp() {
                 onNavigateToNewLink = { navController.navigate("new_link") },
                 onNavigateToNewContact = { navController.navigate("new_contact") },
                 onNavigateToNewImage = { navController.navigate("new_image") },
+                onNavigateToArchive = { navController.navigate("archive") },
                 viewModel = sharedViewModel
             )
         }
@@ -63,5 +64,12 @@ fun PinItApp() {
         composable("new_link") { NewLinkScreen(onNavigateBack = { navController.popBackStack() }) }
         composable("new_contact") { NewContactScreen(onNavigateBack = { navController.popBackStack() }) }
         composable("new_image") { NewImageScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable("archive") {
+            ArchiveScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNoteClick = { noteId -> navController.navigate("new_note?noteId=$noteId") },
+                viewModel = sharedViewModel
+            )
+        }
     }
 }

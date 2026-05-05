@@ -38,6 +38,7 @@ fun HomeScreen(
     onNavigateToNewLink: () -> Unit,
     onNavigateToNewContact: () -> Unit,
     onNavigateToNewImage: () -> Unit,
+    onNavigateToArchive: () -> Unit,
     viewModel: PinItViewModel
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
@@ -100,7 +101,7 @@ fun HomeScreen(
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                     )
                 } else {
-                    TopSearchBar()
+                    TopSearchBar(onArchiveClick = onNavigateToArchive)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

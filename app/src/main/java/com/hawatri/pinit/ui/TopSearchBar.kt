@@ -6,8 +6,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +19,10 @@ import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopSearchBar(modifier: Modifier = Modifier) {
+fun TopSearchBar(
+    modifier: Modifier = Modifier,
+    onArchiveClick: () -> Unit
+) {
     var searchText by remember { mutableStateOf("") }
 
     Row(
@@ -59,10 +63,12 @@ fun TopSearchBar(modifier: Modifier = Modifier) {
         )
 
         Icon(
-            imageVector = Icons.Filled.ViewAgenda,
-            contentDescription = "Toggle View",
+            imageVector = Icons.Filled.Archive,
+            contentDescription = "Archived Notes",
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(end = 12.dp)
+            modifier = Modifier
+                .padding(end = 12.dp)
+                .clickable { onArchiveClick() }
         )
 
         Box(
