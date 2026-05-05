@@ -29,6 +29,7 @@ fun PinItApp() {
             HomeScreen(
                 // Pass the Note ID when clicking an existing note
                 onNoteClick = { noteId -> navController.navigate("new_note?noteId=$noteId") },
+                onListClick = { noteId -> navController.navigate("new_list?noteId=$noteId") }, // <-- NEW
                 onNavigateToNewNote = { navController.navigate("new_note") },
                 onNavigateToNewList = { navController.navigate("new_list") },
                 onNavigateToNewLocation = { navController.navigate("new_location") },
@@ -57,7 +58,21 @@ fun PinItApp() {
                 viewModel = sharedViewModel
             )
         }
-        composable("new_list") { NewListScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable(
+            route = "new_list?noteId={noteId}",
+            arguments = listOf(navArgument("noteId") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getString("noteId")
+            NewListScreen(
+                noteId = noteId,
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = sharedViewModel
+            )
+        }
         composable("new_location") { NewLocationScreen(onNavigateBack = { navController.popBackStack() }) }
         composable("new_qr") { NewQRScreen(onNavigateBack = { navController.popBackStack() }) }
         composable("new_app_list") { NewAppListScreen(onNavigateBack = { navController.popBackStack() }) }
@@ -68,6 +83,7 @@ fun PinItApp() {
             ArchiveScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNoteClick = { noteId -> navController.navigate("new_note?noteId=$noteId") },
+                onListClick = { noteId -> navController.navigate("new_list?noteId=$noteId") }, // <-- NEW
                 viewModel = sharedViewModel
             )
         }

@@ -25,11 +25,14 @@ import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import androidx.compose.ui.platform.LocalContext
 import com.hawatri.pinit.util.NotificationHelper
+import com.google.gson.Gson
+import androidx.compose.ui.text.style.TextDecoration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNoteClick: (String) -> Unit, // New Parameter
+    onListClick: (String) -> Unit, // <-- NEW PARAMETER
     onNavigateToNewNote: () -> Unit,
     onNavigateToNewList: () -> Unit,
     onNavigateToNewLocation: () -> Unit,
@@ -121,7 +124,13 @@ fun HomeScreen(
                             if (isSelectionMode) {
                                 selectedNoteIds = if (selectedNoteIds.contains(id)) selectedNoteIds - id else selectedNoteIds + id
                             } else {
-                                onNoteClick(id)
+                                // --- NEW LOGIC: Check if it's a list ---
+                                val clickedNote = allNotes.find { it.id == id }
+                                if (clickedNote?.isList == true) {
+                                    onListClick(id)
+                                } else {
+                                    onNoteClick(id)
+                                }
                             }
                         },
                         onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
@@ -131,7 +140,7 @@ fun HomeScreen(
                             viewModel.togglePin(note)
                             
                             if (willBePinned) {
-                                notificationHelper.pinNoteToNotification(note.id, note.title, note.text)
+                                notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList)
                             } else {
                                 notificationHelper.unpinNoteFromNotification(note.id)
                             }
@@ -200,9 +209,10 @@ fun NoteCard(
     onLongClick: () -> Unit,
     onPinClick: () -> Unit
 ) {
-    // 3. Highlight the border if selected
     val borderStroke = if (isSelected) BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
     else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+
+    val gson = remember { Gson() }
 
     Card(
         modifier = Modifier
@@ -216,10 +226,9 @@ fun NoteCard(
         border = borderStroke
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // Title & Pin Button Row
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
@@ -239,7 +248,7 @@ fun NoteCard(
 
                 IconButton(
                     onClick = onPinClick,
-                    modifier = Modifier.size(28.dp) // slightly larger for better touch target
+                    modifier = Modifier.size(28.dp).offset(x = 8.dp, y = (-8).dp)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.PushPin,
@@ -250,7 +259,33 @@ fun NoteCard(
                 }
             }
 
-            if (note.text.isNotBlank()) {
+            // --- NEW: Render Content based on Type ---
+            if (note.isList) {
+                // Safely parse the JSON string back into a list of items
+                val listItems = try {
+                    gson.fromJson(note.text, Array<ChecklistItemData>::class.java).toList()
+                } catch (e: Exception) {
+                    emptyList()
+                }
+
+                // Display up to 4 items on the card preview
+                val displayLimit = 4
+                listItems.take(displayLimit).forEach { item ->
+                    ChecklistItemPreview(item)
+                }
+
+                // Show "+ X more" if the list is longer than the limit
+                if (listItems.size > displayLimit) {
+                    Text(
+                        text = "+ ${listItems.size - displayLimit} more items",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(top = 4.dp, start = 24.dp)
+                    )
+                }
+
+            } else if (note.text.isNotBlank()) {
+                // Standard Note Text Rendering
                 Text(
                     text = buildFormattedString(note.text, note.formatRanges),
                     fontSize = 14.sp,
@@ -260,6 +295,32 @@ fun NoteCard(
                 )
             }
         }
+    }
+}
+
+// Custom composable to render individual checklist items on the card preview
+@Composable
+fun ChecklistItemPreview(item: ChecklistItemData) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 2.dp).fillMaxWidth()
+    ) {
+        Icon(
+            imageVector = if (item.isChecked) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
+            contentDescription = null,
+            tint = if (item.isChecked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = item.text,
+            fontSize = 14.sp,
+            color = if (item.isChecked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 

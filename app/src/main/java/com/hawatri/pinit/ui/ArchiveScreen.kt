@@ -18,6 +18,7 @@ import com.hawatri.pinit.viewmodel.PinItViewModel
 fun ArchiveScreen(
     onNavigateBack: () -> Unit,
     onNoteClick: (String) -> Unit,
+    onListClick: (String) -> Unit, // <-- NEW PARAMETER
     viewModel: PinItViewModel
 ) {
     val allNotes by viewModel.notes.collectAsState()
@@ -70,7 +71,12 @@ fun ArchiveScreen(
                         if (isSelectionMode) {
                             selectedNoteIds = if (selectedNoteIds.contains(id)) selectedNoteIds - id else selectedNoteIds + id
                         } else {
-                            onNoteClick(id)
+                            val clickedNote = archivedNotes.find { it.id == id }
+                            if (clickedNote?.isList == true) {
+                                onListClick(id)
+                            } else {
+                                onNoteClick(id)
+                            }
                         }
                     },
                     onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },

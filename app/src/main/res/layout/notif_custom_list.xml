@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:padding="16dp">
+
+    <!-- Title removed to allow Android system to handle it via DecoratedCustomViewStyle -->
+
+    <!-- Replace your old notif_items_container with this 2-column block -->
+    <LinearLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:baselineAligned="false"> <!-- Important for rendering speed -->
+
+        <!-- Left Column -->
+        <LinearLayout
+            android:id="@+id/notif_items_left_col"
+            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingEnd="8dp"/>
+
+        <!-- Right Column -->
+        <LinearLayout
+            android:id="@+id/notif_items_right_col"
+            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingStart="8dp"/>
+    </LinearLayout>
+
+    <!-- NEW: +X more text indicator -->
+    <TextView
+        android:id="@+id/notif_more_text"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        style="@style/TextAppearance.Compat.Notification.Line2"
+        android:paddingTop="4dp" android:paddingStart="4dp"
+        android:visibility="gone"
+        android:textStyle="italic"/>
+
+</LinearLayout>

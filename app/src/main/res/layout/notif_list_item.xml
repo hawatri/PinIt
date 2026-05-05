@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="horizontal" android:paddingVertical="2dp" android:gravity="center_vertical">
+
+    <!-- Update your TextView in notif_list_item.xml to add maxLines and ellipsize -->
+    <TextView
+        android:id="@+id/item_text"
+        android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+        style="@style/TextAppearance.Compat.Notification.Line2"
+        android:textSize="14sp"
+        android:maxLines="1" 
+        android:ellipsize="end" /> <!-- This adds the "..." if the text is too long -->
+
+    <ImageView
+        android:id="@+id/item_checkbox"
+        android:layout_width="24dp" android:layout_height="24dp"
+        android:src="@android:drawable/checkbox_off_background"/>
+</LinearLayout>
