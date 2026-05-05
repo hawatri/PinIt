@@ -32,6 +32,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.graphics.graphicsLayer
 
 import android.Manifest
 import android.os.Build
@@ -200,8 +204,9 @@ fun NewListScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
             ) {
-                // CHANGED: Use LazyListState instead of ScrollState
                 val listState = rememberLazyListState() 
+                // NEW: Track exactly which item is being held
+                var draggedItemId by remember { mutableStateOf<String?>(null) } 
                 
                 LaunchedEffect(checklistItems.size) {
                     if (checklistItems.isNotEmpty()) {
@@ -209,13 +214,12 @@ fun NewListScreen(
                     }
                 }
 
-                // CHANGED: LazyColumn enables built-in smooth reordering animations
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxSize()
-                        .animateContentSize() // <-- SMOOTH overall resizing when adding/removing
+                        .animateContentSize() 
                 ) {
                     // Header items (Mandatory text & Title)
                     item {
@@ -244,28 +248,42 @@ fun NewListScreen(
                     // Checklist Items loop
                     items(
                         count = checklistItems.size, 
-                        key = { checklistItems[it].id ?: UUID.randomUUID().toString() } // Tracks items for animation
+                        key = { checklistItems[it].id ?: UUID.randomUUID().toString() } 
                     ) { index ->
                         val item = checklistItems[index]
+                        val isDragging = draggedItemId == item.id // Check if this is the active item
+                        
                         EditableChecklistItem(
                             item = item,
-                            // Item translation is handled by drag offset; keep modifier plain for compatibility.
-                            modifier = Modifier,
-                            onTextChange = { newText -> checklistItems[index] = item.copy(text = newText) },
-                            onCheckedChange = { checked -> checklistItems[index] = item.copy(isChecked = checked) },
-                            onRemove = { checklistItems.removeAt(index) },
+                            isDragging = isDragging, // Pass this down
+                            // FIX: Only animate items you AREN'T holding so they slide out of the way smoothly
+                            modifier = if (isDragging) Modifier else Modifier.animateItem(), 
+                            onDragStart = { draggedItemId = item.id },
+                            onDragEnd = { draggedItemId = null },
+                            onTextChange = { newText -> 
+                                val safeIndex = checklistItems.indexOf(item)
+                                if (safeIndex != -1) checklistItems[safeIndex] = item.copy(text = newText) 
+                            },
+                            onCheckedChange = { checked -> 
+                                val safeIndex = checklistItems.indexOf(item)
+                                if (safeIndex != -1) checklistItems[safeIndex] = item.copy(isChecked = checked) 
+                            },
+                            onRemove = { checklistItems.remove(item) },
+                            // FIX: Dynamically check the index to prevent rapid-drag crashes
                             onMoveUp = {
-                                if (index > 0) {
-                                    val temp = checklistItems[index]
-                                    checklistItems[index] = checklistItems[index - 1]
-                                    checklistItems[index - 1] = temp
+                                val currentIndex = checklistItems.indexOf(item)
+                                if (currentIndex > 0) {
+                                    val temp = checklistItems[currentIndex]
+                                    checklistItems[currentIndex] = checklistItems[currentIndex - 1]
+                                    checklistItems[currentIndex - 1] = temp
                                 }
                             },
                             onMoveDown = {
-                                if (index < checklistItems.size - 1) {
-                                    val temp = checklistItems[index]
-                                    checklistItems[index] = checklistItems[index + 1]
-                                    checklistItems[index + 1] = temp
+                                val currentIndex = checklistItems.indexOf(item)
+                                if (currentIndex >= 0 && currentIndex < checklistItems.size - 1) {
+                                    val temp = checklistItems[currentIndex]
+                                    checklistItems[currentIndex] = checklistItems[currentIndex + 1]
+                                    checklistItems[currentIndex + 1] = temp
                                 }
                             }
                         )
@@ -312,7 +330,10 @@ fun NewListScreen(
 @Composable
 fun EditableChecklistItem(
     item: ChecklistItemData,
-    modifier: Modifier = Modifier, // <-- NEW
+    modifier: Modifier = Modifier,
+    isDragging: Boolean, // NEW
+    onDragStart: () -> Unit, // NEW
+    onDragEnd: () -> Unit, // NEW
     onTextChange: (String) -> Unit,
     onCheckedChange: (Boolean) -> Unit,
     onRemove: () -> Unit,
@@ -320,14 +341,19 @@ fun EditableChecklistItem(
     onMoveDown: () -> Unit
 ) {
     var offsetY by remember { mutableFloatStateOf(0f) }
-    val isDragging = offsetY != 0f
-    val density = LocalDensity.current.density
-    val swapThreshold = 40 * density 
+    var itemHeight by remember { mutableIntStateOf(0) } // NEW: Tracks exact row height
 
     Row(
         modifier = modifier
-            .zIndex(if (isDragging) 1f else 0f) // Brings the dragged item to the front
-            .offset { IntOffset(0, offsetY.roundToInt()) } // Makes it follow your finger exactly
+            .zIndex(if (isDragging) 1f else 0f)
+            .graphicsLayer {
+                translationY = offsetY
+                // Visual polish: Pops the item up slightly when held
+                scaleX = if (isDragging) 1.02f else 1f 
+                scaleY = if (isDragging) 1.02f else 1f
+                shadowElevation = if (isDragging) 8f else 0f
+            }
+            .onGloballyPositioned { itemHeight = it.size.height } // Captures exact pixel height
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -341,19 +367,31 @@ fun EditableChecklistItem(
                 .size(24.dp)
                 .pointerInput(Unit) {
                     detectVerticalDragGestures(
-                        onDragEnd = { offsetY = 0f },
-                        onDragCancel = { offsetY = 0f }
+                        onDragStart = { onDragStart() },
+                        onDragEnd = { 
+                            offsetY = 0f
+                            onDragEnd() 
+                        },
+                        onDragCancel = { 
+                            offsetY = 0f
+                            onDragEnd() 
+                        }
                     ) { change, dragAmount ->
                         change.consume()
                         offsetY += dragAmount
                         
-                        // Swap logic that smoothly shifts the offset so it doesn't snap back instantly
-                        if (offsetY > swapThreshold) {
-                            onMoveDown()
-                            offsetY -= swapThreshold 
-                        } else if (offsetY < -swapThreshold) {
-                            onMoveUp()
-                            offsetY += swapThreshold
+                        // Safety check to ensure height is calculated
+                        if (itemHeight > 0) {
+                            // Swap when you drag past 50% of the item's actual height
+                            val swapThreshold = itemHeight * 0.5f 
+                            
+                            if (offsetY > swapThreshold) {
+                                onMoveDown()
+                                offsetY -= itemHeight // Instantly correct offset so it stays under finger
+                            } else if (offsetY < -swapThreshold) {
+                                onMoveUp()
+                                offsetY += itemHeight
+                            }
                         }
                     }
                 }
