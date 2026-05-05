@@ -18,6 +18,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.zIndex
+import java.util.UUID
+import kotlin.math.roundToInt
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.mutableFloatStateOf
@@ -36,11 +45,14 @@ import com.hawatri.pinit.util.NotificationHelper
 import com.google.gson.Gson
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.viewmodel.PinItViewModel
-import java.util.UUID
 
-data class ChecklistItemData(val text: String = "", val isChecked: Boolean = false)
+data class ChecklistItemData(
+    val id: String? = UUID.randomUUID().toString(), // NEW: Helps Compose track animations
+    val text: String = "", 
+    val isChecked: Boolean = false
+)
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class) // <-- Updated OptIn
 @Composable
 fun NewListScreen(
     noteId: String? = null, // <-- NEW PARAMETER
@@ -188,91 +200,91 @@ fun NewListScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
             ) {
-                val scrollState = rememberScrollState() // <-- 2. ADD THIS: Creates a scroll state
+                // CHANGED: Use LazyListState instead of ScrollState
+                val listState = rememberLazyListState() 
                 
-                // --- NEW: Auto-scroll logic ---
-                // Every time the size of the checklist changes, this effect runs
                 LaunchedEffect(checklistItems.size) {
-                    // Animate to the very bottom of the scrollable area
-                    scrollState.animateScrollTo(scrollState.maxValue)
+                    if (checklistItems.isNotEmpty()) {
+                        listState.animateScrollToItem(checklistItems.size + 1)
+                    }
                 }
-                // -----------------------------
 
-                Column(
+                // CHANGED: LazyColumn enables built-in smooth reordering animations
+                LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .padding(16.dp)
-                        .verticalScroll(scrollState) // <-- 3. ADD THIS: Makes the inside of the card scrollable
+                        .fillMaxSize()
+                        .animateContentSize() // <-- SMOOTH overall resizing when adding/removing
                 ) {
-                    Text(
-                        text = "*Mandatory field",
-                        color = Color(0xFFD32F2F),
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                    )
-
-                    TextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        placeholder = { Text("Title*", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                        ),
-                        textStyle = TextStyle(fontSize = 24.sp),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Checklist items
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        checklistItems.forEachIndexed { index, item ->
-                            EditableChecklistItem(
-                                item = item,
-                                onTextChange = { newText -> checklistItems[index] = item.copy(text = newText) },
-                                onCheckedChange = { checked -> checklistItems[index] = item.copy(isChecked = checked) },
-                                onRemove = { checklistItems.removeAt(index) },
-                                onMoveUp = {
-                                    if (index > 0) {
-                                        val temp = checklistItems[index]
-                                        checklistItems[index] = checklistItems[index - 1]
-                                        checklistItems[index - 1] = temp
-                                    }
-                                },
-                                onMoveDown = {
-                                    if (index < checklistItems.size - 1) {
-                                        val temp = checklistItems[index]
-                                        checklistItems[index] = checklistItems[index + 1]
-                                        checklistItems[index + 1] = temp
-                                    }
-                                }
-                            )
-                        }
+                    // Header items (Mandatory text & Title)
+                    item {
+                        Text(
+                            text = "*Mandatory field",
+                            color = Color(0xFFD32F2F),
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+                        )
+                        TextField(
+                            value = title,
+                            onValueChange = { title = it },
+                            placeholder = { Text("Title*", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                            ),
+                            textStyle = TextStyle(fontSize = 24.sp),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
 
-                    // CHANGED: The Add Item button is now bold and prominent
-                    Row(
-                        modifier = Modifier
-                            .padding(start = 48.dp, top = 8.dp, bottom = 8.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { checklistItems.add(ChecklistItemData()) }
-                            .padding(vertical = 8.dp, horizontal = 4.dp), // Extra touch padding
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Add,
-                            contentDescription = "Add",
-                            tint = MaterialTheme.colorScheme.primary, // Uses your active app color
-                            modifier = Modifier.size(20.dp)
+                    // Checklist Items loop
+                    items(
+                        count = checklistItems.size, 
+                        key = { checklistItems[it].id ?: UUID.randomUUID().toString() } // Tracks items for animation
+                    ) { index ->
+                        val item = checklistItems[index]
+                        EditableChecklistItem(
+                            item = item,
+                            // Item translation is handled by drag offset; keep modifier plain for compatibility.
+                            modifier = Modifier,
+                            onTextChange = { newText -> checklistItems[index] = item.copy(text = newText) },
+                            onCheckedChange = { checked -> checklistItems[index] = item.copy(isChecked = checked) },
+                            onRemove = { checklistItems.removeAt(index) },
+                            onMoveUp = {
+                                if (index > 0) {
+                                    val temp = checklistItems[index]
+                                    checklistItems[index] = checklistItems[index - 1]
+                                    checklistItems[index - 1] = temp
+                                }
+                            },
+                            onMoveDown = {
+                                if (index < checklistItems.size - 1) {
+                                    val temp = checklistItems[index]
+                                    checklistItems[index] = checklistItems[index + 1]
+                                    checklistItems[index + 1] = temp
+                                }
+                            }
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Add item",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp
-                        )
+                    }
+
+                    // Bottom "Add Item" button
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .padding(start = 48.dp, top = 8.dp, bottom = 8.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { checklistItems.add(ChecklistItemData()) }
+                                .padding(vertical = 8.dp, horizontal = 4.dp), 
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Filled.Add, contentDescription = "Add", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Add item", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                        }
                     }
                 }
             }
@@ -296,22 +308,26 @@ fun NewListScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EditableChecklistItem(
     item: ChecklistItemData,
+    modifier: Modifier = Modifier, // <-- NEW
     onTextChange: (String) -> Unit,
     onCheckedChange: (Boolean) -> Unit,
     onRemove: () -> Unit,
-    onMoveUp: () -> Unit,     // <-- NEW
-    onMoveDown: () -> Unit    // <-- NEW
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit
 ) {
-    // NEW: Variables to track the drag gesture
     var offsetY by remember { mutableFloatStateOf(0f) }
+    val isDragging = offsetY != 0f
     val density = LocalDensity.current.density
-    val swapThreshold = 40 * density // How far to drag before it snaps to the next position
+    val swapThreshold = 40 * density 
 
     Row(
-        modifier = Modifier
+        modifier = modifier
+            .zIndex(if (isDragging) 1f else 0f) // Brings the dragged item to the front
+            .offset { IntOffset(0, offsetY.roundToInt()) } // Makes it follow your finger exactly
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -320,10 +336,9 @@ fun EditableChecklistItem(
         Icon(
             imageVector = Icons.Filled.DragIndicator,
             contentDescription = "Drag",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant, // Removed the alpha fade so it looks active
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .size(24.dp)
-                // NEW: Intercept drags and swap items when dragged far enough
                 .pointerInput(Unit) {
                     detectVerticalDragGestures(
                         onDragEnd = { offsetY = 0f },
@@ -331,12 +346,14 @@ fun EditableChecklistItem(
                     ) { change, dragAmount ->
                         change.consume()
                         offsetY += dragAmount
+                        
+                        // Swap logic that smoothly shifts the offset so it doesn't snap back instantly
                         if (offsetY > swapThreshold) {
                             onMoveDown()
-                            offsetY = 0f // Reset after swap
+                            offsetY -= swapThreshold 
                         } else if (offsetY < -swapThreshold) {
                             onMoveUp()
-                            offsetY = 0f
+                            offsetY += swapThreshold
                         }
                     }
                 }
