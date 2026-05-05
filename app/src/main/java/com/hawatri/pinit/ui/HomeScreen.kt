@@ -84,12 +84,13 @@ fun HomeScreen(
                             IconButton(onClick = { selectedNoteIds = emptySet() }) { Icon(Icons.Filled.Close, "Clear") }
                         },
                         actions = {
+                            // CHANGED: Pin action replaced with Archive action
                             IconButton(onClick = {
                                 selectedNoteIds.forEach { id ->
-                                    allNotes.find { it.id == id }?.let { note -> viewModel.togglePin(note) }
+                                    allNotes.find { it.id == id }?.let { note -> viewModel.toggleArchive(note) }
                                 }
                                 selectedNoteIds = emptySet()
-                            }) { Icon(Icons.Filled.PushPin, "Pin") }
+                            }) { Icon(Icons.Filled.Archive, "Archive") }
 
                             IconButton(onClick = {
                                 selectedNoteIds.forEach { id -> viewModel.deleteNote(id) }
@@ -104,9 +105,10 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // CHANGED: Filter out archived notes from Home and Pinned tabs
                 val displayNotes = when (selectedBottomTab) {
-                    1 -> allNotes.filter { it.isPinned }
-                    else -> allNotes
+                    1 -> allNotes.filter { it.isPinned && !it.isArchived }
+                    else -> allNotes.filter { !it.isArchived } 
                 }
 
                 if (displayNotes.isNotEmpty()) {

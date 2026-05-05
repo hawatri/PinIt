@@ -46,6 +46,12 @@ class PinItViewModel(private val dao: NoteDao) : ViewModel() {
             dao.updateNote(note.copy(isPinned = !note.isPinned))
         }
     }
+
+    fun toggleArchive(note: Note) {
+        viewModelScope.launch {
+            dao.updateNote(note.copy(isArchived = !note.isArchived))
+        }
+    }
 }
 
 // Factory to tell Android how to create our ViewModel with the NoteDao dependency

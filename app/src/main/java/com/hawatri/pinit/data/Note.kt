@@ -13,5 +13,6 @@ data class Note(
     val text: String,
     val formatRanges: List<FormatRange>,
     val isPinned: Boolean = false,
+    val isArchived: Boolean = false, // NEW FIELD
     val timestamp: Long = System.currentTimeMillis()
 )
