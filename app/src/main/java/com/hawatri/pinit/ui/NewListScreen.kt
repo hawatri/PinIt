@@ -9,6 +9,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -90,8 +94,12 @@ fun NewListScreen(
     var title by remember { mutableStateOf("") }
     val checklistItems = remember { mutableStateListOf<ChecklistItemData>() }
     val gson = remember { Gson() }
-    
-    // --- NEW: Load Existing List Logic ---
+    var isPinned by remember { mutableStateOf(false) }
+    var colorHex by remember { mutableStateOf<String?>(null) }
+    var isLocked by remember { mutableStateOf(false) }
+    var labels by remember { mutableStateOf(listOf<String>()) }
+    var showLabelsSheet by remember { mutableStateOf(false) }
+
     val notesList by viewModel.notes.collectAsState()
     var isInitialized by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId) }
@@ -109,6 +117,10 @@ fun NewListScreen(
                 checklistItems.clear()
                 checklistItems.addAll(items)
                 currentReminderText = existingNote.reminderText
+                isPinned = existingNote.isPinned
+                colorHex = existingNote.colorHex
+                isLocked = existingNote.isLocked
+                labels = existingNote.labels
                 isInitialized = true
             }
         }
@@ -125,7 +137,7 @@ fun NewListScreen(
         
         val jsonText = gson.toJson(validItems)
         
-        val isPinned = pinOverride ?: existing?.isPinned ?: false
+        val pinState = pinOverride ?: isPinned
         val isArchived = archiveOverride ?: existing?.isArchived ?: false
 
         val note = Note(
@@ -133,9 +145,13 @@ fun NewListScreen(
             title = title,
             text = jsonText,
             formatRanges = emptyList(),
-            isPinned = isPinned,
+            isPinned = pinState,
             isArchived = isArchived,
             isList = true,
+            noteType = com.hawatri.pinit.data.NoteType.LIST,
+            colorHex = colorHex,
+            isLocked = isLocked,
+            labels = labels,
             reminderText = currentReminderText
         )
 
@@ -182,37 +198,66 @@ fun NewListScreen(
                     }
                 },
                 actions = {
-                    // PIN BUTTON
-                    IconButton(onClick = { 
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            val hasNotificationPermission = ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.POST_NOTIFICATIONS
-                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-
-                            if (hasNotificationPermission) {
-                                val savedNoteId = saveList(pinOverride = true) ?: return@IconButton
-                                val validItems = checklistItems.filter { it.text.isNotBlank() }
-                                val jsonText = gson.toJson(validItems)
-                                notificationHelper.pinNoteToNotification(savedNoteId, title, jsonText, isList = true)
-                                onNavigateBack()
-                            } else {
-                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    // SHARE BUTTON
+                    IconButton(onClick = {
+                        val validItems = checklistItems.filter { it.text.isNotBlank() }
+                        val shareText = buildString {
+                            if (title.isNotBlank()) { append(title); append("\n\n") }
+                            validItems.forEachIndexed { i, item ->
+                                append(if (item.isChecked) "☑ " else "☐ ")
+                                append(item.text)
+                                if (i < validItems.lastIndex) append("\n")
                             }
-                        } else {
-                            val savedNoteId = saveList(pinOverride = true) ?: return@IconButton
-                            val validItems = checklistItems.filter { it.text.isNotBlank() }
-                            val jsonText = gson.toJson(validItems)
-                            notificationHelper.pinNoteToNotification(savedNoteId, title, jsonText, isList = true)
-                            onNavigateBack()
                         }
-                    }) { Icon(Icons.Filled.PushPin, contentDescription = "Pin", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    
-                    // ARCHIVE BUTTON (Replaced Reminder with Archive for consistency)
-                    IconButton(onClick = { 
+                        if (shareText.isNotBlank()) {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                            }
+                            context.startActivity(android.content.Intent.createChooser(intent, "Share list"))
+                        }
+                    }) { Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+
+                    // ARCHIVE BUTTON
+                    IconButton(onClick = {
+                        val validItems = checklistItems.filter { it.text.isNotBlank() }
+                        val jsonText = gson.toJson(validItems)
+                        // Unpin notification before archiving
+                        if (isPinned) {
+                            val idToUnpin = currentNoteId ?: noteId
+                            if (idToUnpin != null) notificationHelper.unpinNoteFromNotification(idToUnpin)
+                            isPinned = false
+                        }
                         saveList(archiveOverride = true)
                         onNavigateBack()
                     }) { Icon(Icons.Filled.Archive, contentDescription = "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+
+                    // PIN TOGGLE BUTTON
+                    IconButton(onClick = {
+                        val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                        } else true
+
+                        if (!hasPermission) {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            return@IconButton
+                        }
+                        isPinned = !isPinned
+                        val validItems = checklistItems.filter { it.text.isNotBlank() }
+                        val jsonText = gson.toJson(validItems)
+                        val savedNoteId = saveList() ?: return@IconButton
+                        if (isPinned) {
+                            notificationHelper.pinNoteToNotification(savedNoteId, title, jsonText, isList = true)
+                        } else {
+                            notificationHelper.unpinNoteFromNotification(savedNoteId)
+                        }
+                    }) {
+                        Icon(
+                            if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                            contentDescription = "Pin",
+                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     
                     Box {
                         IconButton(onClick = { 
@@ -262,13 +307,21 @@ fun NewListScreen(
                             )
                         }
                     }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Label, contentDescription = "Label", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    
+                    IconButton(onClick = { showLabelsSheet = true }) {
+                        Icon(Icons.Filled.Label, "Label",
+                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { isLocked = !isLocked; saveList() }) {
+                        Icon(
+                            if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                            contentDescription = if (isLocked) "Locked" else "Unlocked",
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     // SAVE BUTTON
-                    IconButton(onClick = { 
-                        saveList()
-                        onNavigateBack()
-                    }) { Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    IconButton(onClick = { saveList(); onNavigateBack() }) {
+                        Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -426,7 +479,7 @@ fun NewListScreen(
                 }
             }
 
-            // Bottom formatting bar (Reusing your UI pattern)
+            // Bottom toolbar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -436,9 +489,14 @@ fun NewListScreen(
             ) {
                 FormatIcon(
                     icon = Icons.Filled.GridView,
-                    isActive = false, // Changed from alpha to isActive
+                    isActive = false,
                     isEnabled = true,
-                    onClick = { /* Handle grid layout toggle later */ }
+                    onClick = { }
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                NoteColorPicker(
+                    selectedColor = colorHex,
+                    onColorSelected = { colorHex = it.ifBlank { null }; saveList() }
                 )
             }
         }
@@ -512,6 +570,16 @@ fun NewListScreen(
                     Text("Cancel")
                 }
             }
+        )
+    }
+
+    if (showLabelsSheet) {
+        val allLabels = remember(notesList) { notesList.flatMap { it.labels }.distinct() }
+        LabelsEditorSheet(
+            currentLabels = labels,
+            allExistingLabels = allLabels,
+            onLabelsChange = { labels = it; saveList() },
+            onDismiss = { showLabelsSheet = false }
         )
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,31 +27,65 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.hawatri.pinit.data.Note
+import com.hawatri.pinit.data.NoteType
+import com.hawatri.pinit.util.NotificationHelper
+import com.hawatri.pinit.viewmodel.PinItViewModel
+import java.util.UUID
 import java.util.concurrent.Executors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewQRScreen(onNavigateBack: () -> Unit) {
+fun NewQRScreen(
+    noteId: String? = null,
+    onNavigateBack: () -> Unit,
+    viewModel: PinItViewModel
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val notificationHelper = remember(context) { NotificationHelper(context) }
 
     var scannedValue by remember { mutableStateOf<String?>(null) }
+    var noteTitle by remember { mutableStateOf("QR Code") }
+    var isPinned by remember { mutableStateOf(false) }
+    var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
-    var hasCameraPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-        )
+    val notesList by viewModel.notes.collectAsState()
+    var isInitialized by remember { mutableStateOf(false) }
+    var scanningActive by remember { mutableStateOf(noteId == null) }
+
+    LaunchedEffect(notesList, noteId) {
+        if (noteId != null && !isInitialized && notesList.isNotEmpty()) {
+            val existing = notesList.find { it.id == noteId }
+            if (existing != null) {
+                noteTitle = existing.title
+                scannedValue = existing.text
+                isPinned = existing.isPinned
+                scanningActive = false
+                isInitialized = true
+            }
+        }
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { granted -> hasCameraPermission = granted }
-    )
+    var hasCameraPermission by remember {
+        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> hasCameraPermission = granted }
+    LaunchedEffect(Unit) { if (!hasCameraPermission) permissionLauncher.launch(Manifest.permission.CAMERA) }
 
-    LaunchedEffect(key1 = true) {
-        if (!hasCameraPermission) {
-            permissionLauncher.launch(Manifest.permission.CAMERA)
-        }
+    fun save(pinOverride: Boolean = isPinned): String {
+        val note = Note(
+            id = currentNoteId,
+            title = noteTitle,
+            text = scannedValue ?: "",
+            formatRanges = emptyList(),
+            isPinned = pinOverride,
+            isList = false,
+            noteType = NoteType.QR
+        )
+        val existing = notesList.find { it.id == currentNoteId }
+        if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
+        return currentNoteId
     }
 
     Scaffold(
@@ -63,103 +98,75 @@ fun NewQRScreen(onNavigateBack: () -> Unit) {
                     }
                 },
                 actions = {
-                    // Restored the missing options here
-                    IconButton(onClick = { }) { Icon(Icons.Filled.PushPin, contentDescription = "Pin", tint = Color.White) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.NotificationAdd, contentDescription = "Reminder", tint = Color.White) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.FlashOff, contentDescription = "Flash", tint = Color.White) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Archive, contentDescription = "Archive", tint = Color.White) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Check, contentDescription = "Save", tint = Color.White) }
+                    if (scannedValue != null) {
+                        IconButton(onClick = {
+                            isPinned = !isPinned
+                            val savedId = save(isPinned)
+                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, noteTitle, scannedValue ?: "")
+                            else notificationHelper.unpinNoteFromNotification(savedId)
+                        }) {
+                            Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
+                                tint = if (isPinned) MaterialTheme.colorScheme.primary else Color.White)
+                        }
+                        IconButton(onClick = { scanningActive = true; scannedValue = null }) {
+                            Icon(Icons.Filled.QrCodeScanner, "Rescan", tint = Color.White)
+                        }
+                        IconButton(onClick = { save(); onNavigateBack() }) {
+                            Icon(Icons.Filled.Check, "Save", tint = Color.White)
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
         containerColor = Color.Black
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (hasCameraPermission) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (scanningActive && hasCameraPermission) {
                 AndroidView(
-                    factory = { androidViewContext ->
-                        val previewView = PreviewView(androidViewContext)
-                        val cameraProviderFuture = ProcessCameraProvider.getInstance(androidViewContext)
-
-                        cameraProviderFuture.addListener({
-                            val cameraProvider = cameraProviderFuture.get()
-
-                            val preview = Preview.Builder().build().also {
-                                it.setSurfaceProvider(previewView.surfaceProvider)
-                            }
-
-                            val imageAnalysis = ImageAnalysis.Builder()
+                    factory = { ctx ->
+                        val previewView = PreviewView(ctx)
+                        ProcessCameraProvider.getInstance(ctx).addListener({
+                            val provider = ProcessCameraProvider.getInstance(ctx).get()
+                            val preview = Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
+                            val analysis = ImageAnalysis.Builder()
                                 .setTargetResolution(Size(1280, 720))
                                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                .build()
-                                .also {
-                                    it.setAnalyzer(
-                                        Executors.newSingleThreadExecutor(),
-                                        QrCodeAnalyzer { result ->
-                                            scannedValue = result
-                                        }
-                                    )
+                                .build().also {
+                                    it.setAnalyzer(Executors.newSingleThreadExecutor(), QrCodeAnalyzer { result ->
+                                        scannedValue = result
+                                        scanningActive = false
+                                    })
                                 }
-
                             try {
-                                cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    CameraSelector.DEFAULT_BACK_CAMERA,
-                                    preview,
-                                    imageAnalysis
-                                )
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }, ContextCompat.getMainExecutor(androidViewContext))
-
+                                provider.unbindAll()
+                                provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
+                            } catch (e: Exception) { e.printStackTrace() }
+                        }, ContextCompat.getMainExecutor(ctx))
                         previewView
                     },
                     modifier = Modifier.fillMaxSize()
                 )
-
                 Box(modifier = Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.5f))
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(250.dp)
-                            .border(4.dp, Color(0xFFC0C8D0), RoundedCornerShape(16.dp))
-                    )
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)))
+                    Box(modifier = Modifier.align(Alignment.Center).size(250.dp).border(4.dp, Color(0xFFC0C8D0), RoundedCornerShape(16.dp)))
+                    Text("Point camera at a QR code", color = Color.White, modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
                 }
+            } else if (!hasCameraPermission) {
+                Text("Camera permission required to scan QR codes.", color = Color.White, modifier = Modifier.align(Alignment.Center))
+            }
 
-                if (scannedValue != null) {
-                    Card(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(32.dp)
-                            .fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        Text(
-                            text = "Scanned: $scannedValue",
-                            modifier = Modifier.padding(16.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+            if (scannedValue != null) {
+                Card(
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(32.dp).fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Scanned:", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(scannedValue!!, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
-            } else {
-                Text(
-                    text = "Camera permission is required to scan QR codes.",
-                    color = Color.White,
-                    modifier = Modifier.align(Alignment.Center)
-                )
             }
         }
     }

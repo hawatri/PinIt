@@ -2,6 +2,7 @@ package com.hawatri.pinit.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -14,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +27,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.hawatri.pinit.data.Note
+import com.hawatri.pinit.data.NoteType
+import com.hawatri.pinit.util.NotificationHelper
+import com.hawatri.pinit.viewmodel.PinItViewModel
+import java.util.UUID
 
 @SuppressLint("Range")
 fun getFileName(context: Context, uri: Uri): String {
@@ -35,64 +42,102 @@ fun getFileName(context: Context, uri: Uri): String {
             if (cursor != null && cursor.moveToFirst()) {
                 result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME))
             }
-        } finally {
-            cursor?.close()
-        }
+        } finally { cursor?.close() }
     }
     if (result == null) {
         result = uri.path
         val cut = result?.lastIndexOf('/') ?: -1
-        if (cut != -1) {
-            result = result?.substring(cut + 1)
-        }
+        if (cut != -1) result = result?.substring(cut + 1)
     }
     return result ?: "Image"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewImageScreen(onNavigateBack: () -> Unit) {
+fun NewImageScreen(
+    noteId: String? = null,
+    prefillImageUri: String? = null,
+    onNavigateBack: () -> Unit,
+    viewModel: PinItViewModel
+) {
     val context = LocalContext.current
-    var currentStep by remember { mutableIntStateOf(0) } // 0: Folder, 1: Pick Image, 2: Image Selected
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val notificationHelper = remember(context) { NotificationHelper(context) }
+
+    var currentStep by remember { mutableIntStateOf(if (prefillImageUri != null) 2 else 0) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(prefillImageUri?.let { Uri.parse(it) }) }
     var imageTitle by remember { mutableStateOf("") }
+    var isPinned by remember { mutableStateOf(false) }
+    var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree(),
-        onResult = { uri ->
-            if (uri != null) {
-                currentStep = 1
-            }
-        }
-    )
+    val notesList by viewModel.notes.collectAsState()
+    var isInitialized by remember { mutableStateOf(false) }
 
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri ->
-            if (uri != null) {
-                selectedImageUri = uri
-                val fullName = getFileName(context, uri)
-                // Remove extension for default title if desired, or keep exact filename
-                imageTitle = fullName.substringBeforeLast(".")
+    LaunchedEffect(notesList, noteId) {
+        if (noteId != null && !isInitialized && notesList.isNotEmpty()) {
+            val existing = notesList.find { it.id == noteId }
+            if (existing != null) {
+                imageTitle = existing.title
+                selectedImageUri = existing.text.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
+                isPinned = existing.isPinned
                 currentStep = 2
+                isInitialized = true
             }
         }
-    )
+    }
+
+    val folderPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) currentStep = 1
+    }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            // Take persistent permission so the URI stays valid after app restart
+            try {
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (e: Exception) { /* Some URIs don't support this, ignore */ }
+            selectedImageUri = uri
+            if (imageTitle.isBlank()) imageTitle = getFileName(context, uri).substringBeforeLast(".")
+            currentStep = 2
+        }
+    }
+
+    fun save(pinOverride: Boolean = isPinned): String {
+        val note = Note(
+            id = currentNoteId,
+            title = imageTitle.ifBlank { "Image" },
+            text = selectedImageUri?.toString() ?: "",
+            formatRanges = emptyList(),
+            isPinned = pinOverride,
+            isList = false,
+            noteType = NoteType.IMAGE
+        )
+        val existing = notesList.find { it.id == currentNoteId }
+        if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
+        return currentNoteId
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                 },
                 actions = {
-                    IconButton(onClick = { }) { Icon(Icons.Filled.PushPin, contentDescription = "Pin", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.NotificationAdd, contentDescription = "Reminder", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Label, contentDescription = "Label", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    if (selectedImageUri != null) {
+                        IconButton(onClick = {
+                            isPinned = !isPinned
+                            val savedId = save(isPinned)
+                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, imageTitle.ifBlank { "Image" }, "")
+                            else notificationHelper.unpinNoteFromNotification(savedId)
+                        }) {
+                            Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
+                                tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        IconButton(onClick = { save(); onNavigateBack() }) {
+                            Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -100,128 +145,65 @@ fun NewImageScreen(onNavigateBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .imePadding(),
+            modifier = Modifier.fillMaxSize().padding(paddingValues).imePadding(),
             verticalArrangement = Arrangement.Bottom
         ) {
             Spacer(modifier = Modifier.weight(1f))
-
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
             ) {
                 when (currentStep) {
-                    0 -> {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "To create a new PinIt containing a file you need to create or choose a folder where you want to save your files.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 20.sp
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Text(
-                                text = "Pick your folder",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .align(Alignment.End)
-                                    .clickable { folderPickerLauncher.launch(null) }
-                                    .padding(8.dp)
-                            )
-                        }
-                    }
-                    1 -> {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Select an image",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
-                                    .clickable {
-                                        imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Image,
-                                    contentDescription = "Pick Image",
-                                    tint = MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.size(24.dp)
-                                )
+                    0 -> Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "To save an image, select or pick one from your device.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 20.sp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                            TextButton(onClick = { imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
+                                Text("Pick Image")
                             }
                         }
                     }
-                    2 -> {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            AsyncImage(
-                                model = selectedImageUri,
-                                contentDescription = "Selected Image",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(RoundedCornerShape(8.dp))
+                    1 -> Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Select an image", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                        Box(
+                            modifier = Modifier.size(48.dp).clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+                                .clickable { imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                            contentAlignment = Alignment.Center
+                        ) { Icon(Icons.Filled.Image, "Pick Image", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(24.dp)) }
+                    }
+                    2 -> Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AsyncImage(
+                            model = selectedImageUri, contentDescription = "Selected Image",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp))
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("*Mandatory field", color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 16.dp))
+                            TextField(
+                                value = imageTitle, onValueChange = { imageTitle = it },
+                                placeholder = { Text("Title*", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                                colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
+                                singleLine = true, modifier = Modifier.fillMaxWidth()
                             )
-                            Spacer(modifier = Modifier.width(16.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "*Mandatory field",
-                                    color = Color(0xFFD32F2F),
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(start = 16.dp)
-                                )
-                                TextField(
-                                    value = imageTitle,
-                                    onValueChange = { imageTitle = it },
-                                    placeholder = { Text("Title*", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = Color.Transparent,
-                                        unfocusedContainerColor = Color.Transparent,
-                                        focusedIndicatorColor = Color.Transparent,
-                                        unfocusedIndicatorColor = Color.Transparent,
-                                    ),
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
-                                    .clickable {
-                                        imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Image,
-                                    contentDescription = "Repick Image",
-                                    tint = MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
                         }
+                        Box(
+                            modifier = Modifier.size(48.dp).clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+                                .clickable { imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                            contentAlignment = Alignment.Center
+                        ) { Icon(Icons.Filled.Image, "Repick", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(24.dp)) }
                     }
                 }
             }

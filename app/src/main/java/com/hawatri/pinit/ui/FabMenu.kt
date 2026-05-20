@@ -26,6 +26,9 @@ fun FabMenu(
     onNewLinkClick: () -> Unit,
     onNewContactClick: () -> Unit,
     onNewImageClick: () -> Unit,
+    onNewPDFClick: () -> Unit = {},
+    onNewAudioClick: () -> Unit = {},
+    onImportIcsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val menuItems = listOf(
@@ -36,7 +39,10 @@ fun FabMenu(
         MenuItem("New app list", Icons.Filled.Apps),
         MenuItem("New link", Icons.Filled.Link),
         MenuItem("New contact", Icons.Filled.PersonAdd),
-        MenuItem("New image", Icons.Filled.Image)
+        MenuItem("New image", Icons.Filled.Image),
+        MenuItem("New PDF", Icons.Filled.PictureAsPdf),
+        MenuItem("Record audio", Icons.Filled.Mic),
+        MenuItem("Import .ics", Icons.Filled.CalendarMonth)
     )
 
     Column(
@@ -61,6 +67,9 @@ fun FabMenu(
                             "New link" -> onNewLinkClick()
                             "New contact" -> onNewContactClick()
                             "New image" -> onNewImageClick()
+                            "New PDF" -> onNewPDFClick()
+                            "Record audio" -> onNewAudioClick()
+                            "Import .ics" -> onImportIcsClick()
                         }
                         onDismiss()
                     }

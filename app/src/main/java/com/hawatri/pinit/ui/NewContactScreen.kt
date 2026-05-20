@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +27,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.google.gson.Gson
+import com.hawatri.pinit.data.Note
+import com.hawatri.pinit.data.NoteType
+import com.hawatri.pinit.util.NotificationHelper
+import com.hawatri.pinit.viewmodel.PinItViewModel
+import java.util.UUID
+
+data class ContactNoteData(val name: String, val phone: String)
 
 @SuppressLint("Range")
 fun getContactDetails(context: Context, uri: Uri): Pair<String, String> {
@@ -36,20 +45,14 @@ fun getContactDetails(context: Context, uri: Uri): Pair<String, String> {
         if (it.moveToFirst()) {
             val id = it.getString(it.getColumnIndex(ContactsContract.Contacts._ID))
             name = it.getString(it.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)) ?: ""
-
             val hasPhoneNumber = it.getString(it.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)).toInt()
             if (hasPhoneNumber > 0) {
                 val phoneCursor = context.contentResolver.query(
-                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                    null,
-                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-                    arrayOf(id),
-                    null
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", arrayOf(id), null
                 )
                 phoneCursor?.use { pc ->
-                    if (pc.moveToFirst()) {
-                        phone = pc.getString(pc.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)) ?: ""
-                    }
+                    if (pc.moveToFirst()) phone = pc.getString(pc.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)) ?: ""
                 }
             }
         }
@@ -59,30 +62,64 @@ fun getContactDetails(context: Context, uri: Uri): Pair<String, String> {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewContactScreen(onNavigateBack: () -> Unit) {
+fun NewContactScreen(
+    noteId: String? = null,
+    onNavigateBack: () -> Unit,
+    viewModel: PinItViewModel
+) {
     val context = LocalContext.current
+    val notificationHelper = remember(context) { NotificationHelper(context) }
+    val gson = remember { Gson() }
+
     var name by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
+    var isPinned by remember { mutableStateOf(false) }
+    var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
-    val contactPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickContact(),
-        onResult = { uri ->
-            if (uri != null) {
-                val (fetchedName, fetchedPhone) = getContactDetails(context, uri)
-                name = fetchedName
-                phoneNumber = fetchedPhone
+    val notesList by viewModel.notes.collectAsState()
+    var isInitialized by remember { mutableStateOf(false) }
+
+    LaunchedEffect(notesList, noteId) {
+        if (noteId != null && !isInitialized && notesList.isNotEmpty()) {
+            val existing = notesList.find { it.id == noteId }
+            if (existing != null) {
+                try {
+                    val data = gson.fromJson(existing.text, ContactNoteData::class.java)
+                    name = data.name
+                    phoneNumber = data.phone
+                } catch (e: Exception) { name = existing.title }
+                isPinned = existing.isPinned
+                isInitialized = true
             }
         }
-    )
+    }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { granted ->
-            if (granted) {
-                contactPickerLauncher.launch(null)
-            }
+    fun save(pinOverride: Boolean = isPinned): String {
+        val data = ContactNoteData(name, phoneNumber)
+        val note = Note(
+            id = currentNoteId,
+            title = name.ifBlank { "Contact" },
+            text = gson.toJson(data),
+            formatRanges = emptyList(),
+            isPinned = pinOverride,
+            isList = false,
+            noteType = NoteType.CONTACT
+        )
+        val existing = notesList.find { it.id == currentNoteId }
+        if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
+        return currentNoteId
+    }
+
+    val contactPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickContact()) { uri ->
+        if (uri != null) {
+            val (fetchedName, fetchedPhone) = getContactDetails(context, uri)
+            name = fetchedName
+            phoneNumber = fetchedPhone
         }
-    )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) contactPickerLauncher.launch(null)
+    }
 
     fun onPickContactClicked() {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
@@ -98,14 +135,22 @@ fun NewContactScreen(onNavigateBack: () -> Unit) {
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { }) { Icon(Icons.Filled.PushPin, contentDescription = "Pin", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.NotificationAdd, contentDescription = "Reminder", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Label, contentDescription = "Label", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    IconButton(onClick = {
+                        isPinned = !isPinned
+                        val savedId = save(isPinned)
+                        if (isPinned) notificationHelper.pinNoteToNotification(savedId, name.ifBlank { "Contact" }, phoneNumber)
+                        else notificationHelper.unpinNoteFromNotification(savedId)
+                    }) {
+                        Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
+                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { if (name.isNotBlank() || phoneNumber.isNotBlank()) { save(); onNavigateBack() } }) {
+                        Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -113,82 +158,42 @@ fun NewContactScreen(onNavigateBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .imePadding(),
+            modifier = Modifier.fillMaxSize().padding(paddingValues).imePadding(),
             verticalArrangement = Arrangement.Bottom
         ) {
             Spacer(modifier = Modifier.weight(1f))
-
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         if (name.isEmpty() && phoneNumber.isEmpty()) {
-                            Text(
-                                text = "*Mandatory field",
-                                color = Color(0xFFD32F2F),
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                            )
+                            Text("*Mandatory field", color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 16.dp, bottom = 4.dp))
                         }
-
                         TextField(
-                            value = name,
-                            onValueChange = { name = it },
+                            value = name, onValueChange = { name = it },
                             placeholder = { Text("Name*", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                            ),
+                            colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
                             textStyle = TextStyle(fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
                         )
-
                         TextField(
-                            value = phoneNumber,
-                            onValueChange = { phoneNumber = it },
+                            value = phoneNumber, onValueChange = { phoneNumber = it },
                             placeholder = { Text("Phone Number*", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                            ),
+                            colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
                             textStyle = TextStyle(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
                         )
                     }
-
                     Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
+                        modifier = Modifier.size(48.dp).clip(CircleShape)
                             .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
                             .clickable { onPickContactClicked() },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.ImportContacts, // Book icon for contacts
-                            contentDescription = "Pick Contact",
-                            tint = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Icon(Icons.Filled.ImportContacts, "Pick Contact", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(24.dp))
                     }
                 }
             }

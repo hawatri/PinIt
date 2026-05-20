@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Close
@@ -30,8 +32,13 @@ import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Redo
 import androidx.compose.material.icons.filled.StrikethroughS
+import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Title
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -80,78 +87,93 @@ import com.hawatri.pinit.viewmodel.PinItViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewNoteScreen(
-    noteId: String? = null, // Added to accept existing notes
+    noteId: String? = null,
+    sharedText: String? = null,
     onNavigateBack: () -> Unit,
     viewModel: PinItViewModel
 ) {
     val context = LocalContext.current
     val notificationHelper = remember(context) { NotificationHelper(context) }
 
-    // State for dialogs and menus
     var showReminderMenu by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
-    // States for pickers
     val datePickerState = rememberDatePickerState()
     val timePickerState = rememberTimePickerState()
     var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
 
     var title by remember { mutableStateOf("") }
-    var noteText by remember { mutableStateOf(TextFieldValue("")) }
+    var noteText by remember { mutableStateOf(TextFieldValue(sharedText ?: "")) }
     var isBodyFocused by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId) }
+    var isPinned by remember { mutableStateOf(false) }
 
     var formatRanges by remember { mutableStateOf(listOf<FormatRange>()) }
     var activeFormats by remember { mutableStateOf(setOf<FormatType>()) }
+    var colorHex by remember { mutableStateOf<String?>(null) }
+    var isLocked by remember { mutableStateOf(false) }
+    var labels by remember { mutableStateOf(listOf<String>()) }
+    var showLabelsSheet by remember { mutableStateOf(false) }
 
-    // --- NEW: Load Existing Note Logic ---
+    val undoHistory = remember { ArrayDeque<String>() }
+    val redoHistory = remember { ArrayDeque<String>() }
+    var lastTextForUndo by remember { mutableStateOf("") }
+
     val notesList by viewModel.notes.collectAsState()
     var isInitialized by remember { mutableStateOf(false) }
     var currentReminderText by remember { mutableStateOf<String?>(null) }
 
-    fun saveOrUpdateNote(pinOverride: Boolean? = null): String? {
+    fun saveOrUpdateNote(): String? {
         val idToUse = currentNoteId ?: noteId ?: java.util.UUID.randomUUID().toString()
-
-        if (title.isBlank() && noteText.text.isBlank()) {
-            return null
-        }
+        if (title.isBlank() && noteText.text.isBlank()) return null
 
         val existing = notesList.find { it.id == idToUse }
-        val isPinned = pinOverride ?: existing?.isPinned ?: false
-        val noteToPersist = Note(
+        val noteToPersist = com.hawatri.pinit.data.Note(
             id = idToUse,
             title = title,
             text = noteText.text,
             formatRanges = formatRanges,
             isPinned = isPinned,
-            reminderText = currentReminderText
+            isArchived = existing?.isArchived ?: false,
+            reminderText = currentReminderText,
+            noteType = com.hawatri.pinit.data.NoteType.TEXT,
+            colorHex = colorHex,
+            isLocked = isLocked,
+            labels = labels
         )
 
-        if (existing != null) {
-            viewModel.updateNote(noteToPersist)
-        } else {
-            viewModel.addNote(noteToPersist)
-        }
-
+        if (existing != null) viewModel.updateNote(noteToPersist) else viewModel.addNote(noteToPersist)
         currentNoteId = idToUse
         return idToUse
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (!isGranted) return@rememberLauncherForActivityResult
-        val savedNoteId = saveOrUpdateNote(pinOverride = true) ?: return@rememberLauncherForActivityResult
-        notificationHelper.pinNoteToNotification(savedNoteId, title, noteText.text)
+    fun togglePin() {
+        val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else true
+
+        if (!hasPermission) {
+            android.widget.Toast.makeText(context, "Notification permission required to pin", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        isPinned = !isPinned
+        val savedId = saveOrUpdateNote() ?: return
+        if (isPinned) {
+            notificationHelper.pinNoteToNotification(savedId, title, noteText.text)
+        } else {
+            notificationHelper.unpinNoteFromNotification(savedId)
+        }
     }
 
-    val reminderPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (!isGranted) {
-            android.widget.Toast.makeText(context, "Reminders won't show without notification permission", android.widget.Toast.LENGTH_LONG).show()
-        }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) togglePin()
+        else android.widget.Toast.makeText(context, "Notification permission denied", android.widget.Toast.LENGTH_SHORT).show()
+    }
+
+    val reminderPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (!isGranted) android.widget.Toast.makeText(context, "Reminders won't show without notification permission", android.widget.Toast.LENGTH_LONG).show()
     }
 
     fun checkNotificationPermission() {
@@ -160,20 +182,32 @@ fun NewNoteScreen(
         }
     }
 
+    // Debounced undo history push — fires 400ms after text stops changing
+    LaunchedEffect(noteText.text) {
+        if (noteText.text != lastTextForUndo) {
+            kotlinx.coroutines.delay(400)
+            undoHistory.addLast(lastTextForUndo)
+            if (undoHistory.size > 50) undoHistory.removeFirst()
+            lastTextForUndo = noteText.text
+        }
+    }
+
     LaunchedEffect(notesList, noteId) {
         if (noteId != null && !isInitialized && notesList.isNotEmpty()) {
             val existingNote = notesList.find { it.id == noteId }
             if (existingNote != null) {
                 title = existingNote.title
-                // Load text and set cursor to the very end
                 noteText = TextFieldValue(existingNote.text, selection = TextRange(existingNote.text.length))
                 formatRanges = existingNote.formatRanges
                 currentReminderText = existingNote.reminderText
+                isPinned = existingNote.isPinned
+                colorHex = existingNote.colorHex
+                isLocked = existingNote.isLocked
+                labels = existingNote.labels
                 isInitialized = true
             }
         }
     }
-    // -------------------------------------
 
     fun toggleFormat(type: FormatType) {
         val selection = noteText.selection
@@ -228,27 +262,57 @@ fun NewNoteScreen(
                     }
                 },
                 actions = {
+                    // Share button
+                    IconButton(onClick = {
+                        val shareText = buildString {
+                            if (title.isNotBlank()) { append(title); append("\n\n") }
+                            append(noteText.text)
+                        }
+                        if (shareText.isNotBlank()) {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                            }
+                            context.startActivity(android.content.Intent.createChooser(intent, "Share note"))
+                        }
+                    }) {
+                        Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    // Archive button
+                    IconButton(onClick = {
+                        val idToUse = currentNoteId ?: noteId
+                        if (idToUse != null) {
+                            notesList.find { it.id == idToUse }?.let { note ->
+                                if (note.isPinned) notificationHelper.unpinNoteFromNotification(note.id)
+                                viewModel.toggleArchive(note)
+                            }
+                        } else {
+                            // New unsaved note — save then archive
+                            val savedId = saveOrUpdateNote()
+                            if (savedId != null) {
+                                notesList.find { it.id == savedId }?.let { viewModel.toggleArchive(it) }
+                            }
+                        }
+                        onNavigateBack()
+                    }) {
+                        Icon(Icons.Filled.Archive, contentDescription = "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    // Pin toggle button
                     IconButton(
                         onClick = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                val hasNotificationPermission = ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.POST_NOTIFICATIONS
-                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-
-                                if (hasNotificationPermission) {
-                                    val noteToPinId = saveOrUpdateNote(pinOverride = true) ?: return@IconButton
-                                    notificationHelper.pinNoteToNotification(noteToPinId, title, noteText.text)
-                                } else {
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             } else {
-                                val noteToPinId = saveOrUpdateNote(pinOverride = true) ?: return@IconButton
-                                notificationHelper.pinNoteToNotification(noteToPinId, title, noteText.text)
+                                togglePin()
                             }
                         }
                     ) {
-                        Icon(Icons.Filled.PushPin, contentDescription = "Pin", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                            contentDescription = "Pin",
+                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                     Box {
                         IconButton(onClick = { 
@@ -299,18 +363,21 @@ fun NewNoteScreen(
                             )
                         }
                     }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Label, contentDescription = "Label", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    IconButton(onClick = { showLabelsSheet = true }) {
+                        Icon(Icons.Filled.Label, "Label",
+                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { isLocked = !isLocked; saveOrUpdateNote() }) {
+                        Icon(
+                            if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                            contentDescription = if (isLocked) "Locked" else "Unlocked",
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
-                    // --- NEW: Save vs Update Logic ---
-                    IconButton(
-                        onClick = {
-                            saveOrUpdateNote()
-                            onNavigateBack()
-                        }
-                    ) {
+                    IconButton(onClick = { saveOrUpdateNote(); onNavigateBack() }) {
                         Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    // ---------------------------------
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -447,6 +514,7 @@ fun NewNoteScreen(
 
                                 formatRanges = mergedRanges
                             }
+                            if (newValue.text != noteText.text) redoHistory.clear()
                             noteText = newValue
                         },
                         placeholder = { Text("Text*", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
@@ -509,6 +577,40 @@ fun NewNoteScreen(
                     isActive = false,
                     isEnabled = isBodyFocused,
                     onClick = { cycleChecklist() }
+                )
+
+                // Undo
+                FormatIcon(
+                    icon = Icons.Filled.Undo,
+                    isActive = false,
+                    isEnabled = undoHistory.isNotEmpty(),
+                    onClick = {
+                        if (undoHistory.isNotEmpty()) {
+                            val prev = undoHistory.removeLast()
+                            redoHistory.addLast(noteText.text)
+                            noteText = androidx.compose.ui.text.input.TextFieldValue(prev, androidx.compose.ui.text.TextRange(prev.length))
+                        }
+                    }
+                )
+                // Redo
+                FormatIcon(
+                    icon = Icons.Filled.Redo,
+                    isActive = false,
+                    isEnabled = redoHistory.isNotEmpty(),
+                    onClick = {
+                        if (redoHistory.isNotEmpty()) {
+                            val next = redoHistory.removeLast()
+                            undoHistory.addLast(noteText.text)
+                            noteText = androidx.compose.ui.text.input.TextFieldValue(next, androidx.compose.ui.text.TextRange(next.length))
+                        }
+                    }
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                NoteColorPicker(
+                    selectedColor = colorHex,
+                    onColorSelected = { colorHex = it.ifBlank { null }; saveOrUpdateNote() }
                 )
             }
         }
@@ -582,6 +684,17 @@ fun NewNoteScreen(
                     Text("Cancel")
                 }
             }
+        )
+    }
+
+    // Labels editor sheet
+    if (showLabelsSheet) {
+        val allLabels = remember(notesList) { notesList.flatMap { it.labels }.distinct() }
+        LabelsEditorSheet(
+            currentLabels = labels,
+            allExistingLabels = allLabels,
+            onLabelsChange = { labels = it; saveOrUpdateNote() },
+            onDismiss = { showLabelsSheet = false }
         )
     }
 }

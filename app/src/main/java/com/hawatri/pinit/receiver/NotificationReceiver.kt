@@ -26,6 +26,16 @@ class NotificationReceiver : BroadcastReceiver() {
             NotificationHelper.ACTION_REMOVE_PIN -> {
                 if (noteId == null) return
                 manager.cancel(noteId.hashCode())
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val dao = NoteDatabase.getDatabase(context).noteDao()
+                        val note = dao.getNoteById(noteId)
+                        if (note != null) dao.updateNote(note.copy(isPinned = false))
+                    } finally {
+                        pendingResult.finish()
+                    }
+                }
             }
             NotificationHelper.ACTION_COPY_TEXT -> {
                 val textToCopy = intent.getStringExtra(NotificationHelper.EXTRA_NOTE_TEXT) ?: return

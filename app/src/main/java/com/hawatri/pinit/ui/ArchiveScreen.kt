@@ -8,11 +8,12 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.google.gson.Gson
+import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.viewmodel.PinItViewModel
 
@@ -20,8 +21,7 @@ import com.hawatri.pinit.viewmodel.PinItViewModel
 @Composable
 fun ArchiveScreen(
     onNavigateBack: () -> Unit,
-    onNoteClick: (String) -> Unit,
-    onListClick: (String) -> Unit, // <-- NEW PARAMETER
+    onNoteClick: (Note) -> Unit,
     viewModel: PinItViewModel
 ) {
     val context = LocalContext.current
@@ -39,13 +39,10 @@ fun ArchiveScreen(
                 navigationIcon = {
                     IconButton(onClick = {
                         if (isSelectionMode) selectedNoteIds = emptySet() else onNavigateBack()
-                    }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
+                    }) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
                 },
                 actions = {
                     if (isSelectionMode) {
-                        // Unarchive Button
                         IconButton(onClick = {
                             selectedNoteIds.forEach { id ->
                                 allNotes.find { it.id == id }?.let { note -> viewModel.toggleArchive(note) }
@@ -53,7 +50,6 @@ fun ArchiveScreen(
                             selectedNoteIds = emptySet()
                         }) { Icon(Icons.Filled.Unarchive, "Unarchive") }
 
-                        // Delete Button
                         IconButton(onClick = {
                             selectedNoteIds.forEach { id -> viewModel.deleteNote(id) }
                             selectedNoteIds = emptySet()
@@ -67,7 +63,6 @@ fun ArchiveScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
             if (archivedNotes.isNotEmpty()) {
-                // Reusing the grid from your HomeScreen!
                 NotesGrid(
                     notes = archivedNotes,
                     selectedNoteIds = selectedNoteIds,
@@ -76,12 +71,7 @@ fun ArchiveScreen(
                         if (isSelectionMode) {
                             selectedNoteIds = if (selectedNoteIds.contains(id)) selectedNoteIds - id else selectedNoteIds + id
                         } else {
-                            val clickedNote = archivedNotes.find { it.id == id }
-                            if (clickedNote?.isList == true) {
-                                onListClick(id)
-                            } else {
-                                onNoteClick(id)
-                            }
+                            archivedNotes.find { it.id == id }?.let { onNoteClick(it) }
                         }
                     },
                     onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
@@ -102,9 +92,7 @@ fun ArchiveScreen(
                     onToggleAllClick = { note ->
                         val items = try {
                             Gson().fromJson(note.text, Array<ChecklistItemData>::class.java).toList()
-                        } catch (_: Exception) {
-                            emptyList()
-                        }
+                        } catch (_: Exception) { emptyList() }
                         val allChecked = items.isNotEmpty() && items.all { it.isChecked }
                         val newItems = items.map { it.copy(isChecked = !allChecked) }
                         val updated = note.copy(text = Gson().toJson(newItems))

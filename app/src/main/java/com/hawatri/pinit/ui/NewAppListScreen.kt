@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,38 +28,86 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.google.gson.Gson
+import com.hawatri.pinit.data.Note
+import com.hawatri.pinit.data.NoteType
+import com.hawatri.pinit.util.NotificationHelper
+import com.hawatri.pinit.viewmodel.PinItViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
+data class AppNoteItem(val packageName: String, val appName: String)
 data class AppInfo(val packageName: String, val name: String, val icon: Drawable)
 
-// Helper to fetch installed launchable apps
 suspend fun getInstalledApps(context: Context): List<AppInfo> = withContext(Dispatchers.IO) {
     val pm = context.packageManager
-    val intent = Intent(Intent.ACTION_MAIN, null).apply {
-        addCategory(Intent.CATEGORY_LAUNCHER)
-    }
+    val intent = Intent(Intent.ACTION_MAIN, null).apply { addCategory(Intent.CATEGORY_LAUNCHER) }
     val resolveInfoList = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
     resolveInfoList.map {
-        AppInfo(
-            packageName = it.activityInfo.packageName,
-            name = it.loadLabel(pm).toString(),
-            icon = it.loadIcon(pm)
-        )
+        AppInfo(it.activityInfo.packageName, it.loadLabel(pm).toString(), it.loadIcon(pm))
     }.distinctBy { it.packageName }.sortedBy { it.name.lowercase() }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun NewAppListScreen(onNavigateBack: () -> Unit) {
+fun NewAppListScreen(
+    noteId: String? = null,
+    onNavigateBack: () -> Unit,
+    viewModel: PinItViewModel
+) {
     val context = LocalContext.current
+    val notificationHelper = remember(context) { NotificationHelper(context) }
+    val gson = remember { Gson() }
+
     var showBottomSheet by remember { mutableStateOf(false) }
     var installedApps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
     val selectedApps = remember { mutableStateListOf<AppInfo>() }
+    var isPinned by remember { mutableStateOf(false) }
+    var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
-    // Load apps when the screen opens
-    LaunchedEffect(Unit) {
-        installedApps = getInstalledApps(context)
+    val notesList by viewModel.notes.collectAsState()
+    var isInitialized by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) { installedApps = getInstalledApps(context) }
+
+    LaunchedEffect(notesList, noteId) {
+        if (noteId != null && !isInitialized && notesList.isNotEmpty()) {
+            val existing = notesList.find { it.id == noteId }
+            if (existing != null) {
+                try {
+                    val savedItems = gson.fromJson(existing.text, Array<AppNoteItem>::class.java).toList()
+                    val pm = context.packageManager
+                    val restoredApps = savedItems.mapNotNull { item ->
+                        try {
+                            val icon = pm.getApplicationIcon(item.packageName)
+                            AppInfo(item.packageName, item.appName, icon)
+                        } catch (e: Exception) { null }
+                    }
+                    selectedApps.clear()
+                    selectedApps.addAll(restoredApps)
+                } catch (e: Exception) { /* ignore */ }
+                isPinned = existing.isPinned
+                isInitialized = true
+            }
+        }
+    }
+
+    fun save(pinOverride: Boolean = isPinned): String {
+        val items = selectedApps.map { AppNoteItem(it.packageName, it.name) }
+        val title = if (items.isEmpty()) "App Shortcuts" else "${items.size} App${if (items.size > 1) "s" else ""}"
+        val note = Note(
+            id = currentNoteId,
+            title = title,
+            text = gson.toJson(items),
+            formatRanges = emptyList(),
+            isPinned = pinOverride,
+            isList = false,
+            noteType = NoteType.APPLIST
+        )
+        val existing = notesList.find { it.id == currentNoteId }
+        if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
+        return currentNoteId
     }
 
     Scaffold(
@@ -66,98 +115,70 @@ fun NewAppListScreen(onNavigateBack: () -> Unit) {
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                 },
                 actions = {
-                    IconButton(onClick = { }) { Icon(Icons.Filled.PushPin, contentDescription = "Pin", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.NotificationAdd, contentDescription = "Reminder", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Archive, contentDescription = "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { }) { Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    IconButton(onClick = {
+                        isPinned = !isPinned
+                        val savedId = save(isPinned)
+                        val appNames = selectedApps.take(3).joinToString(", ") { it.name }
+                        if (isPinned) notificationHelper.pinNoteToNotification(savedId, "App Shortcuts", appNames)
+                        else notificationHelper.unpinNoteFromNotification(savedId)
+                    }) {
+                        Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
+                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { if (selectedApps.isNotEmpty()) { save(); onNavigateBack() } }) {
+                        Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
             ) {
                 FlowRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Display selected apps
                     selectedApps.forEach { app ->
                         SelectedAppItem(app = app, onRemove = { selectedApps.remove(app) })
                     }
-
-                    // Add Button
                     Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
+                        modifier = Modifier.size(56.dp).clip(CircleShape)
                             .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
                             .clickable { showBottomSheet = true },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Add,
-                            contentDescription = "Add App",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Icon(Icons.Filled.Add, "Add App", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
         }
 
         if (showBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showBottomSheet = false },
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ) {
+            ModalBottomSheet(onDismissRequest = { showBottomSheet = false }, containerColor = MaterialTheme.colorScheme.surfaceVariant) {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                    Text(
-                        text = "Pick App or Shortcut",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    Divider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+                    Text("Pick App or Shortcut", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "Apps",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-
+                    Text("Apps", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 16.dp))
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(4),
-                        modifier = Modifier.fillMaxHeight(0.8f), // Restrict height so it scrolls
+                        modifier = Modifier.fillMaxHeight(0.8f),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(installedApps) { app ->
                             AppPickerItem(app = app) {
-                                if (!selectedApps.contains(app)) {
-                                    selectedApps.add(app)
-                                }
+                                if (!selectedApps.any { it.packageName == app.packageName }) selectedApps.add(app)
                                 showBottomSheet = false
                             }
                         }
@@ -170,45 +191,19 @@ fun NewAppListScreen(onNavigateBack: () -> Unit) {
 
 @Composable
 fun SelectedAppItem(app: AppInfo, onRemove: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(56.dp)
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(56.dp)) {
         Box {
-            AsyncImage(
-                model = app.icon,
-                contentDescription = app.name,
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-            )
-            // Remove badge
+            AsyncImage(model = app.icon, contentDescription = app.name, modifier = Modifier.size(56.dp).clip(RoundedCornerShape(12.dp)))
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 6.dp, y = (-6).dp)
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF4A525E))
-                    .clickable { onRemove() },
+                modifier = Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-6).dp).size(20.dp).clip(CircleShape)
+                    .background(Color(0xFF4A525E)).clickable { onRemove() },
                 contentAlignment = Alignment.Center
             ) {
-                Divider(
-                    modifier = Modifier.width(10.dp),
-                    color = Color.White,
-                    thickness = 2.dp
-                )
+                HorizontalDivider(modifier = Modifier.width(10.dp), color = Color.White, thickness = 2.dp)
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = app.name,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
-        )
+        Text(app.name, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
     }
 }
 
@@ -216,25 +211,10 @@ fun SelectedAppItem(app: AppInfo, onRemove: () -> Unit) {
 fun AppPickerItem(app: AppInfo, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
-        AsyncImage(
-            model = app.icon,
-            contentDescription = app.name,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-        )
+        AsyncImage(model = app.icon, contentDescription = app.name, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = app.name,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
-        )
+        Text(app.name, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
     }
 }

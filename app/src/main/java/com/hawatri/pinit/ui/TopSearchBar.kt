@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,10 +23,11 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun TopSearchBar(
     modifier: Modifier = Modifier,
-    onArchiveClick: () -> Unit
+    onArchiveClick: () -> Unit,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
+    onSortClick: (() -> Unit)? = null
 ) {
-    var searchText by remember { mutableStateOf("") }
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -42,8 +45,8 @@ fun TopSearchBar(
         )
 
         TextField(
-            value = searchText,
-            onValueChange = { searchText = it },
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
             placeholder = {
                 Text(
                     text = "Search items",
@@ -61,6 +64,26 @@ fun TopSearchBar(
             modifier = Modifier.weight(1f),
             singleLine = true
         )
+
+        if (searchQuery.isNotEmpty()) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = "Clear search",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .clickable { onSearchQueryChange("") }
+            )
+        }
+
+        if (onSortClick != null) {
+            Icon(
+                imageVector = Icons.Filled.Sort,
+                contentDescription = "Sort",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 8.dp).clickable { onSortClick() }
+            )
+        }
 
         Icon(
             imageVector = Icons.Filled.Archive,

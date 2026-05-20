@@ -22,14 +22,17 @@ class NotificationHelper(private val context: Context) {
     companion object {
         const val ACTION_REMOVE_PIN = "ACTION_REMOVE_PIN"
         const val ACTION_COPY_TEXT = "ACTION_COPY_TEXT"
-        const val ACTION_TOGGLE_ITEM = "ACTION_TOGGLE_ITEM" 
-        const val ACTION_CHECK_ALL = "ACTION_CHECK_ALL"     
-        const val ACTION_ADD_TASK = "ACTION_ADD_TASK"       // NEW
-        
+        const val ACTION_TOGGLE_ITEM = "ACTION_TOGGLE_ITEM"
+        const val ACTION_CHECK_ALL = "ACTION_CHECK_ALL"
+        const val ACTION_ADD_TASK = "ACTION_ADD_TASK"
+
         const val EXTRA_NOTE_ID = "EXTRA_NOTE_ID"
         const val EXTRA_NOTE_TEXT = "EXTRA_NOTE_TEXT"
-        const val EXTRA_ITEM_INDEX = "EXTRA_ITEM_INDEX"     
-        const val EXTRA_REPLY_TEXT = "EXTRA_REPLY_TEXT"     // NEW
+        const val EXTRA_ITEM_INDEX = "EXTRA_ITEM_INDEX"
+        const val EXTRA_REPLY_TEXT = "EXTRA_REPLY_TEXT"
+
+        private const val GROUP_KEY = "com.hawatri.pinit.PINNED"
+        private const val SUMMARY_ID = -9999
     }
 
     init { createChannel() }
@@ -44,17 +47,22 @@ class NotificationHelper(private val context: Context) {
     fun pinNoteToNotification(noteId: String, title: String, text: String, isList: Boolean = false) {
         val displayTitle = title.ifBlank { "Pinned Note" }
 
-        // Core intents
         val removeIntent = Intent(context, NotificationReceiver::class.java).apply {
             action = ACTION_REMOVE_PIN
             putExtra(EXTRA_NOTE_ID, noteId)
         }
-        val removePendingIntent = PendingIntent.getBroadcast(context, noteId.hashCode(), removeIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val removePendingIntent = PendingIntent.getBroadcast(
+            context, noteId.hashCode(), removeIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        val openAppPendingIntent = PendingIntent.getActivity(context, noteId.hashCode(), openAppIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val openAppPendingIntent = PendingIntent.getActivity(
+            context, noteId.hashCode(), openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
@@ -62,26 +70,18 @@ class NotificationHelper(private val context: Context) {
             .setOngoing(true)
             .setContentIntent(openAppPendingIntent)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setGroup(GROUP_KEY)
 
         if (isList) {
-            // BUILD CUSTOM XML VIEW
             val customView = RemoteViews(context.packageName, R.layout.notif_custom_list)
-
             try {
-                val gson = Gson()
-                val items = gson.fromJson(text, Array<ChecklistItemData>::class.java).toList()
-                
-                // Clear both columns so they don't duplicate on update
+                val items = Gson().fromJson(text, Array<ChecklistItemData>::class.java).toList()
                 customView.removeAllViews(R.id.notif_items_left_col)
                 customView.removeAllViews(R.id.notif_items_right_col)
-
-                // Increased limit to 10 (5 rows * 2 columns)
-                val displayLimit = 10 
-                
+                val displayLimit = 10
                 items.take(displayLimit).forEachIndexed { index, item ->
                     val itemView = RemoteViews(context.packageName, R.layout.notif_list_item)
                     itemView.setTextViewText(R.id.item_text, item.text)
-                    
                     val iconRes = if (item.isChecked) R.drawable.ic_check_box else R.drawable.ic_check_box_outline
                     itemView.setImageViewResource(R.id.item_checkbox, iconRes)
 
@@ -91,16 +91,13 @@ class NotificationHelper(private val context: Context) {
                         putExtra(EXTRA_ITEM_INDEX, index)
                     }
                     val togglePendingIntent = PendingIntent.getBroadcast(
-                        context, (noteId + index).hashCode(), toggleIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        context, (noteId + index).hashCode(), toggleIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
                     itemView.setOnClickPendingIntent(R.id.item_checkbox, togglePendingIntent)
-                    
-                    // NEW: Alternate between left (even) and right (odd) columns
-                    if (index % 2 == 0) {
-                        customView.addView(R.id.notif_items_left_col, itemView)
-                    } else {
-                        customView.addView(R.id.notif_items_right_col, itemView)
-                    }
+
+                    if (index % 2 == 0) customView.addView(R.id.notif_items_left_col, itemView)
+                    else customView.addView(R.id.notif_items_right_col, itemView)
                 }
 
                 if (items.size > displayLimit) {
@@ -109,65 +106,80 @@ class NotificationHelper(private val context: Context) {
                 } else {
                     customView.setViewVisibility(R.id.notif_more_text, android.view.View.GONE)
                 }
+            } catch (e: Exception) { }
 
-            } catch (e: Exception) {}
-
-            // NEW: Build the Inline RemoteInput Action
-            val remoteInput = RemoteInput.Builder(EXTRA_REPLY_TEXT)
-                .setLabel("Add Item")
-                .build()
-
+            val remoteInput = RemoteInput.Builder(EXTRA_REPLY_TEXT).setLabel("Add Item").build()
             val replyIntent = Intent(context, NotificationReceiver::class.java).apply {
                 action = ACTION_ADD_TASK
                 putExtra(EXTRA_NOTE_ID, noteId)
             }
-            
-            // CRITICAL: RemoteInput PendingIntents MUST be FLAG_MUTABLE
             val replyPendingIntent = PendingIntent.getBroadcast(
-                context, 
-                (noteId + "reply").hashCode(), 
-                replyIntent, 
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE 
+                context, (noteId + "reply").hashCode(), replyIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
             )
+            val replyAction = NotificationCompat.Action.Builder(0, "Add Task", replyPendingIntent)
+                .addRemoteInput(remoteInput).build()
 
-            val replyAction = NotificationCompat.Action.Builder(
-                0, "Add Task", replyPendingIntent
-            ).addRemoteInput(remoteInput).build()
-
-            // 1. Build the Check All PendingIntent
             val checkAllIntent = Intent(context, NotificationReceiver::class.java).apply {
                 action = ACTION_CHECK_ALL
                 putExtra(EXTRA_NOTE_ID, noteId)
             }
             val checkAllPendingIntent = PendingIntent.getBroadcast(
-                context, (noteId + "all").hashCode(), checkAllIntent, 
+                context, (noteId + "all").hashCode(), checkAllIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            // 2. Attach the custom view
             builder.setCustomContentView(customView)
             builder.setCustomBigContentView(customView)
-            
-            // 3. NEW: Add all three as Native System Actions!
-            builder.addAction(replyAction)                                  // Add Task
-            builder.addAction(0, "Check All", checkAllPendingIntent)        // Check All
-            builder.addAction(0, "Remove", removePendingIntent)             // Remove
-
+            builder.addAction(replyAction)
+            builder.addAction(0, "Check All", checkAllPendingIntent)
+            builder.addAction(0, "Remove", removePendingIntent)
         } else {
-            // STANDARD TEXT NOTE
             builder.setContentTitle(displayTitle)
             builder.setContentText(text)
             builder.setStyle(NotificationCompat.BigTextStyle().bigText(text))
-            
             val copyIntent = Intent(context, NotificationReceiver::class.java).apply {
                 action = ACTION_COPY_TEXT
                 putExtra(EXTRA_NOTE_TEXT, text)
             }
-            builder.addAction(0, "Copy", PendingIntent.getBroadcast(context, (noteId + "_copy").hashCode(), copyIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+            builder.addAction(0, "Copy", PendingIntent.getBroadcast(
+                context, (noteId + "_copy").hashCode(), copyIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            ))
             builder.addAction(0, "Remove", removePendingIntent)
         }
 
         manager.notify(noteId.hashCode(), builder.build())
+        updateGroupSummary()
+    }
+
+    fun unpinNoteFromNotification(noteId: String) {
+        manager.cancel(noteId.hashCode())
+        updateGroupSummary()
+    }
+
+    private fun updateGroupSummary() {
+        val activePins = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            manager.activeNotifications.filter { it.id != SUMMARY_ID && it.groupKey?.endsWith(GROUP_KEY) == true }
+        } else emptyList()
+
+        if (activePins.isEmpty()) {
+            manager.cancel(SUMMARY_ID)
+            return
+        }
+
+        val count = activePins.size
+        val summaryNotification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("PinIt")
+            .setContentText("$count pinned item${if (count > 1) "s" else ""}")
+            .setGroup(GROUP_KEY)
+            .setGroupSummary(true)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .build()
+
+        manager.notify(SUMMARY_ID, summaryNotification)
     }
 
     fun showReminderNotification(noteId: String, title: String, text: String, isList: Boolean = false) {
@@ -178,9 +190,7 @@ class NotificationHelper(private val context: Context) {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         val openAppPendingIntent = PendingIntent.getActivity(
-            context,
-            (noteId + "_reminder_open").hashCode(),
-            openAppIntent,
+            context, (noteId + "_reminder_open").hashCode(), openAppIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -194,9 +204,5 @@ class NotificationHelper(private val context: Context) {
             .build()
 
         manager.notify((noteId + "_reminder").hashCode(), notification)
-    }
-
-    fun unpinNoteFromNotification(noteId: String) {
-        manager.cancel(noteId.hashCode())
     }
 }

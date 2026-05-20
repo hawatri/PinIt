@@ -1,9 +1,16 @@
 package com.hawatri.pinit.ui
 
+import android.content.Intent
+import android.net.Uri
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -16,23 +23,41 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.hawatri.pinit.data.Note
-import com.hawatri.pinit.viewmodel.PinItViewModel
-import androidx.compose.ui.platform.LocalContext
-import com.hawatri.pinit.util.NotificationHelper
+import androidx.core.content.ContextCompat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.fragment.app.FragmentActivity
+import coil.compose.AsyncImage
 import com.google.gson.Gson
-import androidx.compose.ui.text.style.TextDecoration
+import com.hawatri.pinit.data.Note
+import com.hawatri.pinit.data.NoteType
+import com.hawatri.pinit.util.NotificationHelper
+import com.hawatri.pinit.viewmodel.PinItViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onNoteClick: (String) -> Unit, // New Parameter
-    onListClick: (String) -> Unit, // <-- NEW PARAMETER
+    onNoteClick: (Note) -> Unit,
     onNavigateToNewNote: () -> Unit,
     onNavigateToNewList: () -> Unit,
     onNavigateToNewLocation: () -> Unit,
@@ -41,22 +66,99 @@ fun HomeScreen(
     onNavigateToNewLink: () -> Unit,
     onNavigateToNewContact: () -> Unit,
     onNavigateToNewImage: () -> Unit,
+    onNavigateToNewPDF: () -> Unit = {},
+    onNavigateToNewAudio: () -> Unit = {},
+    icsShareUri: android.net.Uri? = null,
     onNavigateToArchive: () -> Unit,
     viewModel: PinItViewModel
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var selectedBottomTab by remember { mutableIntStateOf(0) }
     val allNotes by viewModel.notes.collectAsState()
-
-    // 1. Selection State
     var selectedNoteIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedNoteIds.isNotEmpty()
-
-    // NEW: Initialize Notification Helper
     val context = LocalContext.current
     val notificationHelper = remember(context) { NotificationHelper(context) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedLabel by remember { mutableStateOf<String?>(null) }
+    var showSortMenu by remember { mutableStateOf(false) }
+    var sortOrder by remember { mutableStateOf(SortOrder.NEWEST_FIRST) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var lastDeletedNote by remember { mutableStateOf<Note?>(null) }
+    var icsImportUri by remember { mutableStateOf<android.net.Uri?>(icsShareUri) }
+    LaunchedEffect(icsShareUri) { if (icsShareUri != null) icsImportUri = icsShareUri }
+    val icsPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) icsImportUri = uri
+    }
+
+    // Biometric auth for locked notes
+    val pendingLockedNote = remember { mutableStateOf<Note?>(null) }
+    val biometricPrompt = remember(context) {
+        BiometricPrompt(
+            context as FragmentActivity,
+            ContextCompat.getMainExecutor(context),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    pendingLockedNote.value?.let { onNoteClick(it) }
+                    pendingLockedNote.value = null
+                }
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    pendingLockedNote.value = null
+                }
+            }
+        )
+    }
+    val biometricPromptInfo = remember {
+        BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Unlock Note")
+            .setSubtitle("Authenticate to open this note")
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+            .build()
+    }
+
+    fun handleNoteClick(note: Note) {
+        if (note.isLocked) {
+            val canAuth = BiometricManager.from(context)
+                .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+            if (canAuth == BiometricManager.BIOMETRIC_SUCCESS) {
+                pendingLockedNote.value = note
+                biometricPrompt.authenticate(biometricPromptInfo)
+            } else {
+                // No biometric enrolled — open directly (degrade gracefully)
+                onNoteClick(note)
+            }
+        } else {
+            onNoteClick(note)
+        }
+    }
+
+    fun archiveWithUndo(note: Note) {
+        if (note.isPinned) notificationHelper.unpinNoteFromNotification(note.id)
+        viewModel.toggleArchive(note)
+        scope.launch {
+            val result = snackbarHostState.showSnackbar("Archived", actionLabel = "Undo", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.notes.value.find { it.id == note.id }?.let { viewModel.toggleArchive(it) }
+            }
+        }
+    }
+
+    fun deleteWithUndo(note: Note) {
+        lastDeletedNote = note
+        if (note.isPinned) notificationHelper.unpinNoteFromNotification(note.id)
+        viewModel.deleteNote(note.id)
+        scope.launch {
+            val result = snackbarHostState.showSnackbar("Deleted", actionLabel = "Undo", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) {
+                lastDeletedNote?.let { viewModel.addNote(it) }
+            }
+            lastDeletedNote = null
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             PinItBottomNavigation(
                 selectedItem = selectedBottomTab,
@@ -64,7 +166,7 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            if (selectedBottomTab == 0 && !isSelectionMode) { // Hide FAB during selection
+            if (selectedBottomTab == 0 && !isSelectionMode) {
                 LargeFloatingActionButton(
                     onClick = { showFabMenu = !showFabMenu },
                     shape = RoundedCornerShape(24.dp),
@@ -80,7 +182,6 @@ fun HomeScreen(
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 2. Contextual Top Bar logic
                 if (isSelectionMode) {
                     TopAppBar(
                         title = { Text(selectedNoteIds.size.toString()) },
@@ -88,88 +189,159 @@ fun HomeScreen(
                             IconButton(onClick = { selectedNoteIds = emptySet() }) { Icon(Icons.Filled.Close, "Clear") }
                         },
                         actions = {
-                            // CHANGED: Pin action replaced with Archive action
+                            // Duplicate selected notes
+                            if (selectedNoteIds.size == 1) {
+                                IconButton(onClick = {
+                                    selectedNoteIds.firstOrNull()?.let { id ->
+                                        allNotes.find { it.id == id }?.let { note ->
+                                            viewModel.addNote(note.copy(
+                                                id = java.util.UUID.randomUUID().toString(),
+                                                title = if (note.title.isBlank()) "" else "${note.title} (copy)",
+                                                isPinned = false,
+                                                timestamp = System.currentTimeMillis()
+                                            ))
+                                        }
+                                    }
+                                    selectedNoteIds = emptySet()
+                                }) { Icon(Icons.Filled.ContentCopy, "Duplicate") }
+                            }
+
                             IconButton(onClick = {
-                                selectedNoteIds.forEach { id ->
-                                    allNotes.find { it.id == id }?.let { note -> viewModel.toggleArchive(note) }
-                                }
+                                selectedNoteIds.forEach { id -> allNotes.find { it.id == id }?.let { archiveWithUndo(it) } }
                                 selectedNoteIds = emptySet()
                             }) { Icon(Icons.Filled.Archive, "Archive") }
 
                             IconButton(onClick = {
-                                selectedNoteIds.forEach { id -> viewModel.deleteNote(id) }
+                                selectedNoteIds.forEach { id -> allNotes.find { it.id == id }?.let { deleteWithUndo(it) } }
                                 selectedNoteIds = emptySet()
                             }) { Icon(Icons.Filled.Delete, "Delete") }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                     )
                 } else {
-                    TopSearchBar(onArchiveClick = onNavigateToArchive)
+                    Box {
+                        TopSearchBar(
+                            onArchiveClick = onNavigateToArchive,
+                            searchQuery = searchQuery,
+                            onSearchQueryChange = { searchQuery = it },
+                            onSortClick = { showSortMenu = true }
+                        )
+                        DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
+                            SortOrder.entries.forEach { order ->
+                                val isSelected = sortOrder == order
+                                DropdownMenuItem(
+                                    text = { Text(order.label) },
+                                    onClick = { sortOrder = order; showSortMenu = false },
+                                    trailingIcon = if (isSelected) ({ Icon(Icons.Filled.Check, null, modifier = Modifier.size(16.dp)) }) else null
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // CHANGED: Filter out archived notes from Home and Pinned tabs
                 val displayNotes = when (selectedBottomTab) {
                     1 -> allNotes.filter { it.isPinned && !it.isArchived }
-                    else -> allNotes.filter { !it.isArchived } 
+                    2 -> if (selectedLabel != null)
+                            allNotes.filter { !it.isArchived && selectedLabel in it.labels }
+                         else emptyList()
+                    else -> allNotes.filter { !it.isArchived }
+                }.filter { note ->
+                    if (searchQuery.isBlank()) true
+                    else note.title.contains(searchQuery, ignoreCase = true) ||
+                         note.text.contains(searchQuery, ignoreCase = true)
+                }.let { list ->
+                    when (sortOrder) {
+                        SortOrder.NEWEST_FIRST -> list.sortedByDescending { it.timestamp }
+                        SortOrder.OLDEST_FIRST -> list.sortedBy { it.timestamp }
+                        SortOrder.TITLE_AZ -> list.sortedBy { it.title.lowercase() }
+                        SortOrder.TITLE_ZA -> list.sortedByDescending { it.title.lowercase() }
+                    }
                 }
 
-                if (displayNotes.isNotEmpty()) {
-                    NotesGrid(
-                        notes = displayNotes,
-                        selectedNoteIds = selectedNoteIds,
-                        isSelectionMode = isSelectionMode,
-                        onNoteClick = { id ->
-                            if (isSelectionMode) {
-                                selectedNoteIds = if (selectedNoteIds.contains(id)) selectedNoteIds - id else selectedNoteIds + id
-                            } else {
-                                // --- NEW LOGIC: Check if it's a list ---
-                                val clickedNote = allNotes.find { it.id == id }
-                                if (clickedNote?.isList == true) {
-                                    onListClick(id)
-                                } else {
-                                    onNoteClick(id)
-                                }
-                            }
-                        },
-                        onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
-                        onPinClick = { note -> 
-                            // NEW: Update DB and Notification
-                            val willBePinned = !note.isPinned
-                            viewModel.togglePin(note)
-                            
-                            if (willBePinned) {
-                                notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList)
-                            } else {
-                                notificationHelper.unpinNoteFromNotification(note.id)
-                            }
-                        },
-                        onCopyClick = { text ->
-                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                            val clip = android.content.ClipData.newPlainText("Copied Note", text)
-                            clipboard.setPrimaryClip(clip)
-                            android.widget.Toast.makeText(context, "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
-                        },
-                        onToggleAllClick = { note ->
-                            val gson = com.google.gson.Gson()
-                            val items = try {
-                                gson.fromJson(note.text, Array<com.hawatri.pinit.ui.ChecklistItemData>::class.java).toList()
-                            } catch (e: Exception) { emptyList() }
-                            val allChecked = items.isNotEmpty() && items.all { it.isChecked }
-                            val newItems = items.map { it.copy(isChecked = !allChecked) }
-                            val newNote = note.copy(text = gson.toJson(newItems))
-                            viewModel.updateNote(newNote)
-                            if (newNote.isPinned) {
-                                notificationHelper.pinNoteToNotification(newNote.id, newNote.title, newNote.text, isList = true)
-                            }
+                when {
+                    // Labels tab — no label selected: show label browser
+                    selectedBottomTab == 2 && selectedLabel == null -> {
+                        val allLabels = remember(allNotes) {
+                            allNotes.filter { !it.isArchived }
+                                .flatMap { it.labels }
+                                .groupingBy { it }
+                                .eachCount()
+                                .entries
+                                .sortedByDescending { it.value }
                         }
-                    )
-                } else {
-                    val icon = if (selectedBottomTab == 1) Icons.Filled.PushPin else Icons.Filled.Article
-                    val msg = if (selectedBottomTab == 1) "No pinned items" else "No items"
-                    EmptyStateView(icon = icon, message = msg)
+                        LabelBrowser(labelCounts = allLabels, onLabelClick = { selectedLabel = it })
+                    }
+                    // Labels tab — label selected: show filtered notes
+                    selectedBottomTab == 2 && selectedLabel != null -> {
+                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { selectedLabel = null }) { Icon(Icons.Filled.ArrowBack, "Back") }
+                            Text(selectedLabel!!, style = MaterialTheme.typography.titleMedium)
+                        }
+                        if (displayNotes.isNotEmpty()) {
+                            NotesGrid(notes = displayNotes, selectedNoteIds = selectedNoteIds, isSelectionMode = isSelectionMode,
+                                onNoteClick = { id -> if (isSelectionMode) selectedNoteIds = if (id in selectedNoteIds) selectedNoteIds - id else selectedNoteIds + id else allNotes.find { it.id == id }?.let { handleNoteClick(it) } },
+                                onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
+                                onPinClick = { note -> viewModel.togglePin(note); if (!note.isPinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList) else notificationHelper.unpinNoteFromNotification(note.id) },
+                                onCopyClick = { text -> val cb = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; cb.setPrimaryClip(android.content.ClipData.newPlainText("", text)); android.widget.Toast.makeText(context, "Copied", android.widget.Toast.LENGTH_SHORT).show() },
+                                onToggleAllClick = { note -> val g = Gson(); val items = try { g.fromJson(note.text, Array<ChecklistItemData>::class.java).toList() } catch (e: Exception) { emptyList() }; val all = items.isNotEmpty() && items.all { it.isChecked }; val n = note.copy(text = g.toJson(items.map { it.copy(isChecked = !all) })); viewModel.updateNote(n); if (n.isPinned) notificationHelper.pinNoteToNotification(n.id, n.title, n.text, true) }
+                            )
+                        } else {
+                            EmptyStateView(icon = Icons.Filled.Label, message = "No notes with label \"${selectedLabel}\"")
+                        }
+                    }
+                    // Home / Pinned tabs
+                    displayNotes.isNotEmpty() -> {
+                        NotesGrid(
+                            notes = displayNotes,
+                            selectedNoteIds = selectedNoteIds,
+                            isSelectionMode = isSelectionMode,
+                            onNoteClick = { id ->
+                                if (isSelectionMode) {
+                                    selectedNoteIds = if (id in selectedNoteIds) selectedNoteIds - id else selectedNoteIds + id
+                                } else {
+                                    allNotes.find { it.id == id }?.let { handleNoteClick(it) }
+                                }
+                            },
+                            onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
+                            onPinClick = { note ->
+                                val willBePinned = !note.isPinned
+                                viewModel.togglePin(note)
+                                if (willBePinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList)
+                                else notificationHelper.unpinNoteFromNotification(note.id)
+                            },
+                            onCopyClick = { text ->
+                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Copied Note", text))
+                                android.widget.Toast.makeText(context, "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            onToggleAllClick = { note ->
+                                val gson = Gson()
+                                val items = try { gson.fromJson(note.text, Array<ChecklistItemData>::class.java).toList() } catch (e: Exception) { emptyList() }
+                                val allChecked = items.isNotEmpty() && items.all { it.isChecked }
+                                val newNote = note.copy(text = gson.toJson(items.map { it.copy(isChecked = !allChecked) }))
+                                viewModel.updateNote(newNote)
+                                if (newNote.isPinned) notificationHelper.pinNoteToNotification(newNote.id, newNote.title, newNote.text, true)
+                            },
+                            onArchiveNote = { archiveWithUndo(it) }
+                        )
+                    }
+                    else -> {
+                        val icon = if (selectedBottomTab == 1) Icons.Filled.PushPin else Icons.Filled.Article
+                        val msg = if (selectedBottomTab == 1) "No pinned items" else "No items"
+                        EmptyStateView(icon = icon, message = msg)
+                    }
                 }
+            }
+
+            // ICS import sheet
+            icsImportUri?.let { uri ->
+                IcsImportSheet(
+                    uri = uri,
+                    viewModel = viewModel,
+                    onDismiss = { icsImportUri = null }
+                )
             }
 
             if (showFabMenu && selectedBottomTab == 0 && !isSelectionMode) {
@@ -184,6 +356,9 @@ fun HomeScreen(
                     onNewLinkClick = onNavigateToNewLink,
                     onNewContactClick = onNavigateToNewContact,
                     onNewImageClick = onNavigateToNewImage,
+                    onNewPDFClick = onNavigateToNewPDF,
+                    onNewAudioClick = onNavigateToNewAudio,
+                    onImportIcsClick = { icsPickerLauncher.launch(arrayOf("text/calendar", "application/ics", "*/*")) },
                     modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 120.dp)
                 )
             }
@@ -191,6 +366,7 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesGrid(
     notes: List<Note>,
@@ -200,7 +376,8 @@ fun NotesGrid(
     onNoteLongClick: (String) -> Unit,
     onPinClick: (Note) -> Unit,
     onCopyClick: (String) -> Unit,
-    onToggleAllClick: (Note) -> Unit
+    onToggleAllClick: (Note) -> Unit,
+    onArchiveNote: (Note) -> Unit = {}
 ) {
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(2),
@@ -210,15 +387,49 @@ fun NotesGrid(
         verticalItemSpacing = 8.dp
     ) {
         items(notes, key = { it.id }) { note ->
-            NoteCard(
-                note = note,
-                isSelected = selectedNoteIds.contains(note.id),
-                onClick = { onNoteClick(note.id) },
-                onLongClick = { onNoteLongClick(note.id) },
-                onPinClick = { onPinClick(note) },
-                onCopyClick = onCopyClick,
-                onToggleAllClick = onToggleAllClick
+            val dismissState = rememberSwipeToDismissBoxState(
+                confirmValueChange = { value ->
+                    if (value == SwipeToDismissBoxValue.EndToStart && !isSelectionMode) {
+                        onArchiveNote(note)
+                        true
+                    } else false
+                },
+                positionalThreshold = { totalDistance -> totalDistance * 0.45f }
             )
+
+            SwipeToDismissBox(
+                state = dismissState,
+                enableDismissFromStartToEnd = false,
+                enableDismissFromEndToStart = !isSelectionMode,
+                backgroundContent = {
+                    val color by animateColorAsState(
+                        targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
+                            MaterialTheme.colorScheme.errorContainer
+                        else MaterialTheme.colorScheme.surfaceVariant,
+                        label = "swipe_bg"
+                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).background(color),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Icon(
+                            Icons.Filled.Archive, "Archive",
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.padding(end = 16.dp)
+                        )
+                    }
+                }
+            ) {
+                NoteCard(
+                    note = note,
+                    isSelected = selectedNoteIds.contains(note.id),
+                    onClick = { onNoteClick(note.id) },
+                    onLongClick = { onNoteLongClick(note.id) },
+                    onPinClick = { onPinClick(note) },
+                    onCopyClick = onCopyClick,
+                    onToggleAllClick = onToggleAllClick
+                )
+            }
         }
     }
 }
@@ -234,43 +445,68 @@ fun NoteCard(
     onCopyClick: (String) -> Unit = {},
     onToggleAllClick: (Note) -> Unit = {}
 ) {
+    val context = LocalContext.current
     val borderStroke = if (isSelected) BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
     else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-
     val gson = remember { Gson() }
+
+    val isDark = isSystemInDarkTheme()
+    val cardColor = if (note.colorHex.isNullOrBlank()) MaterialTheme.colorScheme.surface
+                    else Color(android.graphics.Color.parseColor(note.colorHex)).copy(alpha = if (isDark) 0.35f else 0.85f)
+
+    // Parse type-specific data outside composable calls (try-catch can't wrap composables)
+    val listItems: List<ChecklistItemData> = remember(note.text, note.noteType, note.isList) {
+        if (note.noteType == NoteType.LIST || note.isList) {
+            try { gson.fromJson(note.text, Array<ChecklistItemData>::class.java).toList() } catch (e: Exception) { emptyList() }
+        } else emptyList()
+    }
+    val linkData: LinkNoteData? = remember(note.text, note.noteType) {
+        if (note.noteType == NoteType.LINK) try { gson.fromJson(note.text, LinkNoteData::class.java) } catch (e: Exception) { null } else null
+    }
+    val contactData: ContactNoteData? = remember(note.text, note.noteType) {
+        if (note.noteType == NoteType.CONTACT) try { gson.fromJson(note.text, ContactNoteData::class.java) } catch (e: Exception) { null } else null
+    }
+    val locationData: LocationNoteData? = remember(note.text, note.noteType) {
+        if (note.noteType == NoteType.LOCATION) try { gson.fromJson(note.text, LocationNoteData::class.java) } catch (e: Exception) { null } else null
+    }
+    val audioData: AudioNoteData? = remember(note.text, note.noteType) {
+        if (note.noteType == NoteType.AUDIO) try { Gson().fromJson(note.text, AudioNoteData::class.java) } catch (e: Exception) { null } else null
+    }
+    val appItems: List<AppNoteItem> = remember(note.text, note.noteType) {
+        if (note.noteType == NoteType.APPLIST) try { gson.fromJson(note.text, Array<AppNoteItem>::class.java).toList() } catch (e: Exception) { emptyList() } else emptyList()
+    }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         border = borderStroke
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Title & Pin Button Row
+            // Title + Pin row
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                if (note.title.isNotBlank()) {
-                    Text(
-                        text = note.title,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
+                Column(modifier = Modifier.weight(1f)) {
+                    if (note.isLocked) {
+                        Icon(Icons.Filled.Lock, "Locked", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                        Spacer(modifier = Modifier.height(2.dp))
+                    }
+                    if (note.title.isNotBlank()) {
+                        Text(
+                            text = note.title,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
-
                 IconButton(
                     onClick = onPinClick,
                     modifier = Modifier.size(28.dp).offset(x = 8.dp, y = (-8).dp)
@@ -284,40 +520,129 @@ fun NoteCard(
                 }
             }
 
-            // --- NEW: Render Content based on Type ---
-            if (note.isList) {
-                // Safely parse the JSON string back into a list of items
-                val listItems = try {
-                    gson.fromJson(note.text, Array<ChecklistItemData>::class.java).toList()
-                } catch (e: Exception) {
-                    emptyList()
+            // Type-specific content (no composables inside try-catch)
+            when (note.noteType) {
+                NoteType.LIST -> {
+                    listItems.take(4).forEach { ChecklistItemPreview(it) }
+                    if (listItems.size > 4) {
+                        Text("+ ${listItems.size - 4} more items", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.padding(top = 4.dp, start = 24.dp))
+                    }
                 }
-
-                // Display up to 4 items on the card preview
-                val displayLimit = 4
-                listItems.take(displayLimit).forEach { item ->
-                    ChecklistItemPreview(item)
+                NoteType.IMAGE -> {
+                    if (note.text.isNotBlank()) {
+                        AsyncImage(model = note.text, contentDescription = note.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(8.dp)))
+                    }
                 }
-
-                // Show "+ X more" if the list is longer than the limit
-                if (listItems.size > displayLimit) {
+                NoteType.LINK -> {
+                    if (linkData != null) {
+                        if (linkData.imageUrl.isNotBlank()) {
+                            AsyncImage(model = linkData.imageUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().height(80.dp).clip(RoundedCornerShape(8.dp)))
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                        if (linkData.description.isNotBlank()) {
+                            Text(linkData.description, fontSize = 12.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Text(linkData.url, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 2.dp))
+                    } else if (note.text.isNotBlank()) {
+                        Text(note.text, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                NoteType.CONTACT -> {
+                    if (contactData != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.Phone, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(contactData.phone, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    } else if (note.text.isNotBlank()) {
+                        Text(note.text, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                NoteType.LOCATION -> {
+                    if (locationData != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.LocationOn, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = locationData.address.ifBlank { "${locationData.lat}, ${locationData.lng}" },
+                                fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else if (note.text.isNotBlank()) {
+                        Text(note.text, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                NoteType.QR -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.QrCode, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(note.text, fontSize = 12.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                NoteType.PDF -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.PictureAsPdf, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = note.title.ifBlank { "PDF Document" },
+                            fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                NoteType.AUDIO -> {
+                    val durMs = audioData?.durationMs ?: 0L
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Mic, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(Icons.Filled.PlayArrow, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            if (durMs > 0) "%d:%02d".format(durMs / 60000, (durMs / 1000) % 60) else "Recording",
+                            fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                NoteType.APPLIST -> {
                     Text(
-                        text = "+ ${listItems.size - displayLimit} more items",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(top = 4.dp, start = 24.dp)
+                        text = appItems.take(5).joinToString(", ") { it.appName } + if (appItems.size > 5) " +${appItems.size - 5}" else "",
+                        fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                else -> {
+                    if (note.isList) {
+                        listItems.take(4).forEach { ChecklistItemPreview(it) }
+                        if (listItems.size > 4) {
+                            Text("+ ${listItems.size - 4} more items", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.padding(top = 4.dp, start = 24.dp))
+                        }
+                    } else if (note.text.isNotBlank()) {
+                        Text(text = buildFormattedString(note.text, note.formatRanges), fontSize = 14.sp, maxLines = 8, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
 
-            } else if (note.text.isNotBlank()) {
-                // Standard Note Text Rendering
-                Text(
-                    text = buildFormattedString(note.text, note.formatRanges),
-                    fontSize = 14.sp,
-                    maxLines = 8,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            // Label chips
+            if (note.labels.isNotEmpty()) {
+                androidx.compose.foundation.layout.FlowRow(
+                    modifier = Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    note.labels.forEach { label ->
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.padding(0.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                }
             }
 
             if (note.reminderText != null) {
@@ -325,75 +650,85 @@ fun NoteCard(
                     modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Notifications,
-                        contentDescription = "Alarm",
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Icon(Icons.Filled.Notifications, "Alarm", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = note.reminderText!!,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(note.reminderText, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
-            // Divider
-            HorizontalDivider(
-                modifier = Modifier.padding(top = 8.dp),
-                thickness = 1.dp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-            )
+            HorizontalDivider(modifier = Modifier.padding(top = 8.dp), thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // Bottom Action Row
+            // Bottom action row
+            val isListType = note.noteType == NoteType.LIST || note.isList
+            val isLinkType = note.noteType == NoteType.LINK
+            val isContactType = note.noteType == NoteType.CONTACT
+            val isPdfType = note.noteType == NoteType.PDF
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        if (note.isList) onToggleAllClick(note) else onCopyClick(note.text)
+                        when {
+                            isListType -> onToggleAllClick(note)
+                            isLinkType -> {
+                                try {
+                                    val data = gson.fromJson(note.text, LinkNoteData::class.java)
+                                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(data.url))
+                                    context.startActivity(browserIntent)
+                                } catch (e: Exception) { onCopyClick(note.text) }
+                            }
+                            isContactType -> {
+                                try {
+                                    val data = gson.fromJson(note.text, ContactNoteData::class.java)
+                                    context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${data.phone}")))
+                                } catch (e: Exception) { onCopyClick(note.text) }
+                            }
+                            isPdfType -> {
+                                try {
+                                    val pdfIntent = Intent(Intent.ACTION_VIEW).apply {
+                                        setDataAndType(Uri.parse(note.text), "application/pdf")
+                                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    }
+                                    context.startActivity(pdfIntent)
+                                } catch (e: Exception) {
+                                    android.widget.Toast.makeText(context, "No PDF viewer found", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            else -> onCopyClick(note.text)
+                        }
                     }
                     .padding(top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (note.isList) {
-                    val items = try {
-                        Gson().fromJson(note.text, Array<ChecklistItemData>::class.java).toList()
-                    } catch (e: Exception) { emptyList() }
-                    val allChecked = items.isNotEmpty() && items.all { it.isChecked }
-
-                    Text(
-                        text = if (allChecked) "Uncheck all" else "Check All",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Icon(
-                        imageVector = if (allChecked) Icons.Outlined.Close else Icons.Outlined.Checklist, 
-                        contentDescription = "Toggle All",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                } else {
-                    Text(
-                        text = "Copy",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Icon(
-                        imageVector = Icons.Outlined.ContentCopy,
-                        contentDescription = "Copy",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
+                when {
+                    isListType -> {
+                        val allChecked = listItems.isNotEmpty() && listItems.all { it.isChecked }
+                        Text(text = if (allChecked) "Uncheck all" else "Check All", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(imageVector = if (allChecked) Icons.Outlined.Close else Icons.Outlined.Checklist, contentDescription = "Toggle All", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
+                    isLinkType -> {
+                        Text("Open Link", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.OpenInNew, "Open", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
+                    isContactType -> {
+                        Text("Call", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.Phone, "Call", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
+                    isPdfType -> {
+                        Text("Open PDF", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.PictureAsPdf, "Open", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                    }
+                    else -> {
+                        Text("Copy", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.ContentCopy, "Copy", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
                 }
             }
         }
     }
 }
 
-// Custom composable to render individual checklist items on the card preview
 @Composable
 fun ChecklistItemPreview(item: ChecklistItemData) {
     Row(
@@ -419,8 +754,6 @@ fun ChecklistItemPreview(item: ChecklistItemData) {
     }
 }
 
-// ... the rest (EmptyStateView & BottomNavigation) remain identical ...
-
 @Composable
 fun EmptyStateView(icon: androidx.compose.ui.graphics.vector.ImageVector, message: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -430,6 +763,39 @@ fun EmptyStateView(icon: androidx.compose.ui.graphics.vector.ImageVector, messag
             Text(text = message, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun LabelBrowser(
+    labelCounts: List<Map.Entry<String, Int>>,
+    onLabelClick: (String) -> Unit
+) {
+    if (labelCounts.isEmpty()) {
+        EmptyStateView(icon = Icons.Filled.Label, message = "No labels yet\nAdd labels from note or list editor")
+        return
+    }
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        labelCounts.forEach { (label, count) ->
+            FilterChip(
+                selected = false,
+                onClick = { onLabelClick(label) },
+                label = { Text("$label  $count") },
+                leadingIcon = { Icon(Icons.Filled.Label, null, modifier = Modifier.size(16.dp)) }
+            )
+        }
+    }
+}
+
+enum class SortOrder(val label: String) {
+    NEWEST_FIRST("Newest first"),
+    OLDEST_FIRST("Oldest first"),
+    TITLE_AZ("Title A → Z"),
+    TITLE_ZA("Title Z → A")
 }
 
 @Composable
