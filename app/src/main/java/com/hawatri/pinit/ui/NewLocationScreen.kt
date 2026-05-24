@@ -71,6 +71,8 @@ fun NewLocationScreen(
     var isLoadingLocation by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
+    var labels by remember { mutableStateOf(listOf<String>()) }
+    var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
     val notesList by viewModel.notes.collectAsState()
@@ -174,6 +176,7 @@ fun NewLocationScreen(
                     }
                 } catch (e: Exception) { locationName = existing.title }
                 isPinned = existing.isPinned
+                labels = existing.labels
                 isInitialized = true
             }
         }
@@ -251,7 +254,8 @@ fun NewLocationScreen(
             formatRanges = emptyList(),
             isPinned = pinOverride,
             isList = false,
-            noteType = NoteType.LOCATION
+            noteType = NoteType.LOCATION,
+            labels = labels
         )
         val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
@@ -275,6 +279,10 @@ fun NewLocationScreen(
                     }) {
                         Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
                             tint = if (isPinned) MaterialTheme.colorScheme.primary else Color.White)
+                    }
+                    IconButton(onClick = { showLabelsSheet = true }) {
+                        Icon(Icons.Filled.Label, "Label",
+                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.White)
                     }
                     IconButton(onClick = { if (locationName.isNotBlank() || lat != null) { save(); onNavigateBack() } }) {
                         Icon(Icons.Filled.Check, "Save", tint = Color.White)
@@ -411,5 +419,15 @@ fun NewLocationScreen(
     DisposableEffect(Unit) {
         mapView.onResume()
         onDispose { mapView.onPause() }
+    }
+
+    if (showLabelsSheet) {
+        val allLabels = remember(notesList) { notesList.flatMap { it.labels }.distinct() }
+        LabelsEditorSheet(
+            currentLabels = labels,
+            allExistingLabels = allLabels,
+            onLabelsChange = { labels = it; if (locationName.isNotBlank() || lat != null) save() },
+            onDismiss = { showLabelsSheet = false }
+        )
     }
 }

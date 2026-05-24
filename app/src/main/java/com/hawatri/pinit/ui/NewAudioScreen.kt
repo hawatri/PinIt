@@ -62,6 +62,8 @@ fun NewAudioScreen(
     var playerPosition by remember { mutableFloatStateOf(0f) }
     var noteTitle by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
+    var labels by remember { mutableStateOf(listOf<String>()) }
+    var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
     var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
@@ -76,6 +78,7 @@ fun NewAudioScreen(
             if (existing != null) {
                 noteTitle = existing.title
                 isPinned = existing.isPinned
+                labels = existing.labels
                 try {
                     val data = gson.fromJson(existing.text, AudioNoteData::class.java)
                     currentFilePath = data.path
@@ -181,7 +184,8 @@ fun NewAudioScreen(
             formatRanges = emptyList(),
             isPinned = pinOverride,
             isList = false,
-            noteType = NoteType.AUDIO
+            noteType = NoteType.AUDIO,
+            labels = labels
         )
         val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
@@ -211,6 +215,10 @@ fun NewAudioScreen(
                         }) {
                             Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
                                 tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        IconButton(onClick = { showLabelsSheet = true }) {
+                            Icon(Icons.Filled.Label, "Label",
+                                tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         IconButton(onClick = { if (currentFilePath != null) { save(); onNavigateBack() } }) {
                             Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -346,6 +354,16 @@ fun NewAudioScreen(
                 )
             }
         }
+    }
+
+    if (showLabelsSheet) {
+        val allLabels = remember(notesList) { notesList.flatMap { it.labels }.distinct() }
+        LabelsEditorSheet(
+            currentLabels = labels,
+            allExistingLabels = allLabels,
+            onLabelsChange = { labels = it; if (currentFilePath != null) save() },
+            onDismiss = { showLabelsSheet = false }
+        )
     }
 }
 

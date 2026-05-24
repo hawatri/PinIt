@@ -531,3 +531,33 @@ App List notes rendered the underlying JSON in the pinned notification (`[{"appN
 - The dialog approach is intentional — `ModalBottomSheet` would still leave the home screen visible behind a partial overlay; the screenshot clearly shows a full-screen picker.
 - Renames are non-destructive: if a note already had both `oldName` and `newName`, the dedup keeps a single copy. No deduplication query needed.
 - Badge count automatically follows the `StateFlow<List<Note>>` — pin/unpin causes immediate recomposition.
+
+---
+
+## Session: Labels available on every note type
+
+### Problem
+Only `NewNoteScreen` and `NewListScreen` had a label icon in their top bar. Specialized screens (Link, Contact, Location, QR, AppList, Image, PDF, Audio) saved notes with empty `labels`, and there was no way to assign or edit labels for them — even though the new label browser/picker was already in place.
+
+### Fix — Wire `LabelsEditorSheet` into all 8 specialized screens
+Pattern applied to each screen:
+1. Add two state variables: `var labels by remember { mutableStateOf(listOf<String>()) }` and `var showLabelsSheet by remember { mutableStateOf(false) }`.
+2. In the existing `LaunchedEffect(notesList, noteId)` that loads an existing note, also `labels = existing.labels`.
+3. In `save(...)`, pass `labels = labels` to the `Note` constructor so the value persists.
+4. Add an `IconButton(onClick = { showLabelsSheet = true })` in the top-bar `actions` row, between Pin and Save, with `Icon(Icons.Filled.Label, "Label", tint = if (labels.isNotEmpty()) primary else default)`. Used the same tint convention as `NewNoteScreen` so the icon highlights when at least one label is applied.
+5. At the very bottom of the composable, after the existing UI, add the standard `if (showLabelsSheet) { LabelsEditorSheet(...) }` block with `onLabelsChange = { labels = it; if (<screen-specific has-content guard>) save() }`. The has-content guard prevents creating an empty placeholder note when the user opens the label sheet on a fresh blank screen.
+
+**Files touched:**
+- `ui/NewLinkScreen.kt`
+- `ui/NewContactScreen.kt`
+- `ui/NewLocationScreen.kt`
+- `ui/NewQRScreen.kt`
+- `ui/NewAppListScreen.kt`
+- `ui/NewImageScreen.kt`
+- `ui/NewPDFScreen.kt`
+- `ui/NewAudioScreen.kt`
+
+### Notes
+- No schema or data-model change — `labels: List<String>` was already on `Note`. The screens just stopped silently dropping it.
+- Each save guard mirrors the existing "do we have something worth saving" check used by the Save button on that screen (e.g. `name.isNotBlank() || phoneNumber.isNotBlank()` for contacts, `selectedImageUri != null` for images, `currentFilePath != null` for audio). If the user opens the label picker too early, picking a label is a no-op — they still need real content first.
+- Reuses the existing `LabelsEditorSheet` (full-screen Cancel/Save dialog with search-and-create) — no new UI was needed.

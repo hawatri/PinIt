@@ -41,6 +41,8 @@ fun NewPDFScreen(
     var selectedPdfUri by remember { mutableStateOf<Uri?>(null) }
     var pdfTitle by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
+    var labels by remember { mutableStateOf(listOf<String>()) }
+    var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
     val notesList by viewModel.notes.collectAsState()
@@ -53,6 +55,7 @@ fun NewPDFScreen(
                 pdfTitle = existing.title
                 selectedPdfUri = existing.text.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
                 isPinned = existing.isPinned
+                labels = existing.labels
                 isInitialized = true
             }
         }
@@ -80,7 +83,8 @@ fun NewPDFScreen(
             formatRanges = emptyList(),
             isPinned = pinOverride,
             isList = false,
-            noteType = NoteType.PDF
+            noteType = NoteType.PDF,
+            labels = labels
         )
         val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
@@ -133,6 +137,10 @@ fun NewPDFScreen(
                                 if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
                                 tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                        IconButton(onClick = { showLabelsSheet = true }) {
+                            Icon(Icons.Filled.Label, "Label",
+                                tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         IconButton(onClick = { save(); onNavigateBack() }) {
                             Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -197,5 +205,15 @@ fun NewPDFScreen(
                 }
             }
         }
+    }
+
+    if (showLabelsSheet) {
+        val allLabels = remember(notesList) { notesList.flatMap { it.labels }.distinct() }
+        LabelsEditorSheet(
+            currentLabels = labels,
+            allExistingLabels = allLabels,
+            onLabelsChange = { labels = it; if (selectedPdfUri != null) save() },
+            onDismiss = { showLabelsSheet = false }
+        )
     }
 }

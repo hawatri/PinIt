@@ -67,6 +67,8 @@ fun NewImageScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(prefillImageUri?.let { Uri.parse(it) }) }
     var imageTitle by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
+    var labels by remember { mutableStateOf(listOf<String>()) }
+    var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
     val notesList by viewModel.notes.collectAsState()
@@ -79,6 +81,7 @@ fun NewImageScreen(
                 imageTitle = existing.title
                 selectedImageUri = existing.text.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
                 isPinned = existing.isPinned
+                labels = existing.labels
                 currentStep = 2
                 isInitialized = true
             }
@@ -109,7 +112,8 @@ fun NewImageScreen(
             formatRanges = emptyList(),
             isPinned = pinOverride,
             isList = false,
-            noteType = NoteType.IMAGE
+            noteType = NoteType.IMAGE,
+            labels = labels
         )
         val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
@@ -133,6 +137,10 @@ fun NewImageScreen(
                         }) {
                             Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
                                 tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        IconButton(onClick = { showLabelsSheet = true }) {
+                            Icon(Icons.Filled.Label, "Label",
+                                tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         IconButton(onClick = { save(); onNavigateBack() }) {
                             Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -208,5 +216,15 @@ fun NewImageScreen(
                 }
             }
         }
+    }
+
+    if (showLabelsSheet) {
+        val allLabels = remember(notesList) { notesList.flatMap { it.labels }.distinct() }
+        LabelsEditorSheet(
+            currentLabels = labels,
+            allExistingLabels = allLabels,
+            onLabelsChange = { labels = it; if (selectedImageUri != null) save() },
+            onDismiss = { showLabelsSheet = false }
+        )
     }
 }

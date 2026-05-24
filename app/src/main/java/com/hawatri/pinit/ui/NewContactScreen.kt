@@ -74,6 +74,8 @@ fun NewContactScreen(
     var name by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
+    var labels by remember { mutableStateOf(listOf<String>()) }
+    var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
     val notesList by viewModel.notes.collectAsState()
@@ -89,6 +91,7 @@ fun NewContactScreen(
                     phoneNumber = data.phone
                 } catch (e: Exception) { name = existing.title }
                 isPinned = existing.isPinned
+                labels = existing.labels
                 isInitialized = true
             }
         }
@@ -103,7 +106,8 @@ fun NewContactScreen(
             formatRanges = emptyList(),
             isPinned = pinOverride,
             isList = false,
-            noteType = NoteType.CONTACT
+            noteType = NoteType.CONTACT,
+            labels = labels
         )
         val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
@@ -149,6 +153,10 @@ fun NewContactScreen(
                     }) {
                         Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
                             tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { showLabelsSheet = true }) {
+                        Icon(Icons.Filled.Label, "Label",
+                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     IconButton(onClick = { if (name.isNotBlank() || phoneNumber.isNotBlank()) { save(); onNavigateBack() } }) {
                         Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -200,5 +208,15 @@ fun NewContactScreen(
                 }
             }
         }
+    }
+
+    if (showLabelsSheet) {
+        val allLabels = remember(notesList) { notesList.flatMap { it.labels }.distinct() }
+        LabelsEditorSheet(
+            currentLabels = labels,
+            allExistingLabels = allLabels,
+            onLabelsChange = { labels = it; if (name.isNotBlank() || phoneNumber.isNotBlank()) save() },
+            onDismiss = { showLabelsSheet = false }
+        )
     }
 }

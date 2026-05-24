@@ -126,6 +126,8 @@ fun NewLinkScreen(
     var previewData by remember { mutableStateOf<LinkNoteData?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var isPinned by remember { mutableStateOf(false) }
+    var labels by remember { mutableStateOf(listOf<String>()) }
+    var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
     val notesList by viewModel.notes.collectAsState()
@@ -141,6 +143,7 @@ fun NewLinkScreen(
                     linkText = data.url
                 } catch (e: Exception) { linkText = existing.text }
                 isPinned = existing.isPinned
+                labels = existing.labels
                 isInitialized = true
             }
         }
@@ -176,7 +179,8 @@ fun NewLinkScreen(
             formatRanges = emptyList(),
             isPinned = pinOverride,
             isList = false,
-            noteType = NoteType.LINK
+            noteType = NoteType.LINK,
+            labels = labels
         )
         val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
@@ -222,6 +226,10 @@ fun NewLinkScreen(
                     }) {
                         Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
                             tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { showLabelsSheet = true }) {
+                        Icon(Icons.Filled.Label, "Label",
+                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     IconButton(onClick = { if (previewData != null || linkText.isNotBlank()) { save(); onNavigateBack() } }) {
                         Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -363,5 +371,15 @@ fun NewLinkScreen(
                 }
             }
         }
+    }
+
+    if (showLabelsSheet) {
+        val allLabels = remember(notesList) { notesList.flatMap { it.labels }.distinct() }
+        LabelsEditorSheet(
+            currentLabels = labels,
+            allExistingLabels = allLabels,
+            onLabelsChange = { labels = it; if (previewData != null || linkText.isNotBlank()) save() },
+            onDismiss = { showLabelsSheet = false }
+        )
     }
 }

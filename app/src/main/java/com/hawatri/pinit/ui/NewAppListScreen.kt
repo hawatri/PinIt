@@ -64,6 +64,8 @@ fun NewAppListScreen(
     var installedApps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
     val selectedApps = remember { mutableStateListOf<AppInfo>() }
     var isPinned by remember { mutableStateOf(false) }
+    var labels by remember { mutableStateOf(listOf<String>()) }
+    var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
     val notesList by viewModel.notes.collectAsState()
@@ -88,6 +90,7 @@ fun NewAppListScreen(
                     selectedApps.addAll(restoredApps)
                 } catch (e: Exception) { /* ignore */ }
                 isPinned = existing.isPinned
+                labels = existing.labels
                 isInitialized = true
             }
         }
@@ -103,7 +106,8 @@ fun NewAppListScreen(
             formatRanges = emptyList(),
             isPinned = pinOverride,
             isList = false,
-            noteType = NoteType.APPLIST
+            noteType = NoteType.APPLIST,
+            labels = labels
         )
         val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
@@ -128,6 +132,10 @@ fun NewAppListScreen(
                     }) {
                         Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
                             tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { showLabelsSheet = true }) {
+                        Icon(Icons.Filled.Label, "Label",
+                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     IconButton(onClick = { if (selectedApps.isNotEmpty()) { save(); onNavigateBack() } }) {
                         Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -187,6 +195,16 @@ fun NewAppListScreen(
                 }
             }
         }
+    }
+
+    if (showLabelsSheet) {
+        val allLabels = remember(notesList) { notesList.flatMap { it.labels }.distinct() }
+        LabelsEditorSheet(
+            currentLabels = labels,
+            allExistingLabels = allLabels,
+            onLabelsChange = { labels = it; if (selectedApps.isNotEmpty()) save() },
+            onDismiss = { showLabelsSheet = false }
+        )
     }
 }
 

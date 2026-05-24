@@ -61,6 +61,8 @@ fun NewQRScreen(
     var scannedValue by remember { mutableStateOf<String?>(null) }
     var noteTitle by remember { mutableStateOf("QR Code") }
     var isPinned by remember { mutableStateOf(false) }
+    var labels by remember { mutableStateOf(listOf<String>()) }
+    var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
     val notesList by viewModel.notes.collectAsState()
@@ -76,6 +78,7 @@ fun NewQRScreen(
                 noteTitle = existing.title
                 scannedValue = existing.text
                 isPinned = existing.isPinned
+                labels = existing.labels
                 scanningActive = false
                 savedToGalleryAsked = true
                 isInitialized = true
@@ -131,7 +134,8 @@ fun NewQRScreen(
             formatRanges = emptyList(),
             isPinned = pinOverride,
             isList = false,
-            noteType = NoteType.QR
+            noteType = NoteType.QR,
+            labels = labels
         )
         val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
@@ -186,6 +190,10 @@ fun NewQRScreen(
                         }
                         IconButton(onClick = { scanningActive = true; scannedValue = null; savedToGalleryAsked = false }) {
                             Icon(Icons.Filled.QrCodeScanner, "Rescan", tint = Color.White)
+                        }
+                        IconButton(onClick = { showLabelsSheet = true }) {
+                            Icon(Icons.Filled.Label, "Label",
+                                tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.White)
                         }
                         IconButton(onClick = { save(); onNavigateBack() }) {
                             Icon(Icons.Filled.Check, "Save", tint = Color.White)
@@ -316,6 +324,16 @@ fun NewQRScreen(
             dismissButton = {
                 TextButton(onClick = { showSaveToGalleryDialog = false; savedToGalleryAsked = true }) { Text("Skip") }
             }
+        )
+    }
+
+    if (showLabelsSheet) {
+        val allLabels = remember(notesList) { notesList.flatMap { it.labels }.distinct() }
+        LabelsEditorSheet(
+            currentLabels = labels,
+            allExistingLabels = allLabels,
+            onLabelsChange = { labels = it; if (scannedValue != null) save() },
+            onDismiss = { showLabelsSheet = false }
         )
     }
 }
