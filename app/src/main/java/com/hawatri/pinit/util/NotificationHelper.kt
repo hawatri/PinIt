@@ -20,6 +20,7 @@ import com.hawatri.pinit.R
 import com.hawatri.pinit.receiver.NotificationReceiver
 import com.hawatri.pinit.ui.AppNoteItem
 import com.hawatri.pinit.ui.ChecklistItemData
+import com.hawatri.pinit.ui.ContactNoteData
 import com.hawatri.pinit.ui.LinkNoteData
 import com.hawatri.pinit.ui.LocationNoteData
 
@@ -201,6 +202,34 @@ class NotificationHelper(private val context: Context) {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 builder.addAction(0, "Navigate", navPending)
+            }
+            builder.addAction(0, "Remove", removePendingIntent)
+        } else if (noteType == com.hawatri.pinit.data.NoteType.CONTACT) {
+            val contactData = try { Gson().fromJson(text, ContactNoteData::class.java) } catch (e: Exception) { null }
+            val contactName = contactData?.name?.ifBlank { displayTitle } ?: displayTitle
+            val phone = contactData?.phone ?: ""
+
+            builder.setContentTitle(contactName)
+            builder.setContentText(phone)
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(phone))
+
+            if (phone.isNotBlank()) {
+                val dialUri = Uri.parse("tel:${Uri.encode(phone)}")
+                val callIntent = Intent(Intent.ACTION_DIAL, dialUri).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                val callPending = PendingIntent.getActivity(
+                    context, (noteId + "_call").hashCode(), callIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(0, "Call", callPending)
+
+                val copyIntent = Intent(context, NotificationReceiver::class.java).apply {
+                    action = ACTION_COPY_TEXT
+                    putExtra(EXTRA_NOTE_TEXT, phone)
+                }
+                builder.addAction(0, "Copy", PendingIntent.getBroadcast(
+                    context, (noteId + "_copy").hashCode(), copyIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                ))
             }
             builder.addAction(0, "Remove", removePendingIntent)
         } else if (noteType == com.hawatri.pinit.data.NoteType.LINK) {

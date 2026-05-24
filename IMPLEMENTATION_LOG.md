@@ -459,3 +459,31 @@ App List notes rendered the underlying JSON in the pinned notification (`[{"appN
 - Backwards-compatible: Gson deserialises old `LinkNoteData` JSON without the field — `isVideo` simply defaults to `false`.
 - A user can re-fetch any old link via the **Refresh** action in the top bar to populate `isVideo`.
 - The notification still uses the existing LINK branch (no thumbnail) — Android only allows a single `largeIcon` and we already optimise notifications for compactness.
+
+---
+
+## Session: Editable link title + contact notification fix
+
+### Problem
+- After a successful link metadata fetch, the title in the preview card was a static `Text` — no way to override the auto-fetched og:title.
+- Contact notifications still showed the raw `ContactNoteData` JSON (`{"name":"…","phone":"…"}`) because the CONTACT branch was never added to `NotificationHelper`. The notification also lacked a Call action.
+
+### Fix — Editable link title
+- The preview card title is now a `TextField` styled the same as the previous static text (semibold, 18 sp). On edit, `previewData = previewData.copy(title = newTitle)`.
+- Removed the outer `Modifier.clickable { openInBrowser() }` from the column so the title field can take focus. The image hero and the URL row carry their own click handlers, so tap-to-open behaviour is preserved.
+
+### Fix — CONTACT notification branch
+- New `CONTACT` branch in `NotificationHelper.pinNoteToNotification`:
+  - Parses `ContactNoteData`, sets `name` as the title and `phone` as the body via `BigTextStyle`.
+  - When `phone` is present, adds a **Call** action that fires `Intent.ACTION_DIAL` with `tel:` URI (no permission required — opens the dialer pre-filled).
+  - Adds a **Copy** action and the standard **Remove**.
+- `NewContactScreen` now passes `noteType = NoteType.CONTACT` and the full JSON, so the helper takes the new branch.
+
+**Files:**
+- `ui/NewLinkScreen.kt` (title TextField, click-handler refactor)
+- `util/NotificationHelper.kt` (CONTACT branch + `ContactNoteData` import)
+- `ui/NewContactScreen.kt` (pass `noteType` and full JSON when pinning)
+
+### Notes
+- `ACTION_DIAL` was chosen over `ACTION_CALL` to avoid the runtime `CALL_PHONE` permission. The user still confirms with one tap in the dialer.
+- The change is backward-compatible: existing pinned contact notifications will pick up the new layout the next time the user re-pins; the JSON-blob notification disappears as soon as the helper runs again.

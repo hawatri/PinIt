@@ -142,8 +142,10 @@ fun NewContactScreen(
                     IconButton(onClick = {
                         isPinned = !isPinned
                         val savedId = save(isPinned)
-                        if (isPinned) notificationHelper.pinNoteToNotification(savedId, name.ifBlank { "Contact" }, phoneNumber)
-                        else notificationHelper.unpinNoteFromNotification(savedId)
+                        if (isPinned) {
+                            val text = gson.toJson(ContactNoteData(name, phoneNumber))
+                            notificationHelper.pinNoteToNotification(savedId, name.ifBlank { "Contact" }, text, isList = false, noteType = NoteType.CONTACT)
+                        } else notificationHelper.unpinNoteFromNotification(savedId)
                     }) {
                         Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
                             tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)

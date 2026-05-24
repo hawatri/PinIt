@@ -254,9 +254,9 @@ fun NewLinkScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth().clickable { openInBrowser() }) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         if (previewData!!.imageUrl.isNotBlank()) {
-                            Box(modifier = Modifier.fillMaxWidth().height(180.dp)) {
+                            Box(modifier = Modifier.fillMaxWidth().height(180.dp).clickable { openInBrowser() }) {
                                 AsyncImage(
                                     model = previewData!!.imageUrl,
                                     contentDescription = null,
@@ -281,24 +281,32 @@ fun NewLinkScreen(
                             }
                         }
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = previewData!!.title,
-                                fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis
+                            TextField(
+                                value = previewData!!.title,
+                                onValueChange = { newTitle ->
+                                    previewData = previewData!!.copy(title = newTitle)
+                                },
+                                placeholder = { Text("Title", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
+                                ),
+                                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface),
+                                modifier = Modifier.fillMaxWidth(),
+                                maxLines = 2
                             )
                             if (previewData!!.description.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     previewData!!.description,
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 4, overflow = TextOverflow.Ellipsis,
-                                    lineHeight = 18.sp
+                                    lineHeight = 18.sp,
+                                    modifier = Modifier.padding(start = 16.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 16.dp).clickable { openInBrowser() }) {
                                 Icon(Icons.Filled.Public, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
