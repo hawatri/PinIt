@@ -390,3 +390,39 @@ App List notes rendered the underlying JSON in the pinned notification (`[{"appN
 - QR images are regenerated from `note.text` each time, so we did not change the `Note` schema — existing QR entries will start showing the image automatically with no migration.
 - ML Kit's `BarcodeScanning` was already in the project for the camera path; we reuse it for the gallery path.
 - `MediaStore` write does not require runtime storage permission on Android 10+ thanks to scoped storage; older devices are out of scope (`minSdk = 29`).
+
+---
+
+## Session: Link notes — full preview, Browse, Open in notification
+
+### Problem
+- Edit screen showed a tiny 80 dp thumbnail row with truncated description and no way to open the link from inside PinIt.
+- Pinned notification just printed the URL with no Open action.
+- Home card preview matched the old screen — no Browse affordance.
+
+### Fix — Edit screen rewrite (`NewLinkScreen.kt`)
+- Preview is now a full-bleed Card: 180 dp hero image (when og:image present), then title (semibold, 18 sp, 2 lines), description (4 lines), and the URL chip in primary colour. Whole card is `clickable` and opens the URL.
+- New top-bar **Refresh** action re-fetches metadata (e.g. after the page updates).
+- New **Edit link** text button under the preview to wipe and re-enter the URL.
+- New persistent **Browse** extended FAB at the bottom-right that fires `ACTION_VIEW`.
+- Improved metadata extraction: `Jsoup` now sends a UA header, follows redirects (8 s timeout), and falls back through `og:title` → `twitter:title` → `<title>`, similarly for description and image. Relative `imageUrl` paths are resolved against the document URL via `java.net.URI.resolve`.
+- Pin button now passes `noteType = NoteType.LINK` and the full JSON so the helper can render rich content.
+
+### Fix — Notification (`NotificationHelper`)
+- New `LINK` branch:
+  - Title is `LinkNoteData.title`, body is description + URL via `BigTextStyle`.
+  - URL gets normalised (`https://` prepended if missing) before building the `geo:`-style `ACTION_VIEW` `PendingIntent`.
+  - Adds three actions: **Open**, **Copy**, **Remove**.
+
+### Fix — Home card (`NoteCard` `LINK` branch)
+- Hero image bumped to 120 dp height to match the Ruppu look.
+- URL row gets a divider + **Browse** row (label + open-in-new icon) that opens the link in the default browser.
+
+**Files:**
+- `ui/NewLinkScreen.kt` (full rewrite — preview card, Browse FAB, refresh action, robust metadata)
+- `util/NotificationHelper.kt` (`LINK` branch + import for `LinkNoteData`)
+- `ui/HomeScreen.kt` (`LINK` card branch — Browse row)
+
+### Notes
+- No schema change. Existing link notes already store `LinkNoteData` JSON, so the new card and notification render automatically.
+- `Jsoup` was already a dependency — no new libs added.

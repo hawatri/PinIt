@@ -537,13 +537,32 @@ fun NoteCard(
                 NoteType.LINK -> {
                     if (linkData != null) {
                         if (linkData.imageUrl.isNotBlank()) {
-                            AsyncImage(model = linkData.imageUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().height(80.dp).clip(RoundedCornerShape(8.dp)))
-                            Spacer(modifier = Modifier.height(4.dp))
+                            AsyncImage(model = linkData.imageUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(8.dp)))
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                         if (linkData.description.isNotBlank()) {
-                            Text(linkData.description, fontSize = 12.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(linkData.description, fontSize = 12.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 16.sp)
                         }
-                        Text(linkData.url, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 2.dp))
+                        Text(linkData.url, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
+                        if (linkData.url.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    try {
+                                        val urlToOpen = if (!linkData.url.startsWith("http", true)) "https://${linkData.url}" else linkData.url
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlToOpen)).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) { }
+                                },
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Browse", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Outlined.OpenInNew, "Browse", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
                     } else if (note.text.isNotBlank()) {
                         Text(note.text, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
