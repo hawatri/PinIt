@@ -1,20 +1,30 @@
 package com.hawatri.pinit.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LabelsEditorSheet(
     currentLabels: List<String>,
@@ -23,97 +33,135 @@ fun LabelsEditorSheet(
     onDismiss: () -> Unit
 ) {
     var inputText by remember { mutableStateOf("") }
-    val suggestions = remember(allExistingLabels, currentLabels) {
-        allExistingLabels.filter { it !in currentLabels }.distinct()
+    var workingLabels by remember(currentLabels) { mutableStateOf(currentLabels.toSet()) }
+
+    val visibleLabels = remember(allExistingLabels, workingLabels, inputText) {
+        val all = (allExistingLabels + workingLabels).distinct()
+        if (inputText.isBlank()) all
+        else all.filter { it.contains(inputText.trim(), ignoreCase = true) }
     }
 
-    ModalBottomSheet(
+    val canSaveNew = inputText.trim().isNotBlank() &&
+        (allExistingLabels + workingLabels).none { it.equals(inputText.trim(), ignoreCase = true) }
+
+    Dialog(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surfaceVariant
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp)
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
         ) {
-            Text("Labels", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 16.dp))
-
-            // Current labels as removable chips
-            if (currentLabels.isNotEmpty()) {
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Top bar — Cancel / Save
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    currentLabels.forEach { label ->
-                        InputChip(
-                            selected = true,
-                            onClick = {},
-                            label = { Text(label, fontSize = 13.sp) },
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = { onLabelsChange(currentLabels - label) },
-                                    modifier = Modifier.size(18.dp)
-                                ) {
-                                    Icon(Icons.Filled.Close, "Remove", modifier = Modifier.size(14.dp))
-                                }
+                    Row(
+                        modifier = Modifier.weight(1f).clickable { onDismiss() }.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.Close, "Cancel", tint = MaterialTheme.colorScheme.onSurface)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    Row(
+                        modifier = Modifier.clickable {
+                            // Apply input as a new label first if non-empty and not duplicate
+                            val trimmed = inputText.trim()
+                            val finalSet = if (trimmed.isNotBlank() && (allExistingLabels + workingLabels).none { it.equals(trimmed, ignoreCase = true) }) {
+                                workingLabels + trimmed
+                            } else workingLabels
+                            onLabelsChange(finalSet.toList())
+                            onDismiss()
+                        }.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurface)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "Save",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Search / new-label input
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                    Spacer(modifier = Modifier.width(16.dp))
+                    TextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        placeholder = { Text("Label name", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+
+                // "Create new label" row — appears when typed text is novel
+                if (canSaveNew) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable {
+                                val trimmed = inputText.trim()
+                                workingLabels = workingLabels + trimmed
+                                inputText = ""
                             }
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.Label, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Text(
+                            text = "Create \"${inputText.trim()}\"",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
                         )
                     }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
                 }
-            }
 
-            // Input to add new label
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    placeholder = { Text("Add new label") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(
-                    onClick = {
-                        val trimmed = inputText.trim()
-                        if (trimmed.isNotBlank() && trimmed !in currentLabels) {
-                            onLabelsChange(currentLabels + trimmed)
+                // Existing labels list
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(visibleLabels) { label ->
+                        val checked = label in workingLabels
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable {
+                                    workingLabels = if (checked) workingLabels - label else workingLabels + label
+                                }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Filled.Label, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.width(20.dp))
+                            Text(label, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                            Icon(
+                                if (checked) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
+                                null,
+                                tint = if (checked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
                         }
-                        inputText = ""
-                    }
-                ) {
-                    Icon(Icons.Filled.Add, "Add Label", tint = MaterialTheme.colorScheme.primary)
-                }
-            }
-
-            // Suggestions (labels from other notes not already applied)
-            if (suggestions.isNotEmpty()) {
-                Text(
-                    "Suggestions",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                )
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(suggestions) { label ->
-                        SuggestionChip(
-                            onClick = { onLabelsChange(currentLabels + label) },
-                            label = { Text(label, fontSize = 13.sp) }
-                        )
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.align(Alignment.End)
-            ) { Text("Done") }
         }
     }
 }

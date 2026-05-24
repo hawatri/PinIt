@@ -487,3 +487,47 @@ App List notes rendered the underlying JSON in the pinned notification (`[{"appN
 ### Notes
 - `ACTION_DIAL` was chosen over `ACTION_CALL` to avoid the runtime `CALL_PHONE` permission. The user still confirms with one tap in the dialer.
 - The change is backward-compatible: existing pinned contact notifications will pick up the new layout the next time the user re-pins; the JSON-blob notification disappears as soon as the helper runs again.
+
+---
+
+## Session: Labels — Ruppu-style picker, browser cards, rename/delete, pinned badge
+
+### Problem
+- Old `LabelsEditorSheet` was a small modal-bottom-sheet with chip rows — didn't match the Ruppu reference. No way to filter or search inside the picker, no clear "save / cancel" affordance.
+- `LabelBrowser` was a wall of `FilterChip`s with a single `"label  count"` line — no rename, no delete, no card layout.
+- The Pinned tab in the bottom navigation didn't show how many notes were pinned, even though the screenshot calls for a small numeric badge.
+
+### Fix — `LabelsEditorSheet` rewrite
+- Now a full-screen `Dialog` with `usePlatformDefaultWidth = false`. Top bar has **Cancel** (X icon) on the left and **Save** (✓ icon) on the right, matching the screenshot.
+- Below: a single search/input row with the magnifier icon and a `"Label name"` placeholder. Typing filters the list of existing labels (case-insensitive).
+- When the typed value is novel, a `Create "<text>"` row appears in primary colour above the list — tapping it adds the label to the working set without dismissing.
+- Each existing label is a tappable row with its tag icon, name, and a checkbox that toggles inclusion. Local edits are kept in `workingLabels: Set<String>` until the user hits **Save**.
+- **Save** also auto-creates the typed label if it's still new, then commits via `onLabelsChange(...)`.
+
+### Fix — `LabelBrowser` redesign
+- Replaced the chip wall with a `FlowRow` of 170 dp `Card`s (matching the Ruppu screenshot):
+  - 32 dp rounded square containing the tag icon, top-left.
+  - 18 dp `MoreVert` kebab top-right that opens a `DropdownMenu` with **Rename** and **Delete**.
+  - Below: the label name (16 sp, medium weight) and the count beneath it.
+- Two `AlertDialog`s:
+  - **Rename** — `OutlinedTextField` pre-filled with the current name; on confirm calls `viewModel.renameLabel(old, new)`.
+  - **Delete** — explicit warning ("…will be removed from all notes. The notes themselves stay."); on confirm calls `viewModel.deleteLabel(name)`.
+
+### Fix — ViewModel: `renameLabel` and `deleteLabel`
+- `renameLabel(oldName, newName)` — iterates current notes, replaces `oldName` with `newName.trim()` in each `note.labels`, deduplicates the result, and writes back via `dao.updateNote`.
+- `deleteLabel(name)` — iterates and writes `note.labels - name` for any note that contained it.
+- Both early-return on no-op input.
+
+### Fix — Pinned tab badge
+- `PinItBottomNavigation` now takes `pinnedCount: Int = 0`. When `pinnedCount > 0` and the index is the Pinned item, the icon is wrapped in `BadgedBox` with a `Badge { Text(pinnedCount.toString()) }`.
+- Caller in `HomeScreen` passes `allNotes.count { it.isPinned && !it.isArchived }`.
+
+**Files:**
+- `ui/LabelsEditor.kt` (full rewrite as `Dialog` with Cancel/Save bar, search-and-create row, list with checkboxes)
+- `ui/HomeScreen.kt` (`LabelBrowser` Card grid + rename/delete dialogs; `PinItBottomNavigation` `pinnedCount` parameter and badge wiring)
+- `viewmodel/PinItViewModel.kt` (`renameLabel`, `deleteLabel`)
+
+### Notes
+- The dialog approach is intentional — `ModalBottomSheet` would still leave the home screen visible behind a partial overlay; the screenshot clearly shows a full-screen picker.
+- Renames are non-destructive: if a note already had both `oldName` and `newName`, the dedup keeps a single copy. No deduplication query needed.
+- Badge count automatically follows the `StateFlow<List<Note>>` — pin/unpin causes immediate recomposition.

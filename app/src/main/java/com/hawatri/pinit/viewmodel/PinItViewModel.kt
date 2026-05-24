@@ -52,6 +52,29 @@ class PinItViewModel(private val dao: NoteDao) : ViewModel() {
             dao.updateNote(note.copy(isArchived = !note.isArchived))
         }
     }
+
+    fun renameLabel(oldName: String, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isBlank() || trimmed == oldName) return
+        viewModelScope.launch {
+            notes.value.forEach { note ->
+                if (oldName in note.labels) {
+                    val updated = note.labels.map { if (it == oldName) trimmed else it }.distinct()
+                    dao.updateNote(note.copy(labels = updated))
+                }
+            }
+        }
+    }
+
+    fun deleteLabel(name: String) {
+        viewModelScope.launch {
+            notes.value.forEach { note ->
+                if (name in note.labels) {
+                    dao.updateNote(note.copy(labels = note.labels - name))
+                }
+            }
+        }
+    }
 }
 
 // Factory to tell Android how to create our ViewModel with the NoteDao dependency

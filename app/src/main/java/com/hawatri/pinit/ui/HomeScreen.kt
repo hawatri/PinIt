@@ -163,7 +163,8 @@ fun HomeScreen(
         bottomBar = {
             PinItBottomNavigation(
                 selectedItem = selectedBottomTab,
-                onItemSelected = { selectedBottomTab = it }
+                onItemSelected = { selectedBottomTab = it },
+                pinnedCount = allNotes.count { it.isPinned && !it.isArchived }
             )
         },
         floatingActionButton = {
@@ -272,7 +273,12 @@ fun HomeScreen(
                                 .entries
                                 .sortedByDescending { it.value }
                         }
-                        LabelBrowser(labelCounts = allLabels, onLabelClick = { selectedLabel = it })
+                        LabelBrowser(
+                            labelCounts = allLabels,
+                            onLabelClick = { selectedLabel = it },
+                            onRename = { old, nu -> viewModel.renameLabel(old, nu) },
+                            onDelete = { name -> viewModel.deleteLabel(name) }
+                        )
                     }
                     // Labels tab — label selected: show filtered notes
                     selectedBottomTab == 2 && selectedLabel != null -> {
@@ -892,25 +898,123 @@ fun EmptyStateView(icon: androidx.compose.ui.graphics.vector.ImageVector, messag
 @Composable
 fun LabelBrowser(
     labelCounts: List<Map.Entry<String, Int>>,
-    onLabelClick: (String) -> Unit
+    onLabelClick: (String) -> Unit,
+    onRename: (String, String) -> Unit = { _, _ -> },
+    onDelete: (String) -> Unit = {}
 ) {
     if (labelCounts.isEmpty()) {
         EmptyStateView(icon = Icons.Filled.Label, message = "No labels yet\nAdd labels from note or list editor")
         return
     }
+
+    var renameTarget by remember { mutableStateOf<String?>(null) }
+    var renameText by remember { mutableStateOf("") }
+    var deleteTarget by remember { mutableStateOf<String?>(null) }
+
     FlowRow(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         labelCounts.forEach { (label, count) ->
-            FilterChip(
-                selected = false,
-                onClick = { onLabelClick(label) },
-                label = { Text("$label  $count") },
-                leadingIcon = { Icon(Icons.Filled.Label, null, modifier = Modifier.size(16.dp)) }
-            )
+            var menuExpanded by remember(label) { mutableStateOf(false) }
+            Card(
+                modifier = Modifier.width(170.dp).clickable { onLabelClick(label) },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Label, null,
+                                modifier = Modifier.padding(6.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Filled.MoreVert, "More", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Rename") },
+                                    leadingIcon = { Icon(Icons.Filled.Edit, null) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        renameTarget = label
+                                        renameText = label
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Delete") },
+                                    leadingIcon = { Icon(Icons.Filled.Delete, null) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        deleteTarget = label
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(label, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("$count", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
+    }
+
+    if (renameTarget != null) {
+        AlertDialog(
+            onDismissRequest = { renameTarget = null },
+            title = { Text("Rename label") },
+            text = {
+                OutlinedTextField(
+                    value = renameText,
+                    onValueChange = { renameText = it },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val old = renameTarget!!
+                    val nu = renameText.trim()
+                    if (nu.isNotBlank() && nu != old) onRename(old, nu)
+                    renameTarget = null
+                }) { Text("Rename") }
+            },
+            dismissButton = {
+                TextButton(onClick = { renameTarget = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (deleteTarget != null) {
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("Delete label?") },
+            text = { Text("\"${deleteTarget}\" will be removed from all notes. The notes themselves stay.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDelete(deleteTarget!!)
+                    deleteTarget = null
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) { Text("Cancel") }
+            }
+        )
     }
 }
 
@@ -922,11 +1026,20 @@ enum class SortOrder(val label: String) {
 }
 
 @Composable
-fun PinItBottomNavigation(selectedItem: Int, onItemSelected: (Int) -> Unit) {
+fun PinItBottomNavigation(selectedItem: Int, onItemSelected: (Int) -> Unit, pinnedCount: Int = 0) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
         listOf("Home", "Pinned", "Labels").forEachIndexed { index, item ->
             NavigationBarItem(
-                icon = { Icon(when(index){ 0->Icons.Filled.Home; 1->Icons.Filled.PushPin; else->Icons.Filled.Label }, item) },
+                icon = {
+                    val iv = when(index){ 0->Icons.Filled.Home; 1->Icons.Filled.PushPin; else->Icons.Filled.Label }
+                    if (index == 1 && pinnedCount > 0) {
+                        BadgedBox(badge = { Badge { Text(pinnedCount.toString()) } }) {
+                            Icon(iv, item)
+                        }
+                    } else {
+                        Icon(iv, item)
+                    }
+                },
                 label = { Text(item) }, selected = selectedItem == index, onClick = { onItemSelected(index) }
             )
         }
