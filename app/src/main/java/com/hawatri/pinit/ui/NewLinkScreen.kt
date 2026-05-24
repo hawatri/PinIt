@@ -34,8 +34,8 @@ import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import java.util.UUID
 
-data class LinkPreviewData(val title: String, val description: String, val imageUrl: String)
-data class LinkNoteData(val url: String, val title: String, val description: String, val imageUrl: String)
+data class LinkPreviewData(val title: String, val description: String, val imageUrl: String, val isVideo: Boolean = false)
+data class LinkNoteData(val url: String, val title: String, val description: String, val imageUrl: String, val isVideo: Boolean = false)
 
 private fun normalizeUrl(raw: String): String {
     val trimmed = raw.trim()
@@ -43,9 +43,29 @@ private fun normalizeUrl(raw: String): String {
     return if (!trimmed.startsWith("http://", true) && !trimmed.startsWith("https://", true)) "https://$trimmed" else trimmed
 }
 
+private val YT_ID_REGEX = Regex(
+    "(?:youtube\\.com/(?:watch\\?(?:.*&)?v=|embed/|v/|shorts/)|youtu\\.be/)([A-Za-z0-9_-]{11})",
+    RegexOption.IGNORE_CASE
+)
+
+private fun extractYouTubeId(url: String): String? = YT_ID_REGEX.find(url)?.groupValues?.getOrNull(1)
+
+private fun isKnownVideoHost(url: String): Boolean {
+    val lower = url.lowercase()
+    return extractYouTubeId(url) != null ||
+        lower.contains("vimeo.com/") ||
+        lower.contains("dailymotion.com/video/") ||
+        lower.contains("twitch.tv/videos/") ||
+        lower.contains("tiktok.com/") && lower.contains("/video/") ||
+        lower.contains("instagram.com/reel/") ||
+        lower.contains("instagram.com/p/")
+}
+
 suspend fun fetchLinkMetadata(url: String): LinkPreviewData? = withContext(Dispatchers.IO) {
     try {
         val formattedUrl = normalizeUrl(url)
+        val ytId = extractYouTubeId(formattedUrl)
+
         val doc = Jsoup.connect(formattedUrl)
             .userAgent("Mozilla/5.0 (Android) PinIt/1.0")
             .timeout(8000)
@@ -57,15 +77,36 @@ suspend fun fetchLinkMetadata(url: String): LinkPreviewData? = withContext(Dispa
         val description = doc.select("meta[property=og:description]").attr("content").takeIf { it.isNotEmpty() }
             ?: doc.select("meta[name=twitter:description]").attr("content").takeIf { it.isNotEmpty() }
             ?: doc.select("meta[name=description]").attr("content")
-        val imageUrl = doc.select("meta[property=og:image]").attr("content").takeIf { it.isNotEmpty() }
+        val rawImage = doc.select("meta[property=og:image]").attr("content").takeIf { it.isNotEmpty() }
             ?: doc.select("meta[name=twitter:image]").attr("content").takeIf { it.isNotEmpty() }
             ?: doc.select("link[rel=apple-touch-icon]").attr("href").takeIf { it.isNotEmpty() }
             ?: doc.select("link[rel=icon]").attr("href")
-        val absImage = if (imageUrl.isNotBlank()) {
-            try { java.net.URI(formattedUrl).resolve(imageUrl).toString() } catch (e: Exception) { imageUrl }
-        } else ""
-        LinkPreviewData(title, description, absImage)
-    } catch (e: Exception) { null }
+        val absImage = when {
+            rawImage.isNotBlank() -> try { java.net.URI(formattedUrl).resolve(rawImage).toString() } catch (e: Exception) { rawImage }
+            ytId != null -> "https://img.youtube.com/vi/$ytId/hqdefault.jpg"
+            else -> ""
+        }
+
+        val ogType = doc.select("meta[property=og:type]").attr("content").lowercase()
+        val hasOgVideo = doc.select("meta[property=og:video]").isNotEmpty() ||
+            doc.select("meta[property=og:video:url]").isNotEmpty() ||
+            doc.select("meta[name=twitter:player]").isNotEmpty() ||
+            doc.select("meta[name=twitter:card]").attr("content").equals("player", ignoreCase = true)
+        val isVideo = ytId != null || ogType.startsWith("video") || hasOgVideo || isKnownVideoHost(formattedUrl)
+
+        LinkPreviewData(title, description, absImage, isVideo)
+    } catch (e: Exception) {
+        // Network failed — still return a YouTube fallback if applicable
+        val ytId = extractYouTubeId(normalizeUrl(url))
+        if (ytId != null) {
+            LinkPreviewData(
+                title = "YouTube",
+                description = "",
+                imageUrl = "https://img.youtube.com/vi/$ytId/hqdefault.jpg",
+                isVideo = true
+            )
+        } else null
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,9 +153,9 @@ fun NewLinkScreen(
             val meta = fetchLinkMetadata(forUrl)
             val formattedUrl = normalizeUrl(forUrl)
             previewData = if (meta != null) {
-                LinkNoteData(formattedUrl, meta.title, meta.description, meta.imageUrl)
+                LinkNoteData(formattedUrl, meta.title, meta.description, meta.imageUrl, meta.isVideo)
             } else {
-                LinkNoteData(formattedUrl, formattedUrl, "", "")
+                LinkNoteData(formattedUrl, formattedUrl, "", "", isKnownVideoHost(formattedUrl))
             }
             isLoading = false
         }
@@ -215,12 +256,29 @@ fun NewLinkScreen(
                 ) {
                     Column(modifier = Modifier.fillMaxWidth().clickable { openInBrowser() }) {
                         if (previewData!!.imageUrl.isNotBlank()) {
-                            AsyncImage(
-                                model = previewData!!.imageUrl,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxWidth().height(180.dp)
-                            )
+                            Box(modifier = Modifier.fillMaxWidth().height(180.dp)) {
+                                AsyncImage(
+                                    model = previewData!!.imageUrl,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                                if (previewData!!.isVideo) {
+                                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.25f)))
+                                    Box(
+                                        modifier = Modifier.align(Alignment.Center)
+                                            .size(64.dp).clip(CircleShape)
+                                            .background(Color.Black.copy(alpha = 0.6f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.PlayArrow, "Play",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(40.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(

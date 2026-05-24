@@ -426,3 +426,36 @@ App List notes rendered the underlying JSON in the pinned notification (`[{"appN
 ### Notes
 - No schema change. Existing link notes already store `LinkNoteData` JSON, so the new card and notification render automatically.
 - `Jsoup` was already a dependency — no new libs added.
+
+---
+
+## Session: Link previews — video-aware
+
+### Problem
+- Link preview always treated every URL the same: thumbnail + title + description. YouTube/Vimeo/etc. links looked identical to articles, with no indication that a tap would launch a video.
+- YouTube watch/share URLs sometimes returned no `og:image` (depending on the locale/CDN response), so the hero stayed empty.
+
+### Fix — `NewLinkScreen.kt` metadata
+- Added `isVideo: Boolean` to `LinkPreviewData` and `LinkNoteData`. Defaults to `false`, so existing JSON deserialises fine.
+- New `extractYouTubeId(url)` regex covers `youtube.com/watch?v=…`, `youtu.be/…`, `embed/`, `v/`, `shorts/` paths.
+- New `isKnownVideoHost(url)` covers Vimeo, Dailymotion, Twitch VODs, TikTok video URLs, Instagram reels/posts (which are usually video).
+- `fetchLinkMetadata` now:
+  - Forces `https://img.youtube.com/vi/<id>/hqdefault.jpg` when og:image is missing on a YouTube URL.
+  - Sets `isVideo = true` if the URL matches a known video host, `og:type` starts with `video`, or `og:video` / `twitter:player` / `twitter:card=player` meta tags are present.
+  - On total network failure for a YouTube URL, still returns a stub preview with the YouTube thumbnail.
+
+### Fix — Edit screen hero overlay
+- When `previewData.isVideo` is true, the 180 dp hero gets a 25 % black scrim and a centered 64 dp circular black play badge with a 40 dp white triangle.
+- Tap anywhere on the card still launches the URL — Android picks the right handler (YouTube app, browser, etc.).
+
+### Fix — Home card hero overlay
+- Same overlay scaled down: 40 dp badge with 24 dp triangle on the 120 dp hero. Looks like a YouTube/Reels thumbnail in the grid.
+
+**Files:**
+- `ui/NewLinkScreen.kt` (data class fields, regex, host list, fallback thumbnail, video overlay in preview card)
+- `ui/HomeScreen.kt` (LINK card branch — video overlay)
+
+### Notes
+- Backwards-compatible: Gson deserialises old `LinkNoteData` JSON without the field — `isVideo` simply defaults to `false`.
+- A user can re-fetch any old link via the **Refresh** action in the top bar to populate `isVideo`.
+- The notification still uses the existing LINK branch (no thumbnail) — Android only allows a single `largeIcon` and we already optimise notifications for compactness.
