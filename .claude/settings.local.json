@@ -5,7 +5,8 @@
       "Bash(Select-Object Name, PSIsContainer)",
       "Bash(gradlew.bat assembleDebug)",
       "Bash(gradlew.bat dependencies *)",
-      "Bash(gradlew.bat :app:dependencies)"
+      "Bash(gradlew.bat :app:dependencies)",
+      "Bash(./gradlew.bat assembleDebug)"
     ]
   }
 }

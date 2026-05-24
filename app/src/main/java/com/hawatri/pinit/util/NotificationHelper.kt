@@ -5,6 +5,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.os.Build
 import android.widget.RemoteViews
 import androidx.core.app.RemoteInput
@@ -13,6 +17,7 @@ import com.google.gson.Gson
 import com.hawatri.pinit.MainActivity
 import com.hawatri.pinit.R
 import com.hawatri.pinit.receiver.NotificationReceiver
+import com.hawatri.pinit.ui.AppNoteItem
 import com.hawatri.pinit.ui.ChecklistItemData
 
 class NotificationHelper(private val context: Context) {
@@ -44,8 +49,9 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun pinNoteToNotification(noteId: String, title: String, text: String, isList: Boolean = false) {
+    fun pinNoteToNotification(noteId: String, title: String, text: String, isList: Boolean = false, noteType: String? = null) {
         val displayTitle = title.ifBlank { "Pinned Note" }
+        val isAppList = noteType == com.hawatri.pinit.data.NoteType.APPLIST
 
         val removeIntent = Intent(context, NotificationReceiver::class.java).apply {
             action = ACTION_REMOVE_PIN
@@ -72,7 +78,49 @@ class NotificationHelper(private val context: Context) {
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setGroup(GROUP_KEY)
 
-        if (isList) {
+        if (isAppList) {
+            val customView = RemoteViews(context.packageName, R.layout.notif_app_list)
+            customView.removeAllViews(R.id.notif_apps_row)
+            val displayLimit = 5
+            try {
+                val items = Gson().fromJson(text, Array<AppNoteItem>::class.java)?.toList() ?: emptyList()
+                val pm = context.packageManager
+                items.take(displayLimit).forEach { item ->
+                    val itemView = RemoteViews(context.packageName, R.layout.notif_app_item)
+                    val iconBitmap = try {
+                        drawableToBitmap(pm.getApplicationIcon(item.packageName))
+                    } catch (e: Exception) { null }
+                    if (iconBitmap != null) {
+                        itemView.setImageViewBitmap(R.id.notif_app_icon, iconBitmap)
+                    } else {
+                        itemView.setImageViewResource(R.id.notif_app_icon, R.mipmap.ic_launcher)
+                    }
+                    itemView.setTextViewText(R.id.notif_app_name, item.appName)
+
+                    val launchIntent = pm.getLaunchIntentForPackage(item.packageName)?.apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    if (launchIntent != null) {
+                        val launchPending = PendingIntent.getActivity(
+                            context, (noteId + item.packageName).hashCode(), launchIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                        itemView.setOnClickPendingIntent(R.id.notif_app_root, launchPending)
+                    }
+                    customView.addView(R.id.notif_apps_row, itemView)
+                }
+                if (items.size > displayLimit) {
+                    customView.setViewVisibility(R.id.notif_apps_more, android.view.View.VISIBLE)
+                    customView.setTextViewText(R.id.notif_apps_more, "+ ${items.size - displayLimit} more")
+                } else {
+                    customView.setViewVisibility(R.id.notif_apps_more, android.view.View.GONE)
+                }
+            } catch (e: Exception) { }
+
+            builder.setCustomContentView(customView)
+            builder.setCustomBigContentView(customView)
+            builder.addAction(0, "Remove", removePendingIntent)
+        } else if (isList) {
             val customView = RemoteViews(context.packageName, R.layout.notif_custom_list)
             try {
                 val items = Gson().fromJson(text, Array<ChecklistItemData>::class.java).toList()
@@ -180,6 +228,17 @@ class NotificationHelper(private val context: Context) {
             .build()
 
         manager.notify(SUMMARY_ID, summaryNotification)
+    }
+
+    private fun drawableToBitmap(drawable: Drawable): Bitmap {
+        if (drawable is BitmapDrawable && drawable.bitmap != null) return drawable.bitmap
+        val width = drawable.intrinsicWidth.takeIf { it > 0 } ?: 96
+        val height = drawable.intrinsicHeight.takeIf { it > 0 } ?: 96
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return bitmap
     }
 
     fun showReminderNotification(noteId: String, title: String, text: String, isList: Boolean = false) {

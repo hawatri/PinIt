@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:padding="12dp">
+
+    <LinearLayout
+        android:id="@+id/notif_apps_row"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:gravity="start" />
+
+    <TextView
+        android:id="@+id/notif_apps_more"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        style="@style/TextAppearance.Compat.Notification.Line2"
+        android:paddingTop="6dp" android:paddingStart="4dp"
+        android:visibility="gone"
+        android:textStyle="italic" />
+</LinearLayout>

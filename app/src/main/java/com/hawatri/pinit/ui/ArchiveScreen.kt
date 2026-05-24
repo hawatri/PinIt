@@ -79,7 +79,7 @@ fun ArchiveScreen(
                         val willBePinned = !note.isPinned
                         viewModel.togglePin(note)
                         if (willBePinned) {
-                            notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList)
+                            notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType)
                         } else {
                             notificationHelper.unpinNoteFromNotification(note.id)
                         }

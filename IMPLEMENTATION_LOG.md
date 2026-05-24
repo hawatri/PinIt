@@ -270,3 +270,29 @@ The `NewNoteScreen` formatting toolbar now includes **Undo** (↩) and **Redo** 
 ### Not yet implemented (future)
 - Firebase cloud sync / cross-device
 - FOREGROUND_SERVICE to keep pins alive aggressively
+
+---
+
+## Session: App List icon rendering (notification + card)
+
+### Problem
+App List notes rendered the underlying JSON in the pinned notification (`[{"appName":...}]` string) and showed a comma-separated text list ("PinIt, Settings, TMoble") on the home card. Tapping the notification opened PinIt instead of the chosen app.
+
+### Fix — Pinned notification with launchable app icons
+- New `RemoteViews` layout `notif_app_list.xml` containing a horizontal `notif_apps_row` and a `+N more` overflow line.
+- New per-icon layout `notif_app_item.xml` (44dp icon + small label).
+- `NotificationHelper.pinNoteToNotification(...)` gained a `noteType` param. When `noteType == APPLIST`:
+  - Parses `Array<AppNoteItem>` from the note text.
+  - For each app (up to 5), inflates `notif_app_item`, draws the real `ApplicationInfo` icon as a `Bitmap` (via `drawableToBitmap`), sets the app name, and binds an `Intent.FLAG_ACTIVITY_NEW_TASK` launch `PendingIntent` to the icon root so tapping launches the app directly.
+  - Adds the standard "Remove" pin action.
+- All callers (`NewAppListScreen`, `HomeScreen`, `ArchiveScreen`, `BootReceiver`) now pass `note.noteType` so app-list pins survive reboot with the same custom layout.
+**Files:** `util/NotificationHelper.kt`, `res/layout/notif_app_list.xml` (new), `res/layout/notif_app_item.xml` (new), `receiver/BootReceiver.kt`, `ui/HomeScreen.kt`, `ui/ArchiveScreen.kt`, `ui/NewAppListScreen.kt`
+
+### Fix — Home card now shows app icons
+- New `AppListPreview` composable in `HomeScreen.kt`: a `Row` of up to 4 real app icons (40dp, 8dp rounded) loaded via `pm.getApplicationIcon(packageName)` and Coil `AsyncImage`. Overflow shows a `+N` chip.
+- Replaced the comma-text branch under `NoteType.APPLIST` in `NoteCard`.
+**Files:** `ui/HomeScreen.kt`
+
+### Notes
+- Edit screen (`NewAppListScreen`) was already a Ruppu-style icon grid with a circular `+` add button — no changes needed there beyond the notification call.
+- Custom notification layouts use `DecoratedCustomViewStyle` so the system still renders the title row and the standard expand/collapse chrome.

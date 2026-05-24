@@ -283,7 +283,7 @@ fun HomeScreen(
                             NotesGrid(notes = displayNotes, selectedNoteIds = selectedNoteIds, isSelectionMode = isSelectionMode,
                                 onNoteClick = { id -> if (isSelectionMode) selectedNoteIds = if (id in selectedNoteIds) selectedNoteIds - id else selectedNoteIds + id else allNotes.find { it.id == id }?.let { handleNoteClick(it) } },
                                 onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
-                                onPinClick = { note -> viewModel.togglePin(note); if (!note.isPinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList) else notificationHelper.unpinNoteFromNotification(note.id) },
+                                onPinClick = { note -> viewModel.togglePin(note); if (!note.isPinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType) else notificationHelper.unpinNoteFromNotification(note.id) },
                                 onCopyClick = { text -> val cb = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; cb.setPrimaryClip(android.content.ClipData.newPlainText("", text)); android.widget.Toast.makeText(context, "Copied", android.widget.Toast.LENGTH_SHORT).show() },
                                 onToggleAllClick = { note -> val g = Gson(); val items = try { g.fromJson(note.text, Array<ChecklistItemData>::class.java).toList() } catch (e: Exception) { emptyList() }; val all = items.isNotEmpty() && items.all { it.isChecked }; val n = note.copy(text = g.toJson(items.map { it.copy(isChecked = !all) })); viewModel.updateNote(n); if (n.isPinned) notificationHelper.pinNoteToNotification(n.id, n.title, n.text, true) }
                             )
@@ -308,7 +308,7 @@ fun HomeScreen(
                             onPinClick = { note ->
                                 val willBePinned = !note.isPinned
                                 viewModel.togglePin(note)
-                                if (willBePinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList)
+                                if (willBePinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType)
                                 else notificationHelper.unpinNoteFromNotification(note.id)
                             },
                             onCopyClick = { text ->
@@ -604,10 +604,7 @@ fun NoteCard(
                     }
                 }
                 NoteType.APPLIST -> {
-                    Text(
-                        text = appItems.take(5).joinToString(", ") { it.appName } + if (appItems.size > 5) " +${appItems.size - 5}" else "",
-                        fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    AppListPreview(items = appItems)
                 }
                 else -> {
                     if (note.isList) {
@@ -724,6 +721,48 @@ fun NoteCard(
                         Icon(Icons.Outlined.ContentCopy, "Copy", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun AppListPreview(items: List<AppNoteItem>) {
+    val context = LocalContext.current
+    val pm = context.packageManager
+    val maxIcons = 4
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        items.take(maxIcons).forEach { item ->
+            val icon = remember(item.packageName) {
+                try { pm.getApplicationIcon(item.packageName) } catch (e: Exception) { null }
+            }
+            if (icon != null) {
+                coil.compose.AsyncImage(
+                    model = icon,
+                    contentDescription = item.appName,
+                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+                )
+            } else {
+                Box(
+                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.Apps, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        if (items.size > maxIcons) {
+            Box(
+                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("+${items.size - maxIcons}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

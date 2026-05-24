@@ -19,7 +19,7 @@ class BootReceiver : BroadcastReceiver() {
                 val notes = NoteDatabase.getDatabase(context).noteDao().getAllNotes().firstOrNull()
                 val helper = NotificationHelper(context)
                 notes?.filter { it.isPinned && !it.isArchived }?.forEach { note ->
-                    helper.pinNoteToNotification(note.id, note.title, note.text, note.isList)
+                    helper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType)
                 }
             } finally {
                 pendingResult.finish()

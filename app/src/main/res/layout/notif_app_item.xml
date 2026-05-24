@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/notif_app_root"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:paddingHorizontal="4dp"
+    android:paddingVertical="2dp">
+
+    <ImageView
+        android:id="@+id/notif_app_icon"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:id="@+id/notif_app_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/TextAppearance.Compat.Notification.Line2"
+        android:layout_marginTop="4dp"
+        android:textSize="11sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:gravity="center" />
+</LinearLayout>

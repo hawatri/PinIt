@@ -121,8 +121,9 @@ fun NewAppListScreen(
                     IconButton(onClick = {
                         isPinned = !isPinned
                         val savedId = save(isPinned)
-                        val appNames = selectedApps.take(3).joinToString(", ") { it.name }
-                        if (isPinned) notificationHelper.pinNoteToNotification(savedId, "App Shortcuts", appNames)
+                        val items = selectedApps.map { AppNoteItem(it.packageName, it.name) }
+                        val titleText = if (items.isEmpty()) "App Shortcuts" else "${items.size} App${if (items.size > 1) "s" else ""}"
+                        if (isPinned) notificationHelper.pinNoteToNotification(savedId, titleText, gson.toJson(items), isList = false, noteType = NoteType.APPLIST)
                         else notificationHelper.unpinNoteFromNotification(savedId)
                     }) {
                         Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
