@@ -560,13 +560,26 @@ fun NoteCard(
                 }
                 NoteType.LOCATION -> {
                     if (locationData != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.LocationOn, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = locationData.address.ifBlank { "${locationData.lat}, ${locationData.lng}" },
-                                fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        Text(
+                            text = locationData.address.ifBlank { "${locationData.lat}, ${locationData.lng}" },
+                            fontSize = 13.sp, maxLines = 4, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp
+                        )
+                        if (locationData.lat != null && locationData.lng != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    val uri = Uri.parse("geo:${locationData.lat},${locationData.lng}?q=${locationData.lat},${locationData.lng}(${Uri.encode(note.title.ifBlank { "Location" })})")
+                                    val intent = Intent(Intent.ACTION_VIEW, uri).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                                    try { context.startActivity(intent) } catch (e: Exception) { }
+                                },
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Navigate", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Filled.Navigation, "Navigate", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
+                            }
                         }
                     } else if (note.text.isNotBlank()) {
                         Text(note.text, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

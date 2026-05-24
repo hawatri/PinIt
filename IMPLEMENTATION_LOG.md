@@ -296,3 +296,44 @@ App List notes rendered the underlying JSON in the pinned notification (`[{"appN
 ### Notes
 - Edit screen (`NewAppListScreen`) was already a Ruppu-style icon grid with a circular `+` add button — no changes needed there beyond the notification call.
 - Custom notification layouts use `DecoratedCustomViewStyle` so the system still renders the title row and the standard expand/collapse chrome.
+
+---
+
+## Session: Location notes — real map, search, and Navigate
+
+### Problem
+- Location notes only showed a flat dark-grey rectangle with a static centre pin (no real map tiles).
+- No way to search for an address; the only way to set a location was the "Get my location" GPS FAB.
+- Pinned notification rendered the JSON blob as plain text and had no Navigate action.
+- Home card showed a single-line preview with no Navigate affordance.
+
+### Fix — Interactive OpenStreetMap with search and tap-to-place
+- Added osmdroid (`org.osmdroid:osmdroid-android:6.1.18`) — free, no API key required.
+- Rewrote `NewLocationScreen.kt`:
+  - `MapView` hosted via `AndroidView`, MAPNIK tile source, multi-touch zoom enabled.
+  - Single-tap on the map drops a marker, sets `lat`/`lng`, and reverse-geocodes to populate the address card.
+  - Top-overlay search bar (rounded surface) — keyboard `Search` action calls `Geocoder.getFromLocationName`, animates camera to the result, and fills the address card.
+  - "My Location" FAB still uses `LocationManager.getLastKnownLocation` and recentres the map.
+  - Bottom card now has an in-card editable name plus a **Navigate** button that fires `geo:lat,lng?q=lat,lng(name)` (any installed maps app handles it).
+  - osmdroid lifecycle hooks via `DisposableEffect` (`onResume`/`onPause`).
+
+### Fix — Notification with Navigate action
+- `NotificationHelper.pinNoteToNotification` learnt a `LOCATION` branch:
+  - Parses `LocationNoteData`, shows the location name as the title and address in `BigTextStyle`.
+  - When `lat`/`lng` are present, adds a **Navigate** action whose `PendingIntent` opens `geo:` URI in the default maps app.
+  - Falls back to the existing Copy/Remove behaviour for non-location notes.
+- Caller wiring: `NewLocationScreen` now passes `noteType = NoteType.LOCATION` and the full JSON text (so the helper can read `lat`/`lng`).
+
+### Fix — Home card Navigate row
+- `NoteCard` `LOCATION` branch now shows the address in 4 lines and, when coordinates exist, a divider + **Navigate** row (label + arrow) that opens the same `geo:` URI.
+
+**Files:**
+- `app/build.gradle.kts` (new osmdroid dep)
+- `ui/NewLocationScreen.kt` (full rewrite around `MapView`, search, marker overlay)
+- `util/NotificationHelper.kt` (`LOCATION` branch with Navigate action; new `LocationNoteData` import + `Uri` import)
+- `ui/HomeScreen.kt` (`LOCATION` card branch — Navigate row)
+
+### Notes
+- osmdroid pulls map tiles directly from OpenStreetMap; the existing `INTERNET` permission already covers it.
+- `geo:` URIs are universal — works with Google Maps, OsmAnd, Maps.me, etc. No Google Play Services dependency added.
+- `Geocoder` warnings about deprecated method signatures are suppressed; they remain functional on minSdk 29.

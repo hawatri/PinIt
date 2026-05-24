@@ -92,4 +92,7 @@ dependencies {
 
     // Biometric
     implementation("androidx.biometric:biometric:1.1.0")
+
+    // OpenStreetMap (osmdroid) — free, no API key
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
 }

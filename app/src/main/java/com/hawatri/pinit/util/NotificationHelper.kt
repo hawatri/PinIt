@@ -9,6 +9,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Build
 import android.widget.RemoteViews
 import androidx.core.app.RemoteInput
@@ -19,6 +20,7 @@ import com.hawatri.pinit.R
 import com.hawatri.pinit.receiver.NotificationReceiver
 import com.hawatri.pinit.ui.AppNoteItem
 import com.hawatri.pinit.ui.ChecklistItemData
+import com.hawatri.pinit.ui.LocationNoteData
 
 class NotificationHelper(private val context: Context) {
     private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -181,6 +183,24 @@ class NotificationHelper(private val context: Context) {
             builder.setCustomBigContentView(customView)
             builder.addAction(replyAction)
             builder.addAction(0, "Check All", checkAllPendingIntent)
+            builder.addAction(0, "Remove", removePendingIntent)
+        } else if (noteType == com.hawatri.pinit.data.NoteType.LOCATION) {
+            val locData = try { Gson().fromJson(text, LocationNoteData::class.java) } catch (e: Exception) { null }
+            val addressText = locData?.address ?: text
+            val nameText = locData?.name?.ifBlank { displayTitle } ?: displayTitle
+            builder.setContentTitle(nameText)
+            builder.setContentText(addressText)
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(addressText))
+
+            if (locData?.lat != null && locData.lng != null) {
+                val geoUri = Uri.parse("geo:${locData.lat},${locData.lng}?q=${locData.lat},${locData.lng}(${Uri.encode(nameText)})")
+                val mapIntent = Intent(Intent.ACTION_VIEW, geoUri).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                val navPending = PendingIntent.getActivity(
+                    context, (noteId + "_nav").hashCode(), mapIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(0, "Navigate", navPending)
+            }
             builder.addAction(0, "Remove", removePendingIntent)
         } else {
             builder.setContentTitle(displayTitle)
