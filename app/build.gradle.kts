@@ -95,4 +95,7 @@ dependencies {
 
     // OpenStreetMap (osmdroid) — free, no API key
     implementation("org.osmdroid:osmdroid-android:6.1.18")
+
+    // ZXing — QR code generation
+    implementation("com.google.zxing:core:3.5.3")
 }

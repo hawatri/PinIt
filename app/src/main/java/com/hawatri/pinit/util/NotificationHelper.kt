@@ -20,6 +20,7 @@ import com.hawatri.pinit.R
 import com.hawatri.pinit.receiver.NotificationReceiver
 import com.hawatri.pinit.ui.AppNoteItem
 import com.hawatri.pinit.ui.ChecklistItemData
+import com.hawatri.pinit.ui.LinkNoteData
 import com.hawatri.pinit.ui.LocationNoteData
 
 class NotificationHelper(private val context: Context) {
@@ -202,6 +203,74 @@ class NotificationHelper(private val context: Context) {
                 builder.addAction(0, "Navigate", navPending)
             }
             builder.addAction(0, "Remove", removePendingIntent)
+        } else if (noteType == com.hawatri.pinit.data.NoteType.LINK) {
+            val linkData = try { Gson().fromJson(text, LinkNoteData::class.java) } catch (e: Exception) { null }
+            val url = linkData?.url ?: text
+            val titleStr = linkData?.title?.ifBlank { displayTitle } ?: displayTitle
+            val description = linkData?.description ?: ""
+            val bodyText = if (description.isNotBlank()) "$description\n$url" else url
+
+            builder.setContentTitle(titleStr)
+            builder.setContentText(url)
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(bodyText))
+
+            if (url.isNotBlank()) {
+                val uri = try {
+                    val u = if (!url.startsWith("http://", true) && !url.startsWith("https://", true)) "https://$url" else url
+                    Uri.parse(u)
+                } catch (e: Exception) { null }
+                if (uri != null) {
+                    val openIntent = Intent(Intent.ACTION_VIEW, uri).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                    val openPending = PendingIntent.getActivity(
+                        context, (noteId + "_open").hashCode(), openIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    builder.addAction(0, "Open", openPending)
+                }
+            }
+            val copyIntent = Intent(context, NotificationReceiver::class.java).apply {
+                action = ACTION_COPY_TEXT
+                putExtra(EXTRA_NOTE_TEXT, url)
+            }
+            builder.addAction(0, "Copy", PendingIntent.getBroadcast(
+                context, (noteId + "_copy").hashCode(), copyIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            ))
+            builder.addAction(0, "Remove", removePendingIntent)
+        } else if (noteType == com.hawatri.pinit.data.NoteType.QR) {
+            builder.setContentTitle(displayTitle)
+            builder.setContentText(text)
+            val qrBitmap = QrUtils.generateQrBitmap(text, 512)
+            if (qrBitmap != null) {
+                builder.setLargeIcon(qrBitmap)
+                builder.setStyle(
+                    NotificationCompat.BigPictureStyle()
+                        .bigPicture(qrBitmap)
+                        .bigLargeIcon(null as Bitmap?)
+                        .setSummaryText(text)
+                )
+            } else {
+                builder.setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            }
+
+            val viewIntent = buildOpenIntentForQrText(text)
+            if (viewIntent != null) {
+                val openPending = PendingIntent.getActivity(
+                    context, (noteId + "_open").hashCode(), viewIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(0, "Open", openPending)
+            } else {
+                val copyIntent = Intent(context, NotificationReceiver::class.java).apply {
+                    action = ACTION_COPY_TEXT
+                    putExtra(EXTRA_NOTE_TEXT, text)
+                }
+                builder.addAction(0, "Copy", PendingIntent.getBroadcast(
+                    context, (noteId + "_copy").hashCode(), copyIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                ))
+            }
+            builder.addAction(0, "Remove", removePendingIntent)
         } else {
             builder.setContentTitle(displayTitle)
             builder.setContentText(text)
@@ -259,6 +328,22 @@ class NotificationHelper(private val context: Context) {
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
         return bitmap
+    }
+
+    private fun buildOpenIntentForQrText(text: String): Intent? {
+        val trimmed = text.trim()
+        if (trimmed.isBlank()) return null
+        return try {
+            val uri = when {
+                trimmed.startsWith("http://", true) || trimmed.startsWith("https://", true) -> Uri.parse(trimmed)
+                trimmed.startsWith("mailto:", true) || trimmed.startsWith("tel:", true) ||
+                    trimmed.startsWith("sms:", true) || trimmed.startsWith("geo:", true) ||
+                    trimmed.startsWith("upi:", true) || trimmed.startsWith("market:", true) -> Uri.parse(trimmed)
+                trimmed.contains("://") -> Uri.parse(trimmed)
+                else -> return null
+            }
+            Intent(Intent.ACTION_VIEW, uri).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+        } catch (e: Exception) { null }
     }
 
     fun showReminderNotification(noteId: String, title: String, text: String, isList: Boolean = false) {

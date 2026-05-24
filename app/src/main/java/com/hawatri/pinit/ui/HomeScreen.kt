@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -586,10 +587,48 @@ fun NoteCard(
                     }
                 }
                 NoteType.QR -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.QrCode, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(note.text, fontSize = 12.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val qrBitmap = remember(note.text) {
+                        if (note.text.isNotBlank()) com.hawatri.pinit.util.QrUtils.generateQrBitmap(note.text, 256) else null
+                    }
+                    if (qrBitmap != null) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.White,
+                            modifier = Modifier.fillMaxWidth().aspectRatio(1f)
+                        ) {
+                            androidx.compose.foundation.Image(
+                                bitmap = qrBitmap.asImageBitmap(),
+                                contentDescription = "QR Code",
+                                modifier = Modifier.fillMaxSize().padding(6.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    Text(
+                        note.text,
+                        fontSize = 13.sp,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    val canOpen = note.text.contains("://")
+                    if (canOpen) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(note.text)).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) { }
+                            },
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Open", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                            Icon(Icons.Outlined.OpenInNew, "Open", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
+                        }
                     }
                 }
                 NoteType.PDF -> {

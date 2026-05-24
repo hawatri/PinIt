@@ -1,5 +1,7 @@
 package com.hawatri.pinit.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,14 +37,34 @@ import java.util.UUID
 data class LinkPreviewData(val title: String, val description: String, val imageUrl: String)
 data class LinkNoteData(val url: String, val title: String, val description: String, val imageUrl: String)
 
+private fun normalizeUrl(raw: String): String {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty()) return trimmed
+    return if (!trimmed.startsWith("http://", true) && !trimmed.startsWith("https://", true)) "https://$trimmed" else trimmed
+}
+
 suspend fun fetchLinkMetadata(url: String): LinkPreviewData? = withContext(Dispatchers.IO) {
     try {
-        val formattedUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) "https://$url" else url
-        val doc = Jsoup.connect(formattedUrl).timeout(5000).get()
-        val title = doc.select("meta[property=og:title]").attr("content").takeIf { it.isNotEmpty() } ?: doc.title()
-        val description = doc.select("meta[property=og:description]").attr("content")
-        val imageUrl = doc.select("meta[property=og:image]").attr("content")
-        LinkPreviewData(title, description, imageUrl)
+        val formattedUrl = normalizeUrl(url)
+        val doc = Jsoup.connect(formattedUrl)
+            .userAgent("Mozilla/5.0 (Android) PinIt/1.0")
+            .timeout(8000)
+            .followRedirects(true)
+            .get()
+        val title = doc.select("meta[property=og:title]").attr("content").takeIf { it.isNotEmpty() }
+            ?: doc.select("meta[name=twitter:title]").attr("content").takeIf { it.isNotEmpty() }
+            ?: doc.title()
+        val description = doc.select("meta[property=og:description]").attr("content").takeIf { it.isNotEmpty() }
+            ?: doc.select("meta[name=twitter:description]").attr("content").takeIf { it.isNotEmpty() }
+            ?: doc.select("meta[name=description]").attr("content")
+        val imageUrl = doc.select("meta[property=og:image]").attr("content").takeIf { it.isNotEmpty() }
+            ?: doc.select("meta[name=twitter:image]").attr("content").takeIf { it.isNotEmpty() }
+            ?: doc.select("link[rel=apple-touch-icon]").attr("href").takeIf { it.isNotEmpty() }
+            ?: doc.select("link[rel=icon]").attr("href")
+        val absImage = if (imageUrl.isNotBlank()) {
+            try { java.net.URI(formattedUrl).resolve(imageUrl).toString() } catch (e: Exception) { imageUrl }
+        } else ""
+        LinkPreviewData(title, description, absImage)
     } catch (e: Exception) { null }
 }
 
@@ -83,20 +105,29 @@ fun NewLinkScreen(
         }
     }
 
-    // Auto-fetch if opened via share intent with a URL
-    LaunchedEffect(prefillUrl) {
-        if (prefillUrl != null && previewData == null) {
-            isLoading = true
-            val meta = fetchLinkMetadata(prefillUrl)
-            if (meta != null) {
-                previewData = LinkNoteData(prefillUrl, meta.title, meta.description, meta.imageUrl)
+    fun resolvePreview(forUrl: String) {
+        if (forUrl.isBlank()) return
+        isLoading = true
+        coroutineScope.launch {
+            val meta = fetchLinkMetadata(forUrl)
+            val formattedUrl = normalizeUrl(forUrl)
+            previewData = if (meta != null) {
+                LinkNoteData(formattedUrl, meta.title, meta.description, meta.imageUrl)
+            } else {
+                LinkNoteData(formattedUrl, formattedUrl, "", "")
             }
             isLoading = false
         }
     }
 
+    LaunchedEffect(prefillUrl) {
+        if (prefillUrl != null && previewData == null) {
+            resolvePreview(prefillUrl)
+        }
+    }
+
     fun save(pinOverride: Boolean = isPinned): String {
-        val data = previewData ?: LinkNoteData(linkText, linkText, "", "")
+        val data = previewData ?: LinkNoteData(normalizeUrl(linkText), linkText, "", "")
         val note = Note(
             id = currentNoteId,
             title = data.title.ifBlank { data.url },
@@ -111,6 +142,15 @@ fun NewLinkScreen(
         return currentNoteId
     }
 
+    fun openInBrowser() {
+        val urlToOpen = previewData?.url ?: normalizeUrl(linkText)
+        if (urlToOpen.isBlank()) return
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlToOpen)).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+            context.startActivity(intent)
+        } catch (e: Exception) { }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -121,12 +161,20 @@ fun NewLinkScreen(
                     }
                 },
                 actions = {
+                    if (previewData != null) {
+                        IconButton(onClick = {
+                            // Re-fetch preview
+                            resolvePreview(previewData!!.url)
+                        }) {
+                            Icon(Icons.Filled.Refresh, "Refresh preview", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                     IconButton(onClick = {
                         isPinned = !isPinned
                         val savedId = save(isPinned)
                         if (isPinned) {
-                            val text = previewData?.title ?: linkText
-                            notificationHelper.pinNoteToNotification(savedId, text, linkText)
+                            val data = previewData ?: LinkNoteData(normalizeUrl(linkText), linkText, "", "")
+                            notificationHelper.pinNoteToNotification(savedId, data.title.ifBlank { data.url }, gson.toJson(data), isList = false, noteType = NoteType.LINK)
                         } else {
                             notificationHelper.unpinNoteFromNotification(savedId)
                         }
@@ -141,6 +189,16 @@ fun NewLinkScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
+        floatingActionButton = {
+            if (previewData != null || linkText.isNotBlank()) {
+                ExtendedFloatingActionButton(
+                    onClick = { openInBrowser() },
+                    icon = { Icon(Icons.Filled.Public, null) },
+                    text = { Text("Browse") },
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
@@ -149,41 +207,66 @@ fun NewLinkScreen(
         ) {
             Spacer(modifier = Modifier.weight(1f))
 
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
-            ) {
-                if (previewData != null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp).clickable { previewData = null },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (previewData!!.imageUrl.isNotEmpty()) {
+            if (previewData != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth().clickable { openInBrowser() }) {
+                        if (previewData!!.imageUrl.isNotBlank()) {
                             AsyncImage(
                                 model = previewData!!.imageUrl,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp))
+                                modifier = Modifier.fillMaxWidth().height(180.dp)
                             )
-                            Spacer(modifier = Modifier.width(16.dp))
                         }
-                        Column {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = previewData!!.title,
                                 fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis
+                                maxLines = 2, overflow = TextOverflow.Ellipsis
                             )
                             if (previewData!!.description.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(previewData!!.description, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    previewData!!.description,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 4, overflow = TextOverflow.Ellipsis,
+                                    lineHeight = 18.sp
+                                )
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(previewData!!.url, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Public, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    previewData!!.url,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
-                } else {
+                }
+                TextButton(
+                    onClick = { previewData = null },
+                    modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+                ) {
+                    Icon(Icons.Filled.Edit, null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Edit link")
+                }
+            } else {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("*Mandatory field", color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 16.dp, bottom = 4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -202,23 +285,11 @@ fun NewLinkScreen(
                                 Box(
                                     modifier = Modifier.size(40.dp).clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
-                                        .clickable(enabled = !isLoading) {
-                                            isLoading = true
-                                            coroutineScope.launch {
-                                                val meta = fetchLinkMetadata(linkText)
-                                                val formattedUrl = if (!linkText.startsWith("http")) "https://$linkText" else linkText
-                                                previewData = if (meta != null) {
-                                                    LinkNoteData(formattedUrl, meta.title, meta.description, meta.imageUrl)
-                                                } else {
-                                                    LinkNoteData(formattedUrl, formattedUrl, "", "")
-                                                }
-                                                isLoading = false
-                                            }
-                                        },
+                                        .clickable(enabled = !isLoading) { resolvePreview(linkText) },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (isLoading) CircularProgressIndicator(color = MaterialTheme.colorScheme.surface, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                    else Icon(Icons.Filled.Public, "Fetch", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(20.dp))
+                                    else Icon(Icons.Filled.ArrowForward, "Fetch", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(20.dp))
                                 }
                             }
                         }

@@ -337,3 +337,56 @@ App List notes rendered the underlying JSON in the pinned notification (`[{"appN
 - osmdroid pulls map tiles directly from OpenStreetMap; the existing `INTERNET` permission already covers it.
 - `geo:` URIs are universal — works with Google Maps, OsmAnd, Maps.me, etc. No Google Play Services dependency added.
 - `Geocoder` warnings about deprecated method signatures are suppressed; they remain functional on minSdk 29.
+
+---
+
+## Session: QR notes — preview image, gallery import, save to gallery, Open action
+
+### Problem
+- After a successful scan, the only thing stored was the raw text. No QR image was rendered anywhere.
+- Notification showed plain text only (no QR picture, no Open action for URLs).
+- Home card showed only a tiny QR icon + cropped URL.
+- Edit/preview screen showed the camera again with a small text card; there was no way to see the QR for the saved entry.
+- No way to import an existing QR image from the gallery, and no save-to-gallery flow after scanning.
+
+### Fix — QR utilities
+- New `util/QrUtils.kt`:
+  - `generateQrBitmap(text, sizePx)` — uses ZXing `QRCodeWriter` to produce a square `Bitmap` with margin 1 and ECC-M.
+  - `saveQrToGallery(context, bitmap, displayName)` — writes a PNG to `MediaStore` `Pictures/PinIt/` on Q+ (uses `IS_PENDING` two-phase write); falls back to `Environment.DIRECTORY_PICTURES` on older versions. Returns the inserted `Uri`.
+- Added `com.google.zxing:core:3.5.3` to `app/build.gradle.kts`.
+
+### Fix — QR notification (`NotificationHelper`)
+- New `QR` branch:
+  - Generates the QR bitmap on the fly from `note.text`.
+  - Sets it as `largeIcon` and uses `NotificationCompat.BigPictureStyle().bigPicture(qrBitmap).bigLargeIcon(null).setSummaryText(text)` so the expanded notification shows the QR image with the URL above it (matching the Ruppu reference).
+  - Adds an **Open** action when the text starts with `http(s)://`, `mailto:`, `tel:`, `sms:`, `geo:`, `upi:`, `market:` or contains `://`. Tapping Open fires `ACTION_VIEW` directly to the relevant app.
+  - Falls back to **Copy** when the text is not a URI.
+  - Always adds the **Remove** action.
+- Helper `buildOpenIntentForQrText(text)` centralises the URI parsing.
+
+### Fix — `NewQRScreen` rewrite
+- After a successful scan (camera or gallery), shows an `AlertDialog` "Save to gallery?" with **Save** / **Skip**. Choosing Save writes the QR image to `Pictures/PinIt/`.
+- Preview/edit layout matches the Ruppu reference:
+  - Top-left: white tile with the regenerated QR bitmap (140 dp).
+  - Below: the scanned text in 16 sp.
+  - Bottom-right: extended FAB **Open** that opens the URL (or copies non-URL payloads).
+- New top-bar action: gallery icon while scanning. Tapping it (or the new "Pick from gallery" pill at the bottom of the camera view) launches `ActivityResultContracts.GetContent("image/*")`. The picked bitmap is fed to ML Kit `BarcodeScanning`. If a QR is found, the same save-to-gallery dialog appears; otherwise we toast.
+- Pin button now passes `noteType = NoteType.QR` so the notification picks up the new branch.
+- Permission UX: when camera permission is denied, the screen offers **Grant permission** and **Pick from gallery instead** instead of a dead-end message.
+
+### Fix — Home card (`NoteCard` `QR` branch)
+- Renders the regenerated QR bitmap on a white tile filling the card's width (1:1 aspect).
+- Below the QR: the scanned text (3 lines max).
+- When the text contains `://`, a divider + **Open** row (label + open-in-new icon) fires `ACTION_VIEW` for that URL.
+
+**Files:**
+- `app/build.gradle.kts` (ZXing dep)
+- `util/QrUtils.kt` (new)
+- `util/NotificationHelper.kt` (`QR` branch + `buildOpenIntentForQrText`; imports for `Uri` / `Bitmap` already present from earlier)
+- `ui/NewQRScreen.kt` (full rewrite — preview layout, gallery import, save dialog)
+- `ui/HomeScreen.kt` (QR card branch — image preview + Open row)
+
+### Notes
+- QR images are regenerated from `note.text` each time, so we did not change the `Note` schema — existing QR entries will start showing the image automatically with no migration.
+- ML Kit's `BarcodeScanning` was already in the project for the camera path; we reuse it for the gallery path.
+- `MediaStore` write does not require runtime storage permission on Android 10+ thanks to scoped storage; older devices are out of scope (`minSdk = 29`).
