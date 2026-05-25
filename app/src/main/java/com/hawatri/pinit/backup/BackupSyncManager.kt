@@ -230,4 +230,7 @@ object BackupSyncManager {
     private data class MergeOutcome(val uploaded: Int, val restored: Int, val finalCount: Int)
 
     fun reset() { _state.value = State.Idle }
+
+    /** Surface a sign-in or other auth-layer error in the same status flow the UI watches. */
+    fun setError(message: String) { _state.value = State.Error(message) }
 }

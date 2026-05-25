@@ -55,8 +55,18 @@ fun SignInScreen(
                 lastSyncDisplay = formatLastSync(AppPreferences.getLastSyncAt(context))
             }
         } catch (e: ApiException) {
-            BackupSyncManager.reset()
-            // Surface a Snackbar via state so the UI can show the failure
+            // Surface the failure so the user knows what's wrong instead of nothing happening.
+            // Status code 10 = DEVELOPER_ERROR (OAuth client not configured for this package/SHA-1).
+            // Status code 12501 = user-cancelled. Status code 7 = network failure.
+            val msg = when (e.statusCode) {
+                10 -> "Sign-in failed: app isn't registered with Google. The OAuth client ID for this package + SHA-1 hasn't been created in Google Cloud Console."
+                12501 -> "Sign-in cancelled"
+                7 -> "Sign-in failed: network error"
+                else -> "Sign-in failed (code ${e.statusCode}): ${e.localizedMessage ?: "unknown"}"
+            }
+            BackupSyncManager.setError(msg)
+        } catch (e: Exception) {
+            BackupSyncManager.setError("Sign-in failed: ${e.localizedMessage ?: "unknown"}")
         }
     }
 
