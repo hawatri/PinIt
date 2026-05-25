@@ -182,7 +182,7 @@
         <activity
             android:name=".widget.AddWidgetConfigActivity"
             android:exported="true"
-            android:theme="@style/Theme.PinIt">
+            android:theme="@style/Theme.PinIt.Picker">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>

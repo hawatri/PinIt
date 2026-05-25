@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.PinIt" parent="android:Theme.Material.Light.NoActionBar" />
-
-    <!-- Used by AddWidgetConfigActivity. The values-night/ variant gives us a dark
-         counterpart that the system swaps in when the device is in dark mode. -->
-    <style name="Theme.PinIt.Picker" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- Dark variant of the picker theme — colors come from values-night/colors.xml,
+         the parent flips to a dark Material theme so default text/widget tints
+         match. -->
+    <style name="Theme.PinIt.Picker" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/picker_bg</item>
         <item name="android:colorBackground">@color/picker_bg</item>
         <item name="android:textColorPrimary">@color/picker_text_primary</item>

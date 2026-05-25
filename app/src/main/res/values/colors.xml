@@ -16,4 +16,13 @@
     <color name="widget_text_secondary">#49454F</color>
     <color name="widget_accent">#6650A4</color>
     <color name="widget_divider">#1A000000</color>
+
+    <!-- Picker palette (light) — used by AddWidgetConfigActivity -->
+    <color name="picker_bg">#FBF8FF</color>
+    <color name="picker_card">#FFFFFFFF</color>
+    <color name="picker_card_stroke">#1F000000</color>
+    <color name="picker_text_primary">#1C1B1F</color>
+    <color name="picker_text_secondary">#5A5670</color>
+    <color name="picker_accent">#6650A4</color>
+    <color name="picker_icon_bg">#EADDFF</color>
 </resources>

@@ -8,4 +8,14 @@
     <color name="widget_text_secondary">#CAC4D0</color>
     <color name="widget_accent">#D0BCFF</color>
     <color name="widget_divider">#33FFFFFF</color>
+
+    <!-- Picker palette (dark) -->
+    <color name="picker_bg">#141218</color>
+    <color name="picker_card">#1F1B25</color>
+    <color name="picker_card_stroke">#33FFFFFF</color>
+    <color name="picker_text_primary">#E6E1E9</color>
+    <color name="picker_text_secondary">#A8A1B5</color>
+    <color name="picker_accent">#D0BCFF</color>
+    <color name="picker_icon_bg">#2E2640</color>
 </resources>
+

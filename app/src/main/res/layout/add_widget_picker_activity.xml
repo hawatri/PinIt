@@ -3,36 +3,103 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="?android:attr/colorBackground">
+    android:background="@color/picker_bg">
 
-    <TextView
-        android:id="@+id/picker_title"
+    <!-- Header -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Choose a note"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:padding="16dp"
-        android:textColor="?android:attr/textColorPrimary" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="20dp">
 
-    <TextView
-        android:id="@+id/picker_empty"
+        <FrameLayout
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/picker_icon_bg">
+            <ImageView
+                android:id="@+id/picker_header_icon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:contentDescription="Type" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="14dp">
+            <TextView
+                android:id="@+id/picker_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Choose a note"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/picker_text_primary"
+                android:singleLine="true"
+                android:ellipsize="end" />
+            <TextView
+                android:id="@+id/picker_subtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textColor="@color/picker_text_secondary"
+                android:singleLine="true"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Empty state (centered, with icon) -->
+    <LinearLayout
+        android:id="@+id/picker_empty_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="No notes yet. Create one in PinIt first."
-        android:textSize="14sp"
-        android:padding="24dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
         android:gravity="center"
-        android:textColor="?android:attr/textColorSecondary"
-        android:visibility="gone" />
+        android:padding="32dp"
+        android:visibility="gone">
 
+        <FrameLayout
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:background="@drawable/picker_icon_bg">
+            <ImageView
+                android:id="@+id/picker_empty_icon"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center"
+                android:contentDescription="Empty" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/picker_empty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:textColor="@color/picker_text_secondary"
+            android:gravity="center"
+            android:paddingTop="16dp"
+            android:lineSpacingExtra="2dp" />
+    </LinearLayout>
+
+    <!-- List of notes (cards) -->
     <ListView
         android:id="@+id/picker_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:divider="@android:color/transparent"
-        android:dividerHeight="4dp"
-        android:paddingHorizontal="8dp"
-        android:paddingBottom="16dp" />
+        android:dividerHeight="10dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="24dp"
+        android:clipToPadding="false"
+        android:scrollbars="none" />
 </LinearLayout>

@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
 import com.hawatri.pinit.R
@@ -25,10 +26,11 @@ import kotlinx.coroutines.withContext
 /**
  * Launched by the launcher when the user drops any Add-X widget on the home screen.
  * The provider class identifies which note type to filter by — the picker only shows
- * matching notes, and the title reflects the type ("Choose a Note", "Choose a Checklist",
- * etc.).
+ * matching notes, the title and header icon reflect the type.
  *
  * Locked notes never appear in the picker.
+ *
+ * Themed via Theme.PinIt.Picker (DayNight) so light/dark mode follow the system.
  */
 class AddWidgetConfigActivity : Activity() {
 
@@ -59,11 +61,20 @@ class AddWidgetConfigActivity : Activity() {
 
         setContentView(R.layout.add_widget_picker_activity)
         val list = findViewById<ListView>(R.id.picker_list)
-        val empty = findViewById<TextView>(R.id.picker_empty)
+        val emptyContainer = findViewById<LinearLayout>(R.id.picker_empty_container)
+        val emptyText = findViewById<TextView>(R.id.picker_empty)
+        val emptyIcon = findViewById<ImageView>(R.id.picker_empty_icon)
         val title = findViewById<TextView>(R.id.picker_title)
+        val subtitle = findViewById<TextView>(R.id.picker_subtitle)
+        val headerIcon = findViewById<ImageView>(R.id.picker_header_icon)
 
         title.text = headerForType(filterType)
-        empty.text = emptyMsgForType(filterType)
+        subtitle.text = subtitleForType(filterType)
+        emptyText.text = emptyMsgForType(filterType)
+        val typeIcon = filterType?.let { WidgetTypeRegistry.entryForType(it)?.iconRes }
+            ?: R.drawable.ic_widget_text
+        headerIcon.setImageResource(typeIcon)
+        emptyIcon.setImageResource(typeIcon)
 
         CoroutineScope(Dispatchers.IO).launch {
             val notes = try {
@@ -77,9 +88,14 @@ class AddWidgetConfigActivity : Activity() {
 
             withContext(Dispatchers.Main) {
                 if (notes.isEmpty()) {
-                    empty.visibility = View.VISIBLE
+                    emptyContainer.visibility = View.VISIBLE
                     list.visibility = View.GONE
+                    subtitle.visibility = View.GONE
                 } else {
+                    emptyContainer.visibility = View.GONE
+                    list.visibility = View.VISIBLE
+                    subtitle.visibility = View.VISIBLE
+                    subtitle.text = "${notes.size} ${if (notes.size == 1) "match" else "matches"}"
                     list.adapter = PickerAdapter(notes) { note ->
                         AddWidgetPrefs.setNoteId(this@AddWidgetConfigActivity, widgetId, note.id)
                         AddWidgetRenderer.updateOne(this@AddWidgetConfigActivity, widgetId)
@@ -106,18 +122,32 @@ class AddWidgetConfigActivity : Activity() {
         else -> "Choose a note"
     }
 
+    private fun subtitleForType(type: String?): String = when (type) {
+        NoteType.TEXT -> "Pick a text note to display"
+        NoteType.LIST -> "Pick a checklist to pin to home"
+        NoteType.QR -> "Pick a QR code to display"
+        NoteType.LINK -> "Pick a saved link"
+        NoteType.CONTACT -> "Pick a contact for one-tap dial"
+        NoteType.LOCATION -> "Pick a location for quick navigation"
+        NoteType.APPLIST -> "Pick an app list"
+        NoteType.IMAGE -> "Pick an image note"
+        NoteType.PDF -> "Pick a PDF note"
+        NoteType.AUDIO -> "Pick a voice memo"
+        else -> "Pick a note to display"
+    }
+
     private fun emptyMsgForType(type: String?): String = when (type) {
-        NoteType.TEXT -> "No text notes yet. Create one in PinIt first."
-        NoteType.LIST -> "No checklists yet. Create one in PinIt first."
-        NoteType.QR -> "No QR codes yet. Create one in PinIt first."
-        NoteType.LINK -> "No link notes yet. Create one in PinIt first."
-        NoteType.CONTACT -> "No contact notes yet. Create one in PinIt first."
-        NoteType.LOCATION -> "No location notes yet. Create one in PinIt first."
-        NoteType.APPLIST -> "No app lists yet. Create one in PinIt first."
-        NoteType.IMAGE -> "No image notes yet. Create one in PinIt first."
-        NoteType.PDF -> "No PDF notes yet. Create one in PinIt first."
-        NoteType.AUDIO -> "No audio notes yet. Create one in PinIt first."
-        else -> "No notes yet. Create one in PinIt first."
+        NoteType.TEXT -> "No text notes yet.\nCreate one in PinIt first."
+        NoteType.LIST -> "No checklists yet.\nCreate one in PinIt first."
+        NoteType.QR -> "No QR codes yet.\nCreate one in PinIt first."
+        NoteType.LINK -> "No link notes yet.\nCreate one in PinIt first."
+        NoteType.CONTACT -> "No contact notes yet.\nCreate one in PinIt first."
+        NoteType.LOCATION -> "No location notes yet.\nCreate one in PinIt first."
+        NoteType.APPLIST -> "No app lists yet.\nCreate one in PinIt first."
+        NoteType.IMAGE -> "No image notes yet.\nCreate one in PinIt first."
+        NoteType.PDF -> "No PDF notes yet.\nCreate one in PinIt first."
+        NoteType.AUDIO -> "No audio notes yet.\nCreate one in PinIt first."
+        else -> "No notes yet.\nCreate one in PinIt first."
     }
 
     private class PickerAdapter(
