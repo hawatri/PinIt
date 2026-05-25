@@ -573,8 +573,22 @@ fun NotesGrid(
                         true
                     } else false
                 },
-                positionalThreshold = { totalDistance -> totalDistance * 0.45f }
+                // Require ~90% of the card width before the swipe commits — accidental
+                // brush-swipes during scrolling were archiving notes by mistake. The
+                // user has to deliberately drag almost the whole card off the edge now.
+                positionalThreshold = { totalDistance -> totalDistance * 0.9f }
             )
+
+            // After Undo restores an archived note, Compose may reuse the same
+            // SwipeToDismissBox slot — the dismiss state would still be EndToStart
+            // and leave a red archive background behind the restored card. Reset the
+            // state whenever the box thinks it's been swiped but the note isn't
+            // archived (the only way that combination happens is post-undo).
+            LaunchedEffect(dismissState.currentValue, note.isArchived) {
+                if (dismissState.currentValue != SwipeToDismissBoxValue.Settled && !note.isArchived) {
+                    dismissState.reset()
+                }
+            }
 
             SwipeToDismissBox(
                 state = dismissState,
