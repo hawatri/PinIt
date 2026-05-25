@@ -99,6 +99,9 @@ dependencies {
     // ZXing — QR code generation
     implementation("com.google.zxing:core:3.5.3")
 
+    // Drag-to-reorder for LazyVerticalStaggeredGrid (manual sort mode)
+    implementation("sh.calvin.reorderable:reorderable:2.4.0")
+
     // Google Sign-In (Drive scope)
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 

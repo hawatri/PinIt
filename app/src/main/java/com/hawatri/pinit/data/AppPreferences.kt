@@ -16,6 +16,7 @@ object AppPreferences {
     private const val KEY_LAST_SYNC = "last_sync_at"
     private const val KEY_INITIAL_MERGE_DONE = "initial_merge_done"
     private const val KEY_ONBOARDING_DONE = "onboarding_done"
+    private const val KEY_MANUAL_ORDER = "manual_order"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -73,5 +74,15 @@ object AppPreferences {
 
     fun setOnboardingDone(context: Context, done: Boolean) {
         prefs(context).edit().putBoolean(KEY_ONBOARDING_DONE, done).apply()
+    }
+
+    /** Comma-separated list of note ids in user-defined manual order. */
+    fun getManualOrder(context: Context): List<String> {
+        val raw = prefs(context).getString(KEY_MANUAL_ORDER, null) ?: return emptyList()
+        return raw.split(",").filter { it.isNotBlank() }
+    }
+
+    fun setManualOrder(context: Context, ids: List<String>) {
+        prefs(context).edit().putString(KEY_MANUAL_ORDER, ids.joinToString(",")).apply()
     }
 }

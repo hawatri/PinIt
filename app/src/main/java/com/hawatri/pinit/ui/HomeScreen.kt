@@ -56,7 +56,10 @@ import com.hawatri.pinit.data.NoteType
 import androidx.compose.animation.togetherWith
 import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.viewmodel.PinItViewModel
+import com.hawatri.pinit.data.AppPreferences
 import com.hawatri.pinit.widget.AddWidgets
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyStaggeredGridState
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.animation.ExperimentalAnimationApi::class)
 @Composable
@@ -89,7 +92,17 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedLabel by remember { mutableStateOf<String?>(null) }
     var showSortMenu by remember { mutableStateOf(false) }
-    var sortOrder by remember { mutableStateOf(SortOrder.NEWEST_FIRST) }
+    // Persisted manual order — list of note ids the user dragged into shape. Empty
+    // means "never reordered" so we fall back to NEWEST_FIRST.
+    var manualOrder by remember { mutableStateOf<List<String>>(AppPreferences.getManualOrder(context)) }
+    var sortOrder by remember {
+        mutableStateOf(if (manualOrder.isNotEmpty()) SortOrder.MANUAL else SortOrder.NEWEST_FIRST)
+    }
+    // Reorder mode is on while the user is dragging cards around. Tap ✓ to commit
+    // the new order, ✗ to discard. Disables every other gesture (clicks, long-press,
+    // selection mode) so the only thing the user can do is drag.
+    var reorderMode by remember { mutableStateOf(false) }
+    var draftOrder by remember { mutableStateOf<List<Note>>(emptyList()) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var lastDeletedNote by remember { mutableStateOf<Note?>(null) }
@@ -289,7 +302,29 @@ fun HomeScreen(
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (isSelectionMode) {
+                if (reorderMode) {
+                    // Drag-to-reorder top bar — ✗ discards the draft, ✓ commits and exits.
+                    TopAppBar(
+                        title = { Text("Drag to reorder") },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                reorderMode = false
+                                draftOrder = emptyList()
+                                if (manualOrder.isEmpty()) sortOrder = SortOrder.NEWEST_FIRST
+                            }) { Icon(Icons.Filled.Close, "Discard") }
+                        },
+                        actions = {
+                            IconButton(onClick = {
+                                val ids = draftOrder.map { it.id }
+                                manualOrder = ids
+                                AppPreferences.setManualOrder(context, ids)
+                                reorderMode = false
+                                draftOrder = emptyList()
+                            }) { Icon(Icons.Filled.Check, "Save order") }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                    )
+                } else if (isSelectionMode) {
                     TopAppBar(
                         title = { Text(selectedNoteIds.size.toString()) },
                         navigationIcon = {
@@ -347,7 +382,18 @@ fun HomeScreen(
                                 val isSelected = sortOrder == order
                                 DropdownMenuItem(
                                     text = { Text(order.label) },
-                                    onClick = { sortOrder = order; showSortMenu = false },
+                                    onClick = {
+                                        showSortMenu = false
+                                        if (order == SortOrder.MANUAL) {
+                                            // Enter reorder mode — the snapshot is taken below
+                                            // via LaunchedEffect(reorderMode) so we can use the
+                                            // already-computed displayNotes.
+                                            reorderMode = true
+                                            sortOrder = SortOrder.MANUAL
+                                        } else {
+                                            sortOrder = order
+                                        }
+                                    },
                                     trailingIcon = if (isSelected) ({ Icon(Icons.Filled.Check, null, modifier = Modifier.size(16.dp)) }) else null
                                 )
                             }
@@ -373,7 +419,22 @@ fun HomeScreen(
                         SortOrder.OLDEST_FIRST -> list.sortedBy { it.timestamp }
                         SortOrder.TITLE_AZ -> list.sortedBy { it.title.lowercase() }
                         SortOrder.TITLE_ZA -> list.sortedByDescending { it.title.lowercase() }
+                        SortOrder.MANUAL -> {
+                            val rank = manualOrder.withIndex().associate { it.value to it.index }
+                            list.sortedWith(
+                                compareBy(
+                                    { rank[it.id] ?: Int.MAX_VALUE },
+                                    { -it.timestamp }
+                                )
+                            )
+                        }
                     }
+                }
+
+                // Snapshot the current visible list as the reorder draft when the user
+                // enters reorder mode. Subsequent drags mutate draftOrder; ✓ commits.
+                LaunchedEffect(reorderMode) {
+                    if (reorderMode) draftOrder = displayNotes
                 }
 
                 androidx.compose.animation.AnimatedContent(
@@ -429,8 +490,12 @@ fun HomeScreen(
                     }
                     // Home / Pinned tabs
                     displayNotes.isNotEmpty() -> {
+                        // In reorder mode the user is editing draftOrder; outside it
+                        // we just show the sorted displayNotes. draftOrder is committed
+                        // to manualOrder when the user taps ✓ in the reorder top bar.
+                        val gridSource = if (reorderMode) draftOrder else displayNotes
                         NotesGrid(
-                            notes = displayNotes,
+                            notes = gridSource,
                             selectedNoteIds = selectedNoteIds,
                             isSelectionMode = isSelectionMode,
                             onNoteClick = { id ->
@@ -462,7 +527,12 @@ fun HomeScreen(
                                 viewModel.updateNote(newNote)
                                 if (newNote.isPinned) notificationHelper.pinNoteToNotification(newNote.id, newNote.title, newNote.text, true)
                             },
-                            onArchiveNote = { archiveWithUndo(it) }
+                            reorderMode = reorderMode,
+                            onMove = { from, to ->
+                                draftOrder = draftOrder.toMutableList().apply {
+                                    add(to, removeAt(from))
+                                }
+                            }
                         )
                     }
                     else -> {
@@ -556,9 +626,16 @@ fun NotesGrid(
     onPinClick: (Note) -> Unit,
     onCopyClick: (String) -> Unit,
     onToggleAllClick: (Note) -> Unit,
-    onArchiveNote: (Note) -> Unit = {}
+    reorderMode: Boolean = false,
+    onMove: (from: Int, to: Int) -> Unit = { _, _ -> }
 ) {
+    val gridState = androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState()
+    val reorderState = rememberReorderableLazyStaggeredGridState(gridState) { from, to ->
+        onMove(from.index, to.index)
+    }
+
     LazyVerticalStaggeredGrid(
+        state = gridState,
         columns = StaggeredGridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 88.dp),
@@ -566,77 +643,30 @@ fun NotesGrid(
         verticalItemSpacing = 8.dp
     ) {
         items(notes, key = { it.id }) { note ->
-            val dismissState = rememberSwipeToDismissBoxState(
-                confirmValueChange = { value ->
-                    if (value == SwipeToDismissBoxValue.EndToStart && !isSelectionMode) {
-                        onArchiveNote(note)
-                        true
-                    } else false
-                },
-                // Require nearly the full card width (99%) before the swipe commits —
-                // accidental brush-swipes during scrolling were archiving notes by
-                // mistake. The user has to deliberately drag the whole card off the
-                // edge now.
-                positionalThreshold = { totalDistance -> totalDistance * 0.99f }
-            )
-
-            // After Undo restores an archived note, Compose may reuse the same
-            // SwipeToDismissBox slot — the dismiss state would still be EndToStart
-            // and leave a red archive background behind the restored card. Reset the
-            // state whenever the box thinks it's been swiped but the note isn't
-            // archived (the only way that combination happens is post-undo).
-            LaunchedEffect(dismissState.currentValue, note.isArchived) {
-                if (dismissState.currentValue != SwipeToDismissBoxValue.Settled && !note.isArchived) {
-                    dismissState.reset()
-                }
-            }
-
-            SwipeToDismissBox(
-                state = dismissState,
-                enableDismissFromStartToEnd = false,
-                enableDismissFromEndToStart = !isSelectionMode,
-                modifier = Modifier.animateItem(
-                    fadeInSpec = androidx.compose.animation.core.tween(220),
-                    fadeOutSpec = androidx.compose.animation.core.tween(180),
-                    placementSpec = androidx.compose.animation.core.spring(
-                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
-                        stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
-                    )
-                ),
-                backgroundContent = {
-                    // Only render the archive background while the user is actually
-                    // swiping. Without this guard, translucent colored cards reveal the
-                    // archive icon behind them at rest.
-                    if (dismissState.currentValue != SwipeToDismissBoxValue.Settled ||
-                        dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
-                        val color by animateColorAsState(
-                            targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
-                                MaterialTheme.colorScheme.errorContainer
-                            else MaterialTheme.colorScheme.surfaceVariant,
-                            label = "swipe_bg"
-                        )
-                        Box(
-                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).background(color),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            Icon(
-                                Icons.Filled.Archive, "Archive",
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.padding(end = 16.dp)
-                            )
-                        }
-                    }
-                }
-            ) {
-                NoteCard(
-                    note = note,
-                    isSelected = selectedNoteIds.contains(note.id),
-                    onClick = { onNoteClick(note.id) },
-                    onLongClick = { onNoteLongClick(note.id) },
-                    onPinClick = { onPinClick(note) },
-                    onCopyClick = onCopyClick,
-                    onToggleAllClick = onToggleAllClick
+            ReorderableItem(reorderState, key = note.id) { isDragging ->
+                val tint by animateColorAsState(
+                    targetValue = if (isDragging) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                                  else androidx.compose.ui.graphics.Color.Transparent,
+                    label = "drag_tint"
                 )
+                Box(
+                    modifier = Modifier
+                        .background(tint)
+                        .then(
+                            if (reorderMode) Modifier.longPressDraggableHandle()
+                            else Modifier
+                        )
+                ) {
+                    NoteCard(
+                        note = note,
+                        isSelected = selectedNoteIds.contains(note.id),
+                        onClick = { if (!reorderMode) onNoteClick(note.id) },
+                        onLongClick = { if (!reorderMode) onNoteLongClick(note.id) },
+                        onPinClick = { if (!reorderMode) onPinClick(note) },
+                        onCopyClick = if (reorderMode) ({}) else onCopyClick,
+                        onToggleAllClick = if (reorderMode) ({}) else onToggleAllClick
+                    )
+                }
             }
         }
     }
@@ -1409,7 +1439,8 @@ enum class SortOrder(val label: String) {
     NEWEST_FIRST("Newest first"),
     OLDEST_FIRST("Oldest first"),
     TITLE_AZ("Title A → Z"),
-    TITLE_ZA("Title Z → A")
+    TITLE_ZA("Title Z → A"),
+    MANUAL("Manual order")
 }
 
 @Composable
