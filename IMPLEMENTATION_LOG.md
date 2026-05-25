@@ -561,3 +561,47 @@ Pattern applied to each screen:
 - No schema or data-model change — `labels: List<String>` was already on `Note`. The screens just stopped silently dropping it.
 - Each save guard mirrors the existing "do we have something worth saving" check used by the Save button on that screen (e.g. `name.isNotBlank() || phoneNumber.isNotBlank()` for contacts, `selectedImageUri != null` for images, `currentFilePath != null` for audio). If the user opens the label picker too early, picking a label is a no-op — they still need real content first.
 - Reuses the existing `LabelsEditorSheet` (full-screen Cancel/Save dialog with search-and-create) — no new UI was needed.
+
+---
+
+## Session: Image and PDF previews everywhere
+
+### Problem
+- Pinned IMAGE notifications showed the raw URI string (`content://media/picker/0/com.android.providers.media.photopicker/media/<id>`) instead of the picture.
+- Pinned PDF notifications showed the literal text "PDF Document" with no thumbnail.
+- Edit screens for both types only rendered a tiny icon/title row with no preview after picking the file.
+- Home cards were the same — image notes had a thumbnail but PDFs were just an icon + filename row.
+
+### Root cause
+- `NotificationHelper` had no IMAGE / PDF branch — both fell through the default `else` and were rendered as `BigTextStyle` over `text`. For IMAGE/PDF, `text` is the URI string, hence the dump.
+- `NewImageScreen` / `NewPDFScreen` were calling `pinNoteToNotification(savedId, title, "")` (or `"PDF Document"`), so even if a branch existed, the helper had nothing to render from.
+
+### Fix — `util/PdfUtils.kt` (new)
+- `PdfUtils.renderFirstPage(context, uri, maxW, maxH)` — opens the URI via `ContentResolver.openFileDescriptor`, builds a `PdfRenderer`, paints the first page onto a `Bitmap` over a white background (many PDFs render with a transparent canvas otherwise), and returns it. Aspect-preserving downscale to fit `maxW × maxH`. Returns null on any failure (revoked URI, deleted file, password-protected PDF) so callers can fall back gracefully.
+- `ImageUriUtils.decodeBitmap(context, uri | uriString, maxDimension)` — two-pass decode (`inJustDecodeBounds` first, then `inSampleSize`) so big photos don't OOM the notification process.
+
+### Fix — `NotificationHelper` IMAGE / PDF branches
+- **IMAGE**: decodes the URI via `ImageUriUtils.decodeBitmap`, attaches as `largeIcon`, wraps in `BigPictureStyle().bigPicture(bm).bigLargeIcon(null)`. Adds an **Open** action that fires `ACTION_VIEW` with `image/*` MIME. Falls back to plain "Image" body if decode fails.
+- **PDF**: renders the first page via `PdfUtils.renderFirstPage`, attaches as `largeIcon` + `BigPictureStyle` (with `setSummaryText(title)`). Adds an **Open** action that fires `ACTION_VIEW` with `application/pdf` MIME. Falls back to `BigTextStyle("PDF Document")` if render fails (e.g. password-protected). Both branches grant `FLAG_GRANT_READ_URI_PERMISSION` on the open intent.
+
+### Fix — `NewImageScreen` / `NewPDFScreen` pin call sites
+- Both now pass the URI as `text` and `noteType = NoteType.IMAGE / PDF` so the helper takes the new branches. Previously they passed empty/static strings.
+
+### Fix — PDF home card thumbnail
+- `NoteCard` `PDF` branch now does the same `PdfUtils.renderFirstPage(...)` (memoized via `remember(note.text)` so it's not redone on every recomposition) and renders the result on a white 140 dp surface above the existing icon + filename row. If render fails, the row alone is shown.
+
+### Fix — PDF edit-screen thumbnail
+- `NewPDFScreen` selected-state now shows a 220 dp first-page preview above the title field, matching the way Image notes show their thumbnail.
+
+**Files:**
+- `util/PdfUtils.kt` (new — `PdfUtils.renderFirstPage` + `ImageUriUtils.decodeBitmap`)
+- `util/NotificationHelper.kt` (IMAGE + PDF branches)
+- `ui/NewImageScreen.kt` (pass URI + noteType when pinning)
+- `ui/NewPDFScreen.kt` (pass URI + noteType when pinning, plus first-page preview in the selected-state card)
+- `ui/HomeScreen.kt` (PDF card branch shows first-page bitmap)
+
+### Notes
+- `PdfRenderer` is part of `android.graphics.pdf`, available since API 21 — no new dependency needed.
+- Notification bitmaps are limited to ~1 MB by the system — `PdfUtils` and `ImageUriUtils` cap at 1024 px which lands well under that. Larger source PDFs / images simply downscale.
+- Bitmap decoding happens on the calling thread (the pin-toggle callback). For typical document/photo sizes this is well under 100 ms; if it ever becomes a bottleneck, move it to `Dispatchers.IO`.
+- URI-based opens use `FLAG_GRANT_READ_URI_PERMISSION` — the same flag that `NewImageScreen` and `NewPDFScreen` already take persistably when picking the file, so notification taps work even after a reboot.

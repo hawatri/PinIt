@@ -266,6 +266,64 @@ class NotificationHelper(private val context: Context) {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             ))
             builder.addAction(0, "Remove", removePendingIntent)
+        } else if (noteType == com.hawatri.pinit.data.NoteType.IMAGE) {
+            builder.setContentTitle(displayTitle)
+            val bitmap = if (text.isNotBlank()) ImageUriUtils.decodeBitmap(context, text, 1024) else null
+            if (bitmap != null) {
+                builder.setLargeIcon(bitmap)
+                builder.setStyle(
+                    NotificationCompat.BigPictureStyle()
+                        .bigPicture(bitmap)
+                        .bigLargeIcon(null as Bitmap?)
+                )
+            } else {
+                builder.setContentText("Image")
+            }
+            if (text.isNotBlank()) {
+                try {
+                    val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(Uri.parse(text), "image/*")
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    val viewPending = PendingIntent.getActivity(
+                        context, (noteId + "_open").hashCode(), viewIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    builder.addAction(0, "Open", viewPending)
+                } catch (e: Exception) { /* ignore */ }
+            }
+            builder.addAction(0, "Remove", removePendingIntent)
+        } else if (noteType == com.hawatri.pinit.data.NoteType.PDF) {
+            builder.setContentTitle(displayTitle)
+            builder.setContentText("PDF Document")
+            val bitmap = if (text.isNotBlank()) {
+                try { PdfUtils.renderFirstPage(context, Uri.parse(text), 1024, 1024) } catch (e: Exception) { null }
+            } else null
+            if (bitmap != null) {
+                builder.setLargeIcon(bitmap)
+                builder.setStyle(
+                    NotificationCompat.BigPictureStyle()
+                        .bigPicture(bitmap)
+                        .bigLargeIcon(null as Bitmap?)
+                        .setSummaryText(displayTitle)
+                )
+            } else {
+                builder.setStyle(NotificationCompat.BigTextStyle().bigText("PDF Document"))
+            }
+            if (text.isNotBlank()) {
+                try {
+                    val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(Uri.parse(text), "application/pdf")
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    val viewPending = PendingIntent.getActivity(
+                        context, (noteId + "_open").hashCode(), viewIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    builder.addAction(0, "Open", viewPending)
+                } catch (e: Exception) { /* ignore */ }
+            }
+            builder.addAction(0, "Remove", removePendingIntent)
         } else if (noteType == com.hawatri.pinit.data.NoteType.QR) {
             builder.setContentTitle(displayTitle)
             builder.setContentText(text)

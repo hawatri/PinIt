@@ -670,6 +670,27 @@ fun NoteCard(
                     }
                 }
                 NoteType.PDF -> {
+                    val pdfBitmap = remember(note.text) {
+                        if (note.text.isNotBlank()) {
+                            try { com.hawatri.pinit.util.PdfUtils.renderFirstPage(context, Uri.parse(note.text), 512, 512) }
+                            catch (e: Exception) { null }
+                        } else null
+                    }
+                    if (pdfBitmap != null) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.White,
+                            modifier = Modifier.fillMaxWidth().height(140.dp)
+                        ) {
+                            androidx.compose.foundation.Image(
+                                bitmap = pdfBitmap.asImageBitmap(),
+                                contentDescription = "PDF preview",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier.fillMaxSize().padding(4.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.PictureAsPdf, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.width(6.dp))

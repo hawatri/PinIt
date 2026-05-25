@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
@@ -25,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.data.NoteType
 import com.hawatri.pinit.util.NotificationHelper
+import com.hawatri.pinit.util.PdfUtils
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import java.util.UUID
 
@@ -130,7 +134,7 @@ fun NewPDFScreen(
                         IconButton(onClick = {
                             isPinned = !isPinned
                             val savedId = save(isPinned)
-                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, pdfTitle.ifBlank { "PDF" }, "PDF Document")
+                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, pdfTitle.ifBlank { "PDF" }, selectedPdfUri?.toString() ?: "", isList = false, noteType = NoteType.PDF)
                             else notificationHelper.unpinNoteFromNotification(savedId)
                         }) {
                             Icon(
@@ -175,31 +179,50 @@ fun NewPDFScreen(
                         }
                     }
                 } else {
-                    Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.PictureAsPdf, "PDF", modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("*Mandatory field", color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
-                            TextField(
-                                value = pdfTitle,
-                                onValueChange = { pdfTitle = it },
-                                placeholder = { Text("Title*", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
-                                ),
-                                textStyle = TextStyle(fontSize = 16.sp),
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                    val pdfBitmap = remember(selectedPdfUri) {
+                        selectedPdfUri?.let { PdfUtils.renderFirstPage(context, it, 1024, 1024) }
+                    }
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        if (pdfBitmap != null) {
+                            Surface(
+                                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                                color = Color.White,
+                                modifier = Modifier.fillMaxWidth().height(220.dp)
+                            ) {
+                                Image(
+                                    bitmap = pdfBitmap.asImageBitmap(),
+                                    contentDescription = "PDF first page",
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier.fillMaxSize().padding(8.dp)
+                                )
+                            }
                         }
-                        Box(
-                            modifier = Modifier.size(40.dp).clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
-                                .clickable { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Filled.FolderOpen, "Change", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(20.dp))
+                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.PictureAsPdf, "PDF", modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.error)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("*Mandatory field", color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+                                TextField(
+                                    value = pdfTitle,
+                                    onValueChange = { pdfTitle = it },
+                                    placeholder = { Text("Title*", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
+                                    ),
+                                    textStyle = TextStyle(fontSize = 16.sp),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            Box(
+                                modifier = Modifier.size(40.dp).clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+                                    .clickable { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Filled.FolderOpen, "Change", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(20.dp))
+                            }
                         }
                     }
                 }

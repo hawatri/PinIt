@@ -132,7 +132,7 @@ fun NewImageScreen(
                         IconButton(onClick = {
                             isPinned = !isPinned
                             val savedId = save(isPinned)
-                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, imageTitle.ifBlank { "Image" }, "")
+                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, imageTitle.ifBlank { "Image" }, selectedImageUri?.toString() ?: "", isList = false, noteType = NoteType.IMAGE)
                             else notificationHelper.unpinNoteFromNotification(savedId)
                         }) {
                             Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",

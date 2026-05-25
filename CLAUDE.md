@@ -80,13 +80,15 @@ res/layout/    → notif_custom_list.xml + notif_list_item.xml (LIST checklist),
   - **QR**: `BigPictureStyle` showing the regenerated QR bitmap (via `QrUtils.generateQrBitmap`); URL as content text. **Open** action when the payload is a URI (http/https/tel/mailto/sms/geo/upi/market or anything with `://`); falls back to **Copy**.
   - **LINK**: `BigTextStyle` with title + description + URL; **Open** action fires `ACTION_VIEW` for the (normalised) URL; **Copy** also present.
   - **CONTACT**: `BigTextStyle` with name as title, phone as body. **Call** action fires `Intent.ACTION_DIAL` with `tel:<phone>` (no `CALL_PHONE` permission required), plus **Copy** and **Remove**.
+  - **IMAGE**: `BigPictureStyle` with the decoded image bitmap (via `ImageUriUtils.decodeBitmap`). **Open** action fires `ACTION_VIEW` with `image/*` MIME and `FLAG_GRANT_READ_URI_PERMISSION`.
+  - **PDF**: `BigPictureStyle` with the first page rendered via `PdfUtils.renderFirstPage`. **Open** action fires `ACTION_VIEW` with `application/pdf` MIME. Falls back to `BigTextStyle("PDF Document")` if render fails.
   - **TEXT** (default): `BigTextStyle` with **Copy** + **Remove** actions.
 - All pinned notifications share group key `com.hawatri.pinit.PINNED` and a summary notification ("N pinned items") that's recomputed on every pin/unpin.
 - `NotificationReceiver` handles: `ACTION_TOGGLE_ITEM`, `ACTION_CHECK_ALL`, `ACTION_COPY_TEXT`, `ACTION_REMOVE_PIN` (also clears `isPinned` in DB), `ACTION_ADD_TASK` (RemoteInput).
 - `AlarmReceiver` fires scheduled reminders set via `ReminderHelper` using `AlarmManager.setExactAndAllowWhileIdle`.
 - `BootReceiver` re-posts all pinned notifications on `BOOT_COMPLETED` so pins survive reboot — passes `note.noteType` so custom layouts are restored correctly.
 - Locked notes (`isLocked = true`) require biometric auth via `androidx.biometric` before opening — handled in `HomeScreen.handleNoteClick()`.
-- **All pin call sites must pass `noteType`** so the helper picks the right branch. Existing call sites: `NewLocationScreen`, `NewLinkScreen`, `NewQRScreen`, `NewAppListScreen`, `NewContactScreen`, `HomeScreen` (toggle pin, toggle all), `ArchiveScreen`, `BootReceiver`. When adding a new screen that pins, pass `noteType = NoteType.X`.
+- **All pin call sites must pass `noteType`** so the helper picks the right branch. Existing call sites: `NewLocationScreen`, `NewLinkScreen`, `NewQRScreen`, `NewAppListScreen`, `NewContactScreen`, `NewImageScreen`, `NewPDFScreen`, `HomeScreen` (toggle pin, toggle all), `ArchiveScreen`, `BootReceiver`. When adding a new screen that pins, pass `noteType = NoteType.X`.
 
 ## Type-Specific UX
 
@@ -99,8 +101,8 @@ res/layout/    → notif_custom_list.xml + notif_list_item.xml (LIST checklist),
 | LOCATION | `NewLocationScreen` — osmdroid `MapView`, top search bar (`Geocoder.getFromLocationName`), tap-to-place + reverse geocode, my-location FAB, Navigate button | address + Navigate row | BigText + Navigate |
 | CONTACT | `NewContactScreen` — name + phone, picker via `ContactsContract` | phone with icon | BigText name/phone + **Call** (ACTION_DIAL) + Copy |
 | APPLIST | `NewAppListScreen` — Ruppu-style icon grid with circular `+`, modal app picker | row of up to 4 real app icons + `+N` chip | horizontal app icon row, each launches its app |
-| IMAGE | `NewImageScreen` | thumbnail | text + Copy |
-| PDF | `NewPDFScreen` | filename | text + Copy |
+| IMAGE | `NewImageScreen` | thumbnail | BigPicture image + Open |
+| PDF | `NewPDFScreen` — first-page thumbnail above title field | first-page thumbnail + filename row | BigPicture first page + Open |
 | AUDIO | `NewAudioScreen` recorder | duration + play | text + Copy |
 
 ## Labels
@@ -154,6 +156,7 @@ res/layout/    → notif_custom_list.xml + notif_list_item.xml (LIST checklist),
 - **`ACTION_DIAL` over `ACTION_CALL`:** to dodge the runtime `CALL_PHONE` permission. The user taps once more in the dialer, but the app stays permission-light.
 - **`geo:` URIs** in Location/Map intents: works with any installed maps app — no Google Play Services dependency.
 - **QR images are regenerated, not stored:** `QrUtils.generateQrBitmap(text)` runs on the fly in the card, edit screen, and notification. Backwards-compatible with all existing QR notes.
+- **PDF / image previews are also rendered on demand:** `PdfUtils.renderFirstPage(context, uri)` and `ImageUriUtils.decodeBitmap(context, uri)` are used by both the home card and the notification builder. No bitmap is persisted; the source URI in `note.text` is enough. URI permissions taken with `takePersistableUriPermission` survive reboot.
 
 ## Project Documentation
 
