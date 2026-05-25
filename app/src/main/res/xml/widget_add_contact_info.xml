@@ -5,6 +5,7 @@
     android:targetCellWidth="2"
     android:targetCellHeight="1"
     android:initialLayout="@layout/add_widget"
+    android:previewImage="@drawable/widget_preview_add_contact"
     android:configure="com.hawatri.pinit.widget.AddWidgetConfigActivity"
     android:updatePeriodMillis="0"
     android:resizeMode="none"

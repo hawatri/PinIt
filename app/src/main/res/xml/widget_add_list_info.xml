@@ -5,6 +5,7 @@
     android:targetCellWidth="2"
     android:targetCellHeight="3"
     android:initialLayout="@layout/add_widget"
+    android:previewImage="@drawable/widget_preview_add_list"
     android:configure="com.hawatri.pinit.widget.AddWidgetConfigActivity"
     android:updatePeriodMillis="0"
     android:resizeMode="none"

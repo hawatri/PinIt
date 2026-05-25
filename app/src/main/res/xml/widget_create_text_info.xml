@@ -5,6 +5,7 @@
     android:targetCellWidth="1"
     android:targetCellHeight="1"
     android:initialLayout="@layout/create_widget"
+    android:previewImage="@drawable/widget_preview_create_text"
     android:updatePeriodMillis="0"
     android:resizeMode="none"
     android:widgetCategory="home_screen"
