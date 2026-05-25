@@ -5,10 +5,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
@@ -26,8 +29,12 @@ fun TopSearchBar(
     onArchiveClick: () -> Unit,
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
-    onSortClick: (() -> Unit)? = null
+    onSortClick: (() -> Unit)? = null,
+    onSettingsClick: () -> Unit = {},
+    onSignInClick: () -> Unit = {}
 ) {
+    var profileMenuExpanded by remember { mutableStateOf(false) }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -94,19 +101,37 @@ fun TopSearchBar(
                 .clickable { onArchiveClick() }
         )
 
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Person,
-                contentDescription = "Profile",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(24.dp)
-            )
+        Box {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .clickable { profileMenuExpanded = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Person,
+                    contentDescription = "Profile",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            DropdownMenu(
+                expanded = profileMenuExpanded,
+                onDismissRequest = { profileMenuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Settings") },
+                    leadingIcon = { Icon(Icons.Filled.Settings, null) },
+                    onClick = { profileMenuExpanded = false; onSettingsClick() }
+                )
+                DropdownMenuItem(
+                    text = { Text("Sign in") },
+                    leadingIcon = { Icon(Icons.Filled.Login, null) },
+                    onClick = { profileMenuExpanded = false; onSignInClick() }
+                )
+            }
         }
     }
 }

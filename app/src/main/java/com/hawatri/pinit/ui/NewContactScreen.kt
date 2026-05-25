@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,6 +32,8 @@ import com.google.gson.Gson
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.data.NoteType
 import com.hawatri.pinit.util.NotificationHelper
+import com.hawatri.pinit.util.cancelAlarm
+import com.hawatri.pinit.util.formatAlarmText
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import java.util.UUID
 
@@ -78,6 +81,13 @@ fun NewContactScreen(
     var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
     var showLabelsSheet by remember { mutableStateOf(false) }
+    var currentReminderText by remember { mutableStateOf<String?>(null) }
+    var showReminderMenu by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+    val timePickerState = rememberTimePickerState()
+    var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
     val notesList by viewModel.notes.collectAsState()
@@ -96,6 +106,7 @@ fun NewContactScreen(
                 isLocked = existing.isLocked
                 colorHex = existing.colorHex
                 labels = existing.labels
+                currentReminderText = existing.reminderText
                 isInitialized = true
             }
         }
@@ -115,10 +126,20 @@ fun NewContactScreen(
             noteType = NoteType.CONTACT,
             colorHex = colorHex,
             isLocked = isLocked,
-            labels = labels
+            labels = labels,
+            reminderText = currentReminderText
         )
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
+    }
+
+    val reminderPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (!isGranted) android.widget.Toast.makeText(context, "Reminders won't show without notification permission", android.widget.Toast.LENGTH_LONG).show()
+    }
+    fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            reminderPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     val contactPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickContact()) { uri ->
@@ -185,6 +206,47 @@ fun NewContactScreen(
                         Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
                             tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    // Reminder
+                    Box {
+                        IconButton(onClick = {
+                            checkNotificationPermission()
+                            showReminderMenu = true
+                        }) {
+                            Icon(Icons.Filled.Notifications, "Set Reminder",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        DropdownMenu(
+                            expanded = showReminderMenu,
+                            onDismissRequest = { showReminderMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Tomorrow (8:00 AM)") },
+                                onClick = {
+                                    showReminderMenu = false
+                                    if (name.isBlank() && phoneNumber.isBlank()) return@DropdownMenuItem
+                                    val noteToPinId = save()
+                                    val scheduled = com.hawatri.pinit.util.setTomorrowAlarm(
+                                        context = context, noteId = noteToPinId, noteTitle = name.ifBlank { "Contact" }
+                                    )
+                                    if (scheduled) {
+                                        currentReminderText = formatAlarmText(
+                                            java.util.Calendar.getInstance().apply {
+                                                add(java.util.Calendar.DAY_OF_YEAR, 1)
+                                                set(java.util.Calendar.HOUR_OF_DAY, 8)
+                                                set(java.util.Calendar.MINUTE, 0)
+                                                set(java.util.Calendar.SECOND, 0)
+                                            }
+                                        )
+                                        save()
+                                    }
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Pick date and time") },
+                                onClick = { showReminderMenu = false; showDatePicker = true }
+                            )
+                        }
+                    }
                     IconButton(onClick = { showLabelsSheet = true }) {
                         Icon(Icons.Filled.Label, "Label",
                             tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
@@ -214,6 +276,24 @@ fun NewContactScreen(
             verticalArrangement = Arrangement.Bottom
         ) {
             Spacer(modifier = Modifier.weight(1f))
+            if (currentReminderText != null) {
+                AssistChip(
+                    onClick = { showReminderMenu = true },
+                    label = { Text(currentReminderText!!) },
+                    leadingIcon = { Icon(Icons.Filled.Notifications, null, modifier = Modifier.size(16.dp)) },
+                    trailingIcon = {
+                        Icon(
+                            Icons.Filled.Close, "Remove Alarm",
+                            modifier = Modifier.size(16.dp).clickable {
+                                cancelAlarm(context, currentNoteId)
+                                currentReminderText = null
+                                if (name.isNotBlank() || phoneNumber.isNotBlank()) save()
+                            }
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                )
+            }
             Card(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
@@ -259,6 +339,49 @@ fun NewContactScreen(
             allExistingLabels = allLabels,
             onLabelsChange = { labels = it; if (name.isNotBlank() || phoneNumber.isNotBlank()) save() },
             onDismiss = { showLabelsSheet = false }
+        )
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    selectedDateMillis = datePickerState.selectedDateMillis
+                    showDatePicker = false
+                    showTimePicker = true
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
+        ) { DatePicker(state = datePickerState) }
+    }
+
+    if (showTimePicker) {
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Select time") },
+            text = { TimePicker(state = timePickerState) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showTimePicker = false
+                    if (name.isBlank() && phoneNumber.isBlank()) return@TextButton
+                    val calendar = java.util.Calendar.getInstance().apply {
+                        timeInMillis = selectedDateMillis ?: System.currentTimeMillis()
+                        set(java.util.Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        set(java.util.Calendar.MINUTE, timePickerState.minute)
+                    }
+                    val noteToPinId = save()
+                    val scheduled = com.hawatri.pinit.util.scheduleCustomAlarm(
+                        context = context, noteId = noteToPinId, noteTitle = name.ifBlank { "Contact" },
+                        dateMillis = selectedDateMillis, hour = timePickerState.hour, minute = timePickerState.minute
+                    )
+                    if (scheduled) {
+                        currentReminderText = formatAlarmText(calendar)
+                        save()
+                    }
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text("Cancel") } }
         )
     }
 }

@@ -23,6 +23,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -72,6 +73,8 @@ fun HomeScreen(
     onNavigateToNewAudio: () -> Unit = {},
     icsShareUri: android.net.Uri? = null,
     onNavigateToArchive: () -> Unit,
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToSignIn: () -> Unit = {},
     viewModel: PinItViewModel
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
@@ -79,6 +82,7 @@ fun HomeScreen(
     val allNotes by viewModel.notes.collectAsState()
     var selectedNoteIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedNoteIds.isNotEmpty()
+    var showBulkLabelsSheet by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val notificationHelper = remember(context) { NotificationHelper(context) }
     var searchQuery by remember { mutableStateOf("") }
@@ -93,6 +97,34 @@ fun HomeScreen(
     val icsPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) icsImportUri = uri
     }
+    var lastBackPressMs by remember { mutableLongStateOf(0L) }
+
+    // Back navigation:
+    //   - Selection mode → clear selection
+    //   - FAB menu open → close it
+    //   - Bulk labels sheet → close it
+    //   - Labels tab with a drilled-in label → pop the label
+    //   - Pinned (1) or Labels (2) tab → switch to Home
+    //   - Home tab → double-tap within 2s to exit, otherwise toast
+    androidx.activity.compose.BackHandler(enabled = true) {
+        when {
+            isSelectionMode -> selectedNoteIds = emptySet()
+            showFabMenu -> showFabMenu = false
+            showBulkLabelsSheet -> showBulkLabelsSheet = false
+            selectedBottomTab == 2 && selectedLabel != null -> selectedLabel = null
+            selectedBottomTab != 0 -> selectedBottomTab = 0
+            else -> {
+                val now = System.currentTimeMillis()
+                if (now - lastBackPressMs < 2000) {
+                    (context as? android.app.Activity)?.finish()
+                } else {
+                    lastBackPressMs = now
+                    android.widget.Toast.makeText(context, "Press back again to exit", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
 
     // Notification permission gate for pin actions (Android 13+)
     val pendingPinAction = remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -230,6 +262,11 @@ fun HomeScreen(
                                 }) { Icon(Icons.Filled.ContentCopy, "Duplicate") }
                             }
 
+                            // Apply labels to all selected notes
+                            IconButton(onClick = { showBulkLabelsSheet = true }) {
+                                Icon(Icons.Filled.Label, "Add label")
+                            }
+
                             IconButton(onClick = {
                                 selectedNoteIds.forEach { id -> allNotes.find { it.id == id }?.let { archiveWithUndo(it) } }
                                 selectedNoteIds = emptySet()
@@ -248,7 +285,9 @@ fun HomeScreen(
                             onArchiveClick = onNavigateToArchive,
                             searchQuery = searchQuery,
                             onSearchQueryChange = { searchQuery = it },
-                            onSortClick = { showSortMenu = true }
+                            onSortClick = { showSortMenu = true },
+                            onSettingsClick = onNavigateToSettings,
+                            onSignInClick = onNavigateToSignIn
                         )
                         DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
                             SortOrder.entries.forEach { order ->
@@ -388,6 +427,38 @@ fun HomeScreen(
                     uri = uri,
                     viewModel = viewModel,
                     onDismiss = { icsImportUri = null }
+                )
+            }
+
+            // Bulk labels editor — applies labels to all selected notes
+            if (showBulkLabelsSheet) {
+                val selectedNotes = remember(selectedNoteIds, allNotes) {
+                    allNotes.filter { it.id in selectedNoteIds }
+                }
+                // Show labels common to every selected note (intersection) so the user can
+                // see which labels they all share, and add/remove from there.
+                val commonLabels = remember(selectedNotes) {
+                    if (selectedNotes.isEmpty()) emptyList()
+                    else selectedNotes.map { it.labels.toSet() }.reduce { acc, set -> acc intersect set }.toList()
+                }
+                val allKnownLabels = remember(allNotes) { allNotes.flatMap { it.labels }.distinct() }
+                LabelsEditorSheet(
+                    currentLabels = commonLabels,
+                    allExistingLabels = allKnownLabels,
+                    onLabelsChange = { newLabels ->
+                        // Add the labels the user selected to every selected note
+                        // (preserve any per-note labels that aren't in the common set)
+                        selectedNotes.forEach { note ->
+                            val merged = (note.labels + newLabels).distinct()
+                            // Also remove any labels the user unticked from the common set
+                            val removed = commonLabels - newLabels.toSet()
+                            val final = merged.filterNot { it in removed }
+                            viewModel.updateNote(note.copy(labels = final))
+                        }
+                        showBulkLabelsSheet = false
+                        selectedNoteIds = emptySet()
+                    },
+                    onDismiss = { showBulkLabelsSheet = false }
                 )
             }
 
@@ -553,7 +624,14 @@ fun NoteCard(
         colors = CardDefaults.cardColors(containerColor = cardColor),
         border = borderStroke
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Box {
+            // Blur the body when locked. blur() requires Android 12+ (API 31); on
+            // older devices we fall back to a heavy overlay.
+            val supportsBlur = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
+            val contentModifier = if (note.isLocked && supportsBlur) {
+                Modifier.blur(18.dp)
+            } else Modifier
+            Column(modifier = contentModifier.padding(16.dp)) {
             // Title + Pin row
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -912,6 +990,26 @@ fun NoteCard(
                     else -> {
                         Text("Copy", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Icon(Icons.Outlined.ContentCopy, "Copy", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+        }
+            // Lock overlay — sits on top of the blurred content for locked notes
+            if (note.isLocked) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = if (supportsBlur) 0.15f else 0.85f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Filled.Lock, "Locked",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Locked", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f))
                     }
                 }
             }

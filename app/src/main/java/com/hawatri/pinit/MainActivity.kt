@@ -8,10 +8,15 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.hawatri.pinit.data.AppPreferences
+import com.hawatri.pinit.data.ThemeMode
 import com.hawatri.pinit.ui.PinItApp
 import com.hawatri.pinit.ui.theme.PinItTheme
 import androidx.core.view.WindowCompat
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,15 +40,33 @@ class MainActivity : FragmentActivity() {
             intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.toString()
         } else null
 
+        val themeFlow = MutableStateFlow(AppPreferences.getThemeMode(this))
+        themeModeFlow = themeFlow
+
         setContent {
-            PinItTheme {
+            val themeMode by themeFlow.collectAsState()
+            PinItTheme(themeMode = themeMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    PinItApp(sharedText = sharedText, sharedImageUri = sharedImageUri, sharedIcsUri = sharedIcsUri, widgetAction = widgetAction)
+                    PinItApp(
+                        sharedText = sharedText,
+                        sharedImageUri = sharedImageUri,
+                        sharedIcsUri = sharedIcsUri,
+                        widgetAction = widgetAction,
+                        currentTheme = themeMode,
+                        onThemeChange = { mode ->
+                            AppPreferences.setThemeMode(this@MainActivity, mode)
+                            themeFlow.value = mode
+                        }
+                    )
                 }
             }
         }
+    }
+
+    companion object {
+        var themeModeFlow: MutableStateFlow<ThemeMode>? = null
     }
 }

@@ -21,11 +21,19 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.hawatri.pinit.data.NoteDatabase
 import com.hawatri.pinit.data.NoteType
+import com.hawatri.pinit.data.ThemeMode
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import com.hawatri.pinit.viewmodel.PinItViewModelFactory
 
 @Composable
-fun PinItApp(sharedText: String? = null, sharedImageUri: String? = null, sharedIcsUri: String? = null, widgetAction: String? = null) {
+fun PinItApp(
+    sharedText: String? = null,
+    sharedImageUri: String? = null,
+    sharedIcsUri: String? = null,
+    widgetAction: String? = null,
+    currentTheme: ThemeMode = ThemeMode.SYSTEM,
+    onThemeChange: (ThemeMode) -> Unit = {}
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
 
@@ -136,6 +144,8 @@ fun PinItApp(sharedText: String? = null, sharedImageUri: String? = null, sharedI
                 onNavigateToNewAudio = { navController.navigate("new_audio") },
                 icsShareUri = icsShareUri,
                 onNavigateToArchive = { navController.navigate("archive") },
+                onNavigateToSettings = { navController.navigate("settings") },
+                onNavigateToSignIn = { navController.navigate("sign_in") },
                 viewModel = sharedViewModel
             )
         }
@@ -287,6 +297,20 @@ fun PinItApp(sharedText: String? = null, sharedImageUri: String? = null, sharedI
                     }
                 },
                 viewModel = sharedViewModel
+            )
+        }
+
+        composable("settings") {
+            SettingsScreen(
+                currentTheme = currentTheme,
+                onThemeChange = onThemeChange,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("sign_in") {
+            SignInScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }
