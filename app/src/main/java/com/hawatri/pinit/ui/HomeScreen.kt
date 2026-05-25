@@ -56,6 +56,7 @@ import com.hawatri.pinit.data.NoteType
 import androidx.compose.animation.togetherWith
 import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.viewmodel.PinItViewModel
+import com.hawatri.pinit.widget.NoteWidget
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.animation.ExperimentalAnimationApi::class)
 @Composable
@@ -616,15 +617,47 @@ fun NoteCard(
         if (note.noteType == NoteType.APPLIST) try { gson.fromJson(note.text, Array<AppNoteItem>::class.java).toList() } catch (e: Exception) { emptyList() } else emptyList()
     }
 
+    var showCardMenu by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    if (isSelected) onLongClick() else showCardMenu = true
+                }
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = cardColor),
         border = borderStroke
     ) {
         Box {
+            DropdownMenu(expanded = showCardMenu, onDismissRequest = { showCardMenu = false }) {
+                DropdownMenuItem(
+                    text = { Text("Add to Home Screen") },
+                    leadingIcon = { Icon(Icons.Filled.AddToHomeScreen, null) },
+                    onClick = {
+                        showCardMenu = false
+                        if (note.isLocked) {
+                            android.widget.Toast.makeText(context, "Locked notes can't be shown on the home screen", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            val ok = NoteWidget.requestPin(context, note.id)
+                            if (!ok) {
+                                android.widget.Toast.makeText(context, "Your launcher doesn't support widget pinning", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Select") },
+                    leadingIcon = { Icon(Icons.Filled.CheckCircle, null) },
+                    onClick = {
+                        showCardMenu = false
+                        onLongClick()
+                    }
+                )
+            }
             // Blur the body when locked. blur() requires Android 12+ (API 31); on
             // older devices we fall back to a heavy overlay.
             val supportsBlur = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
@@ -931,6 +964,7 @@ fun NoteCard(
             val isLinkType = note.noteType == NoteType.LINK
             val isContactType = note.noteType == NoteType.CONTACT
             val isPdfType = note.noteType == NoteType.PDF
+            val isAudioType = note.noteType == NoteType.AUDIO
 
             Row(
                 modifier = Modifier
@@ -962,6 +996,26 @@ fun NoteCard(
                                     android.widget.Toast.makeText(context, "No PDF viewer found", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
+                            isAudioType -> {
+                                // Share the recording file via FileProvider
+                                val path = audioData?.path
+                                if (!path.isNullOrBlank()) {
+                                    try {
+                                        val file = java.io.File(path)
+                                        val uri = androidx.core.content.FileProvider.getUriForFile(
+                                            context, "${context.packageName}.provider", file
+                                        )
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "audio/*"
+                                            putExtra(Intent.EXTRA_STREAM, uri)
+                                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, "Share recording"))
+                                    } catch (e: Exception) {
+                                        android.widget.Toast.makeText(context, "Could not share recording", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
                             else -> onCopyClick(note.text)
                         }
                     }
@@ -987,6 +1041,10 @@ fun NoteCard(
                         Text("Open PDF", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Icon(Icons.Filled.PictureAsPdf, "Open", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                     }
+                    isAudioType -> {
+                        Text("Share", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
                     else -> {
                         Text("Copy", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Icon(Icons.Outlined.ContentCopy, "Copy", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
@@ -994,12 +1052,16 @@ fun NoteCard(
                 }
             }
         }
-            // Lock overlay — sits on top of the blurred content for locked notes
+            // Lock overlay — sits on top of the blurred content for locked notes.
+            // It absorbs all taps (clickable below) so the underlying Copy/Call/Open
+            // row can't be triggered. Tapping the overlay routes through the card's
+            // onClick, which already gates locked notes behind biometric auth.
             if (note.isLocked) {
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = if (supportsBlur) 0.15f else 0.85f)),
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = if (supportsBlur) 0.15f else 0.85f))
+                        .combinedClickable(onClick = onClick, onLongClick = onLongClick),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1009,7 +1071,7 @@ fun NoteCard(
                             modifier = Modifier.size(28.dp)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Locked", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f))
+                        Text("Tap to unlock", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f))
                     }
                 }
             }

@@ -31,6 +31,7 @@ fun PinItApp(
     sharedImageUri: String? = null,
     sharedIcsUri: String? = null,
     widgetAction: String? = null,
+    widgetOpenNoteId: String? = null,
     currentTheme: ThemeMode = ThemeMode.SYSTEM,
     onThemeChange: (ThemeMode) -> Unit = {}
 ) {
@@ -46,6 +47,7 @@ fun PinItApp(
     val notes by sharedViewModel.notes.collectAsState()
     LaunchedEffect(notes) {
         com.hawatri.pinit.widget.PinItWidget.requestUpdate(context)
+        com.hawatri.pinit.widget.NoteWidget.requestUpdateAll(context)
     }
 
     // Handle widget quick-action intents
@@ -53,6 +55,26 @@ fun PinItApp(
         when (widgetAction) {
             "new_note" -> navController.navigate("new_note")
             "new_list" -> navController.navigate("new_list")
+        }
+    }
+
+    // Handle "open this note" intents fired by tapping a NoteWidget header
+    LaunchedEffect(widgetOpenNoteId, notes) {
+        if (widgetOpenNoteId != null) {
+            val note = notes.find { it.id == widgetOpenNoteId } ?: return@LaunchedEffect
+            val route = when {
+                note.noteType == NoteType.LIST || note.isList -> "new_list?noteId=${note.id}"
+                note.noteType == NoteType.QR -> "new_qr?noteId=${note.id}"
+                note.noteType == NoteType.LINK -> "new_link?noteId=${note.id}"
+                note.noteType == NoteType.CONTACT -> "new_contact?noteId=${note.id}"
+                note.noteType == NoteType.LOCATION -> "new_location?noteId=${note.id}"
+                note.noteType == NoteType.APPLIST -> "new_app_list?noteId=${note.id}"
+                note.noteType == NoteType.IMAGE -> "new_image?noteId=${note.id}"
+                note.noteType == NoteType.PDF -> "new_pdf?noteId=${note.id}"
+                note.noteType == NoteType.AUDIO -> "new_audio?noteId=${note.id}"
+                else -> "new_note?noteId=${note.id}"
+            }
+            navController.navigate(route)
         }
     }
 

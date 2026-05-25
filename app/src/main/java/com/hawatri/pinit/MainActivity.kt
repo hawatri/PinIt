@@ -33,6 +33,7 @@ class MainActivity : FragmentActivity() {
         } else null
 
         val widgetAction = intent?.getStringExtra("WIDGET_ACTION")
+        val widgetOpenNoteId = intent?.getStringExtra("WIDGET_OPEN_NOTE_ID")
 
         @Suppress("DEPRECATION")
         val sharedIcsUri = if (intent?.action == Intent.ACTION_SEND &&
@@ -55,6 +56,7 @@ class MainActivity : FragmentActivity() {
                         sharedImageUri = sharedImageUri,
                         sharedIcsUri = sharedIcsUri,
                         widgetAction = widgetAction,
+                        widgetOpenNoteId = widgetOpenNoteId,
                         currentTheme = themeMode,
                         onThemeChange = { mode ->
                             AppPreferences.setThemeMode(this@MainActivity, mode)

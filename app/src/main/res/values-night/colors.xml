@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget palette (dark) -->
+    <color name="widget_bg">#1C1B1F</color>
+    <color name="widget_surface">#2B2930</color>
+    <color name="widget_outline">#33FFFFFF</color>
+    <color name="widget_text_primary">#E6E1E5</color>
+    <color name="widget_text_secondary">#CAC4D0</color>
+    <color name="widget_accent">#D0BCFF</color>
+    <color name="widget_divider">#33FFFFFF</color>
+</resources>
