@@ -11,6 +11,7 @@ import androidx.core.app.RemoteInput
 import com.google.gson.Gson
 import com.hawatri.pinit.data.NoteDatabase
 import com.hawatri.pinit.ui.ChecklistItemData
+import com.hawatri.pinit.util.AudioPlayback
 import com.hawatri.pinit.util.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +43,23 @@ class NotificationReceiver : BroadcastReceiver() {
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 clipboard.setPrimaryClip(ClipData.newPlainText("Pinned Note", textToCopy))
                 Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+            }
+            NotificationHelper.ACTION_TOGGLE_AUDIO -> {
+                if (noteId == null) return
+                val path = intent.getStringExtra(NotificationHelper.EXTRA_AUDIO_PATH) ?: return
+                AudioPlayback.toggle(context, noteId, path)
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val dao = NoteDatabase.getDatabase(context).noteDao()
+                        val note = dao.getNoteById(noteId)
+                        if (note != null && note.isPinned) {
+                            NotificationHelper(context).pinNoteToNotification(
+                                note.id, note.title, note.text, note.isList, note.noteType
+                            )
+                        }
+                    } finally { pendingResult.finish() }
+                }
             }
             NotificationHelper.ACTION_TOGGLE_ITEM, 
             NotificationHelper.ACTION_CHECK_ALL,

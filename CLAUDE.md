@@ -82,9 +82,10 @@ res/layout/    → notif_custom_list.xml + notif_list_item.xml (LIST checklist),
   - **CONTACT**: `BigTextStyle` with name as title, phone as body. **Call** action fires `Intent.ACTION_DIAL` with `tel:<phone>` (no `CALL_PHONE` permission required), plus **Copy** and **Remove**.
   - **IMAGE**: `BigPictureStyle` with the decoded image bitmap (via `ImageUriUtils.decodeBitmap`). **Open** action fires `ACTION_VIEW` with `image/*` MIME and `FLAG_GRANT_READ_URI_PERMISSION`.
   - **PDF**: `BigPictureStyle` with the first page rendered via `PdfUtils.renderFirstPage`. **Open** action fires `ACTION_VIEW` with `application/pdf` MIME. Falls back to `BigTextStyle("PDF Document")` if render fails.
+  - **AUDIO**: `BigTextStyle` with title + duration label (`m:ss`). **Play** / **Stop** action toggles `AudioPlayback` (process-wide singleton in `util/AudioPlayback.kt`); the receiver re-posts the notification afterwards so the action label flips. Path stored in `AudioNoteData.path` is read directly — recordings live in `filesDir/recordings/`.
   - **TEXT** (default): `BigTextStyle` with **Copy** + **Remove** actions.
 - All pinned notifications share group key `com.hawatri.pinit.PINNED` and a summary notification ("N pinned items") that's recomputed on every pin/unpin.
-- `NotificationReceiver` handles: `ACTION_TOGGLE_ITEM`, `ACTION_CHECK_ALL`, `ACTION_COPY_TEXT`, `ACTION_REMOVE_PIN` (also clears `isPinned` in DB), `ACTION_ADD_TASK` (RemoteInput).
+- `NotificationReceiver` handles: `ACTION_TOGGLE_ITEM`, `ACTION_CHECK_ALL`, `ACTION_COPY_TEXT`, `ACTION_REMOVE_PIN` (also clears `isPinned` in DB), `ACTION_ADD_TASK` (RemoteInput), `ACTION_TOGGLE_AUDIO` (toggles `AudioPlayback` and re-posts the notification so Play/Stop label flips).
 - `AlarmReceiver` fires scheduled reminders set via `ReminderHelper` using `AlarmManager.setExactAndAllowWhileIdle`.
 - `BootReceiver` re-posts all pinned notifications on `BOOT_COMPLETED` so pins survive reboot — passes `note.noteType` so custom layouts are restored correctly.
 - Locked notes (`isLocked = true`) require biometric auth via `androidx.biometric` before opening — handled in `HomeScreen.handleNoteClick()`.
@@ -103,7 +104,7 @@ res/layout/    → notif_custom_list.xml + notif_list_item.xml (LIST checklist),
 | APPLIST | `NewAppListScreen` — Ruppu-style icon grid with circular `+`, modal app picker | row of up to 4 real app icons + `+N` chip | horizontal app icon row, each launches its app |
 | IMAGE | `NewImageScreen` | thumbnail | BigPicture image + Open |
 | PDF | `NewPDFScreen` — first-page thumbnail above title field | first-page thumbnail + filename row | BigPicture first page + Open |
-| AUDIO | `NewAudioScreen` recorder | duration + play | text + Copy |
+| AUDIO | `NewAudioScreen` recorder | Mic + Play/Stop button + duration (tap row to toggle, observes `AudioPlayback.playingNoteId`) | BigText title + duration + **Play / Stop** action |
 
 ## Labels
 

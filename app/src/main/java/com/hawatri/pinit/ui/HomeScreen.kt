@@ -703,14 +703,34 @@ fun NoteCard(
                 }
                 NoteType.AUDIO -> {
                     val durMs = audioData?.durationMs ?: 0L
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    val playingId by com.hawatri.pinit.util.AudioPlayback.playingNoteId.collectAsState()
+                    val isPlayingThis = playingId == note.id
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            audioData?.path?.takeIf { it.isNotBlank() }?.let {
+                                com.hawatri.pinit.util.AudioPlayback.toggle(context, note.id, it)
+                            }
+                        }
+                    ) {
                         Icon(Icons.Filled.Mic, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(Icons.Filled.PlayArrow, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.width(2.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier.size(36.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(if (isPlayingThis) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                if (isPlayingThis) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+                                if (isPlayingThis) "Stop" else "Play",
+                                modifier = Modifier.size(20.dp),
+                                tint = if (isPlayingThis) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             if (durMs > 0) "%d:%02d".format(durMs / 60000, (durMs / 1000) % 60) else "Recording",
-                            fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

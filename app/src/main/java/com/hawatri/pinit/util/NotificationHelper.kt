@@ -19,6 +19,7 @@ import com.hawatri.pinit.MainActivity
 import com.hawatri.pinit.R
 import com.hawatri.pinit.receiver.NotificationReceiver
 import com.hawatri.pinit.ui.AppNoteItem
+import com.hawatri.pinit.ui.AudioNoteData
 import com.hawatri.pinit.ui.ChecklistItemData
 import com.hawatri.pinit.ui.ContactNoteData
 import com.hawatri.pinit.ui.LinkNoteData
@@ -34,11 +35,13 @@ class NotificationHelper(private val context: Context) {
         const val ACTION_TOGGLE_ITEM = "ACTION_TOGGLE_ITEM"
         const val ACTION_CHECK_ALL = "ACTION_CHECK_ALL"
         const val ACTION_ADD_TASK = "ACTION_ADD_TASK"
+        const val ACTION_TOGGLE_AUDIO = "ACTION_TOGGLE_AUDIO"
 
         const val EXTRA_NOTE_ID = "EXTRA_NOTE_ID"
         const val EXTRA_NOTE_TEXT = "EXTRA_NOTE_TEXT"
         const val EXTRA_ITEM_INDEX = "EXTRA_ITEM_INDEX"
         const val EXTRA_REPLY_TEXT = "EXTRA_REPLY_TEXT"
+        const val EXTRA_AUDIO_PATH = "EXTRA_AUDIO_PATH"
 
         private const val GROUP_KEY = "com.hawatri.pinit.PINNED"
         private const val SUMMARY_ID = -9999
@@ -265,6 +268,29 @@ class NotificationHelper(private val context: Context) {
                 context, (noteId + "_copy").hashCode(), copyIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             ))
+            builder.addAction(0, "Remove", removePendingIntent)
+        } else if (noteType == com.hawatri.pinit.data.NoteType.AUDIO) {
+            val audioData = try { Gson().fromJson(text, AudioNoteData::class.java) } catch (e: Exception) { null }
+            val durMs = audioData?.durationMs ?: 0L
+            val path = audioData?.path ?: ""
+            val durationLabel = if (durMs > 0) "%d:%02d".format(durMs / 60000, (durMs / 1000) % 60) else "Audio recording"
+            builder.setContentTitle(displayTitle)
+            builder.setContentText(durationLabel)
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(durationLabel))
+
+            if (path.isNotBlank()) {
+                val isPlaying = AudioPlayback.isPlaying(noteId)
+                val toggleIntent = Intent(context, NotificationReceiver::class.java).apply {
+                    action = ACTION_TOGGLE_AUDIO
+                    putExtra(EXTRA_NOTE_ID, noteId)
+                    putExtra(EXTRA_AUDIO_PATH, path)
+                }
+                val togglePending = PendingIntent.getBroadcast(
+                    context, (noteId + "_audio").hashCode(), toggleIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(0, if (isPlaying) "Stop" else "Play", togglePending)
+            }
             builder.addAction(0, "Remove", removePendingIntent)
         } else if (noteType == com.hawatri.pinit.data.NoteType.IMAGE) {
             builder.setContentTitle(displayTitle)

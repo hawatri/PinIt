@@ -605,3 +605,39 @@ Pattern applied to each screen:
 - Notification bitmaps are limited to ~1 MB by the system — `PdfUtils` and `ImageUriUtils` cap at 1024 px which lands well under that. Larger source PDFs / images simply downscale.
 - Bitmap decoding happens on the calling thread (the pin-toggle callback). For typical document/photo sizes this is well under 100 ms; if it ever becomes a bottleneck, move it to `Dispatchers.IO`.
 - URI-based opens use `FLAG_GRANT_READ_URI_PERMISSION` — the same flag that `NewImageScreen` and `NewPDFScreen` already take persistably when picking the file, so notification taps work even after a reboot.
+
+---
+
+## Session: Audio playback from card and notification
+
+### Problem
+- Pinned audio notifications dumped the raw `AudioNoteData` JSON (`{"durationMs":5000,"path":"/data/user/0/com.hawatri.pinit/files/recordings/<uuid>.m4a"}`) instead of a duration label, and only had Copy/Remove actions — no way to play the recording.
+- Home cards rendered a static play *icon* but tapping it did nothing.
+
+### Fix — `util/AudioPlayback.kt` (new)
+Process-wide singleton that owns a single `MediaPlayer` and exposes `StateFlow<String?> playingNoteId`. Public surface: `toggle(context, noteId, path)` (start or stop), `stop()`, `isPlaying(noteId)`. Auto-stops on completion or error. Sharing the player avoids two notes playing at the same time and lets both the card and the notification reflect the same state.
+
+### Fix — `NotificationHelper` AUDIO branch
+- Parses `AudioNoteData`, sets the title to the note title and the body to a clean `m:ss` duration label (or `"Audio recording"` if duration is zero).
+- Adds a single toggle action labelled **Play** when stopped and **Stop** when this note is currently playing. The action fires `ACTION_TOGGLE_AUDIO` with the note ID and the file path as extras.
+
+### Fix — `NotificationReceiver` `ACTION_TOGGLE_AUDIO`
+- Calls `AudioPlayback.toggle(context, noteId, path)` then re-fetches the note from Room (still pinned?) and re-posts the notification via `NotificationHelper.pinNoteToNotification` so the Play/Stop label flips immediately.
+
+### Fix — Home card audio branch
+- Card row is now clickable. Tapping it calls `AudioPlayback.toggle(...)` with the note's path. The card observes `AudioPlayback.playingNoteId` via `collectAsState()` and switches the badge between PlayArrow / Stop with primary / primaryContainer colours so the active note is visible at a glance.
+
+### Fix — `NewAudioScreen` pin call
+- Now passes `gson.toJson(AudioNoteData(path, durationMs))` and `noteType = NoteType.AUDIO` instead of the placeholder string `"Audio recording"`. The helper now has real data to render.
+
+**Files:**
+- `util/AudioPlayback.kt` (new)
+- `util/NotificationHelper.kt` (`AUDIO` branch + `ACTION_TOGGLE_AUDIO` / `EXTRA_AUDIO_PATH` constants + `AudioNoteData` import)
+- `receiver/NotificationReceiver.kt` (`ACTION_TOGGLE_AUDIO` handler that toggles + re-posts)
+- `ui/HomeScreen.kt` (audio card branch — observes `playingNoteId`, click toggles, badge flips icon)
+- `ui/NewAudioScreen.kt` (pin call passes JSON + noteType)
+
+### Notes
+- Re-posting the notification after the toggle is what makes the Play/Stop label flip in the shade. Without it the action would fire correctly but the label would stay stale.
+- `AudioPlayback` lives in `util/` because both Compose code (the card) and the broadcast receiver need it. The `MediaPlayer` is freed on completion / error / explicit stop.
+- We deliberately avoided a foreground service or `MediaSession` — the recordings are short voice memos, not long-form audio, and adding `FOREGROUND_SERVICE_MEDIA_PLAYBACK` would invite a Doze-mode review for marginal benefit.

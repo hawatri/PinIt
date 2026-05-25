@@ -210,8 +210,10 @@ fun NewAudioScreen(
                         IconButton(onClick = {
                             isPinned = !isPinned
                             val savedId = save(isPinned)
-                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, noteTitle.ifBlank { "Audio" }, "Audio recording")
-                            else notificationHelper.unpinNoteFromNotification(savedId)
+                            if (isPinned) {
+                                val data = AudioNoteData(currentFilePath ?: "", durationMs)
+                                notificationHelper.pinNoteToNotification(savedId, noteTitle.ifBlank { "Audio" }, gson.toJson(data), isList = false, noteType = NoteType.AUDIO)
+                            } else notificationHelper.unpinNoteFromNotification(savedId)
                         }) {
                             Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
                                 tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
