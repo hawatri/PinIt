@@ -93,6 +93,27 @@ fun HomeScreen(
         if (uri != null) icsImportUri = uri
     }
 
+    // Notification permission gate for pin actions (Android 13+)
+    val pendingPinAction = remember { mutableStateOf<(() -> Unit)?>(null) }
+    val notifPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val action = pendingPinAction.value
+        pendingPinAction.value = null
+        if (granted) {
+            action?.invoke()
+        } else {
+            android.widget.Toast.makeText(context, "Notification permission required to pin", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+    fun runWithNotifPermission(action: () -> Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            pendingPinAction.value = action
+            notifPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            action()
+        }
+    }
+
     // Biometric auth for locked notes
     val pendingLockedNote = remember { mutableStateOf<Note?>(null) }
     val biometricPrompt = remember(context) {
@@ -290,7 +311,7 @@ fun HomeScreen(
                             NotesGrid(notes = displayNotes, selectedNoteIds = selectedNoteIds, isSelectionMode = isSelectionMode,
                                 onNoteClick = { id -> if (isSelectionMode) selectedNoteIds = if (id in selectedNoteIds) selectedNoteIds - id else selectedNoteIds + id else allNotes.find { it.id == id }?.let { handleNoteClick(it) } },
                                 onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
-                                onPinClick = { note -> viewModel.togglePin(note); if (!note.isPinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType) else notificationHelper.unpinNoteFromNotification(note.id) },
+                                onPinClick = { note -> runWithNotifPermission { viewModel.togglePin(note); if (!note.isPinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType) else notificationHelper.unpinNoteFromNotification(note.id) } },
                                 onCopyClick = { text -> val cb = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; cb.setPrimaryClip(android.content.ClipData.newPlainText("", text)); android.widget.Toast.makeText(context, "Copied", android.widget.Toast.LENGTH_SHORT).show() },
                                 onToggleAllClick = { note -> val g = Gson(); val items = try { g.fromJson(note.text, Array<ChecklistItemData>::class.java).toList() } catch (e: Exception) { emptyList() }; val all = items.isNotEmpty() && items.all { it.isChecked }; val n = note.copy(text = g.toJson(items.map { it.copy(isChecked = !all) })); viewModel.updateNote(n); if (n.isPinned) notificationHelper.pinNoteToNotification(n.id, n.title, n.text, true) }
                             )
@@ -313,10 +334,12 @@ fun HomeScreen(
                             },
                             onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
                             onPinClick = { note ->
-                                val willBePinned = !note.isPinned
-                                viewModel.togglePin(note)
-                                if (willBePinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType)
-                                else notificationHelper.unpinNoteFromNotification(note.id)
+                                runWithNotifPermission {
+                                    val willBePinned = !note.isPinned
+                                    viewModel.togglePin(note)
+                                    if (willBePinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType)
+                                    else notificationHelper.unpinNoteFromNotification(note.id)
+                                }
                             },
                             onCopyClick = { text ->
                                 val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager

@@ -30,7 +30,7 @@ viewmodel/     → PinItViewModel (single ViewModel, StateFlow state, label rena
 ui/            → Jetpack Compose screens, NoteCard, FabMenu, LabelsEditor, IcsImportSheet, NoteColorPicker
                  NewLocationScreen hosts an osmdroid MapView via AndroidView
 receiver/      → NotificationReceiver, AlarmReceiver, BootReceiver
-util/          → NotificationHelper, ReminderHelper, QrUtils
+util/          → NotificationHelper, ReminderHelper, QrUtils, PdfUtils, ImageUriUtils, AudioPlayback
 widget/        → PinItWidget (home screen widget)
 res/layout/    → notif_custom_list.xml + notif_list_item.xml (LIST checklist),
                  notif_app_list.xml + notif_app_item.xml (APPLIST icon row)
@@ -158,6 +158,7 @@ res/layout/    → notif_custom_list.xml + notif_list_item.xml (LIST checklist),
 - **`geo:` URIs** in Location/Map intents: works with any installed maps app — no Google Play Services dependency.
 - **QR images are regenerated, not stored:** `QrUtils.generateQrBitmap(text)` runs on the fly in the card, edit screen, and notification. Backwards-compatible with all existing QR notes.
 - **PDF / image previews are also rendered on demand:** `PdfUtils.renderFirstPage(context, uri)` and `ImageUriUtils.decodeBitmap(context, uri)` are used by both the home card and the notification builder. No bitmap is persisted; the source URI in `note.text` is enough. URI permissions taken with `takePersistableUriPermission` survive reboot.
+- **Audio playback is shared across surfaces:** `util/AudioPlayback` is a process-wide singleton owning a single `MediaPlayer` and exposing `StateFlow<String?> playingNoteId`. The home card observes it via `collectAsState()`; the notification re-posts itself after each toggle so its Play/Stop label flips. Never instantiate a second `MediaPlayer` for playback — go through `AudioPlayback.toggle(context, noteId, path)`.
 
 ## Project Documentation
 

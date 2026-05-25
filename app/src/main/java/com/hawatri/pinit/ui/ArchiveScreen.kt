@@ -32,6 +32,28 @@ fun ArchiveScreen(
     var selectedNoteIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedNoteIds.isNotEmpty()
 
+    val pendingPinAction = remember { mutableStateOf<(() -> Unit)?>(null) }
+    val notifPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val action = pendingPinAction.value
+        pendingPinAction.value = null
+        if (granted) {
+            action?.invoke()
+        } else {
+            android.widget.Toast.makeText(context, "Notification permission required to pin", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+    fun runWithNotifPermission(action: () -> Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            pendingPinAction.value = action
+            notifPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            action()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -76,12 +98,14 @@ fun ArchiveScreen(
                     },
                     onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
                     onPinClick = { note ->
-                        val willBePinned = !note.isPinned
-                        viewModel.togglePin(note)
-                        if (willBePinned) {
-                            notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType)
-                        } else {
-                            notificationHelper.unpinNoteFromNotification(note.id)
+                        runWithNotifPermission {
+                            val willBePinned = !note.isPinned
+                            viewModel.togglePin(note)
+                            if (willBePinned) {
+                                notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType)
+                            } else {
+                                notificationHelper.unpinNoteFromNotification(note.id)
+                            }
                         }
                     },
                     onCopyClick = { text ->
