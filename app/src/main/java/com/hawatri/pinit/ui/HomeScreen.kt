@@ -573,10 +573,11 @@ fun NotesGrid(
                         true
                     } else false
                 },
-                // Require ~90% of the card width before the swipe commits — accidental
-                // brush-swipes during scrolling were archiving notes by mistake. The
-                // user has to deliberately drag almost the whole card off the edge now.
-                positionalThreshold = { totalDistance -> totalDistance * 0.9f }
+                // Require nearly the full card width (99%) before the swipe commits —
+                // accidental brush-swipes during scrolling were archiving notes by
+                // mistake. The user has to deliberately drag the whole card off the
+                // edge now.
+                positionalThreshold = { totalDistance -> totalDistance * 0.99f }
             )
 
             // After Undo restores an archived note, Compose may reuse the same
