@@ -36,6 +36,7 @@ class NotificationHelper(private val context: Context) {
         const val ACTION_CHECK_ALL = "ACTION_CHECK_ALL"
         const val ACTION_ADD_TASK = "ACTION_ADD_TASK"
         const val ACTION_TOGGLE_AUDIO = "ACTION_TOGGLE_AUDIO"
+        const val ACTION_REPIN = "ACTION_REPIN"
 
         const val EXTRA_NOTE_ID = "EXTRA_NOTE_ID"
         const val EXTRA_NOTE_TEXT = "EXTRA_NOTE_TEXT"
@@ -77,11 +78,25 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Delete intent — fires if the user dismisses the notification (long-press
+        // dismiss on Android 14+, or system clears). We re-pin it so the note stays
+        // pinned until the user explicitly taps Remove.
+        val repinIntent = Intent(context, NotificationReceiver::class.java).apply {
+            action = ACTION_REPIN
+            putExtra(EXTRA_NOTE_ID, noteId)
+        }
+        val repinPendingIntent = PendingIntent.getBroadcast(
+            context, ("repin_$noteId").hashCode(), repinIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(displayTitle)
             .setOngoing(true)
+            .setAutoCancel(false)
             .setContentIntent(openAppPendingIntent)
+            .setDeleteIntent(repinPendingIntent)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setGroup(GROUP_KEY)
 

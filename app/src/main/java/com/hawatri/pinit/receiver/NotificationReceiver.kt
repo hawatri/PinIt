@@ -38,6 +38,24 @@ class NotificationReceiver : BroadcastReceiver() {
                     }
                 }
             }
+            NotificationHelper.ACTION_REPIN -> {
+                // User swiped the notification away — re-post it so pinned notes stay
+                // visible until they explicitly tap Remove. Only re-post if the note
+                // is still pinned in the DB (user may have unpinned it elsewhere).
+                if (noteId == null) return
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val dao = NoteDatabase.getDatabase(context).noteDao()
+                        val note = dao.getNoteById(noteId)
+                        if (note != null && note.isPinned && !note.isArchived) {
+                            NotificationHelper(context).pinNoteToNotification(
+                                note.id, note.title, note.text, note.isList, note.noteType
+                            )
+                        }
+                    } finally { pendingResult.finish() }
+                }
+            }
             NotificationHelper.ACTION_COPY_TEXT -> {
                 val textToCopy = intent.getStringExtra(NotificationHelper.EXTRA_NOTE_TEXT) ?: return
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager

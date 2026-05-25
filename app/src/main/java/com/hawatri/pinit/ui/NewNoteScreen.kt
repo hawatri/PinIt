@@ -374,6 +374,10 @@ fun NewNoteScreen(
                             tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    ColorPickerMenuButton(
+                        selectedColor = colorHex,
+                        onColorSelected = { colorHex = it.ifBlank { null }; saveOrUpdateNote() }
+                    )
 
                     IconButton(onClick = { saveOrUpdateNote(); onNavigateBack() }) {
                         Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
