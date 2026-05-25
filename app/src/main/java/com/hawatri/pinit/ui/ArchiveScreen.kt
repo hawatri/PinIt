@@ -2,8 +2,8 @@ package com.hawatri.pinit.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.*
@@ -16,6 +16,7 @@ import com.google.gson.Gson
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.viewmodel.PinItViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +29,8 @@ fun ArchiveScreen(
     val notificationHelper = remember(context) { NotificationHelper(context) }
     val allNotes by viewModel.notes.collectAsState()
     val archivedNotes = allNotes.filter { it.isArchived }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     var selectedNoteIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedNoteIds.isNotEmpty()
@@ -54,14 +57,32 @@ fun ArchiveScreen(
         }
     }
 
+    /** Bulk delete with a single Undo snackbar that re-inserts every removed note. */
+    fun deleteSelectedWithUndo(idsToDelete: Set<String>) {
+        if (idsToDelete.isEmpty()) return
+        val snapshot = allNotes.filter { it.id in idsToDelete }
+        snapshot.forEach { note ->
+            if (note.isPinned) notificationHelper.unpinNoteFromNotification(note.id)
+            viewModel.deleteNote(note.id)
+        }
+        val label = if (snapshot.size == 1) "Deleted" else "Deleted ${snapshot.size}"
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(label, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) {
+                snapshot.forEach { viewModel.addNote(it) }
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(if (isSelectionMode) selectedNoteIds.size.toString() else "Archive") },
                 navigationIcon = {
                     IconButton(onClick = {
                         if (isSelectionMode) selectedNoteIds = emptySet() else onNavigateBack()
-                    }) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
+                    }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
                 },
                 actions = {
                     if (isSelectionMode) {
@@ -73,8 +94,9 @@ fun ArchiveScreen(
                         }) { Icon(Icons.Filled.Unarchive, "Unarchive") }
 
                         IconButton(onClick = {
-                            selectedNoteIds.forEach { id -> viewModel.deleteNote(id) }
+                            val ids = selectedNoteIds
                             selectedNoteIds = emptySet()
+                            deleteSelectedWithUndo(ids)
                         }) { Icon(Icons.Filled.Delete, "Delete") }
                     }
                 },

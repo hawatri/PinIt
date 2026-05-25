@@ -11,7 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -22,6 +24,7 @@ import androidx.navigation.navArgument
 import com.hawatri.pinit.data.NoteDatabase
 import com.hawatri.pinit.data.NoteType
 import com.hawatri.pinit.data.ThemeMode
+import com.hawatri.pinit.data.AppPreferences
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import com.hawatri.pinit.viewmodel.PinItViewModelFactory
 
@@ -35,8 +38,15 @@ fun PinItApp(
     currentTheme: ThemeMode = ThemeMode.SYSTEM,
     onThemeChange: (ThemeMode) -> Unit = {}
 ) {
-    val navController = rememberNavController()
     val context = LocalContext.current
+    var onboardingDone by remember { mutableStateOf(AppPreferences.isOnboardingDone(context)) }
+
+    if (!onboardingDone) {
+        OnboardingScreen(onComplete = { onboardingDone = true })
+        return
+    }
+
+    val navController = rememberNavController()
 
     val database = NoteDatabase.getDatabase(context)
     val dao = database.noteDao()

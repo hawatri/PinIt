@@ -213,6 +213,56 @@ fun HomeScreen(
         }
     }
 
+    /** Bulk archive with one Undo snackbar that un-archives every snapshotted note. */
+    fun archiveSelectedWithUndo(idsToArchive: Set<String>) {
+        if (idsToArchive.isEmpty()) return
+        val snapshot = viewModel.notes.value.filter { it.id in idsToArchive }
+        snapshot.forEach { viewModel.toggleArchive(it) }
+        val label = if (snapshot.size == 1) "Archived" else "Archived ${snapshot.size}"
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(label, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) {
+                snapshot.forEach { original ->
+                    viewModel.notes.value.find { it.id == original.id }?.let { viewModel.toggleArchive(it) }
+                }
+            }
+        }
+    }
+
+    /** Bulk delete with one Undo snackbar that re-inserts every snapshotted note. */
+    fun deleteSelectedWithUndo(idsToDelete: Set<String>) {
+        if (idsToDelete.isEmpty()) return
+        val snapshot = viewModel.notes.value.filter { it.id in idsToDelete }
+        snapshot.forEach { note ->
+            if (note.isPinned) notificationHelper.unpinNoteFromNotification(note.id)
+            viewModel.deleteNote(note.id)
+        }
+        val label = if (snapshot.size == 1) "Deleted" else "Deleted ${snapshot.size}"
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(label, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) {
+                snapshot.forEach { viewModel.addNote(it) }
+            }
+        }
+    }
+
+    fun deleteLabelWithUndo(name: String) {
+        // Snapshot the *exact* state of every affected note before the delete so undo
+        // can restore the label list verbatim — important if a note had multiple
+        // labels and only one was being removed.
+        val affected = viewModel.notes.value.filter { name in it.labels }
+        if (affected.isEmpty()) return
+        viewModel.deleteLabel(name)
+        scope.launch {
+            val msg = if (affected.size == 1) "Label \"$name\" deleted"
+                      else "Label \"$name\" removed from ${affected.size} notes"
+            val result = snackbarHostState.showSnackbar(msg, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) {
+                affected.forEach { viewModel.updateNote(it) }
+            }
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
@@ -269,13 +319,15 @@ fun HomeScreen(
                             }
 
                             IconButton(onClick = {
-                                selectedNoteIds.forEach { id -> allNotes.find { it.id == id }?.let { archiveWithUndo(it) } }
+                                val ids = selectedNoteIds
                                 selectedNoteIds = emptySet()
+                                archiveSelectedWithUndo(ids)
                             }) { Icon(Icons.Filled.Archive, "Archive") }
 
                             IconButton(onClick = {
-                                selectedNoteIds.forEach { id -> allNotes.find { it.id == id }?.let { deleteWithUndo(it) } }
+                                val ids = selectedNoteIds
                                 selectedNoteIds = emptySet()
+                                deleteSelectedWithUndo(ids)
                             }) { Icon(Icons.Filled.Delete, "Delete") }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -352,7 +404,7 @@ fun HomeScreen(
                             labelCounts = allLabels,
                             onLabelClick = { selectedLabel = it },
                             onRename = { old, nu -> viewModel.renameLabel(old, nu) },
-                            onDelete = { name -> viewModel.deleteLabel(name) }
+                            onDelete = { name -> deleteLabelWithUndo(name) }
                         )
                     }
                     // Labels tab — label selected: show filtered notes

@@ -15,6 +15,7 @@ object AppPreferences {
     private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_LAST_SYNC = "last_sync_at"
     private const val KEY_INITIAL_MERGE_DONE = "initial_merge_done"
+    private const val KEY_ONBOARDING_DONE = "onboarding_done"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -65,5 +66,12 @@ object AppPreferences {
 
     fun setInitialMergeDone(context: Context, done: Boolean) {
         prefs(context).edit().putBoolean(KEY_INITIAL_MERGE_DONE, done).apply()
+    }
+
+    fun isOnboardingDone(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_ONBOARDING_DONE, false)
+
+    fun setOnboardingDone(context: Context, done: Boolean) {
+        prefs(context).edit().putBoolean(KEY_ONBOARDING_DONE, done).apply()
     }
 }
