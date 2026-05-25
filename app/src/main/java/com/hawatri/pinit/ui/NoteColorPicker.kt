@@ -78,3 +78,66 @@ fun NoteColorPicker(
         }
     }
 }
+
+/**
+ * Compact color picker that opens as a popup — fits inside a TopAppBar's actions row.
+ * Use this on screens that don't have a bottom toolbar.
+ */
+@Composable
+fun ColorPickerMenuButton(
+    selectedColor: String?,
+    onColorSelected: (String) -> Unit,
+    iconTint: Color? = null
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                imageVector = Icons.Filled.FormatColorFill,
+                contentDescription = "Note Color",
+                tint = when {
+                    !selectedColor.isNullOrBlank() -> Color(android.graphics.Color.parseColor(selectedColor))
+                    iconTint != null -> iconTint
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                NoteColors.all.forEach { colorHex ->
+                    val isSelected = selectedColor == colorHex || (colorHex == NoteColors.NONE && selectedColor.isNullOrBlank())
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (colorHex.isBlank()) MaterialTheme.colorScheme.surfaceVariant
+                                else Color(android.graphics.Color.parseColor(colorHex))
+                            )
+                            .border(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                                shape = CircleShape
+                            )
+                            .clickable {
+                                onColorSelected(colorHex)
+                                expanded = false
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                Icons.Filled.Check, null,
+                                tint = if (colorHex.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else Color.DarkGray,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

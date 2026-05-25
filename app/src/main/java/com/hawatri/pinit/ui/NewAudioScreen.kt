@@ -62,6 +62,8 @@ fun NewAudioScreen(
     var playerPosition by remember { mutableFloatStateOf(0f) }
     var noteTitle by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
+    var isLocked by remember { mutableStateOf(false) }
+    var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
     var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
@@ -78,6 +80,8 @@ fun NewAudioScreen(
             if (existing != null) {
                 noteTitle = existing.title
                 isPinned = existing.isPinned
+                isLocked = existing.isLocked
+                colorHex = existing.colorHex
                 labels = existing.labels
                 try {
                     val data = gson.fromJson(existing.text, AudioNoteData::class.java)
@@ -175,19 +179,22 @@ fun NewAudioScreen(
         state = RecordingState.RECORDED
     }
 
-    fun save(pinOverride: Boolean = isPinned): String {
+    fun save(pinOverride: Boolean = isPinned, archiveOverride: Boolean? = null): String {
         val data = AudioNoteData(currentFilePath ?: "", durationMs)
+        val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
             title = noteTitle.ifBlank { "Recording ${formatDuration(durationMs)}" },
             text = gson.toJson(data),
             formatRanges = emptyList(),
             isPinned = pinOverride,
+            isArchived = archiveOverride ?: existing?.isArchived ?: false,
             isList = false,
             noteType = NoteType.AUDIO,
+            colorHex = colorHex,
+            isLocked = isLocked,
             labels = labels
         )
-        val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
     }
@@ -207,6 +214,30 @@ fun NewAudioScreen(
                 navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant) } },
                 actions = {
                     if (state == RecordingState.RECORDED || state == RecordingState.PLAYING) {
+                        // Share audio file
+                        IconButton(onClick = {
+                            val path = currentFilePath ?: return@IconButton
+                            try {
+                                val file = File(path)
+                                val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "audio/*"
+                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                }
+                                context.startActivity(android.content.Intent.createChooser(intent, "Share recording"))
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(context, "Could not share recording", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }) { Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+
+                        // Archive
+                        IconButton(onClick = {
+                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                            save(pinOverride = false, archiveOverride = true)
+                            onNavigateBack()
+                        }) { Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+
                         IconButton(onClick = {
                             isPinned = !isPinned
                             val savedId = save(isPinned)
@@ -222,6 +253,17 @@ fun NewAudioScreen(
                             Icon(Icons.Filled.Label, "Label",
                                 tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        IconButton(onClick = { isLocked = !isLocked; save() }) {
+                            Icon(
+                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                                if (isLocked) "Locked" else "Unlocked",
+                                tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        ColorPickerMenuButton(
+                            selectedColor = colorHex,
+                            onColorSelected = { colorHex = it.ifBlank { null }; save() }
+                        )
                         IconButton(onClick = { if (currentFilePath != null) { save(); onNavigateBack() } }) {
                             Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }

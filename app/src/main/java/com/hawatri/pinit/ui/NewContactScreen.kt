@@ -74,6 +74,8 @@ fun NewContactScreen(
     var name by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
+    var isLocked by remember { mutableStateOf(false) }
+    var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
     var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
@@ -91,25 +93,30 @@ fun NewContactScreen(
                     phoneNumber = data.phone
                 } catch (e: Exception) { name = existing.title }
                 isPinned = existing.isPinned
+                isLocked = existing.isLocked
+                colorHex = existing.colorHex
                 labels = existing.labels
                 isInitialized = true
             }
         }
     }
 
-    fun save(pinOverride: Boolean = isPinned): String {
+    fun save(pinOverride: Boolean = isPinned, archiveOverride: Boolean? = null): String {
         val data = ContactNoteData(name, phoneNumber)
+        val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
             title = name.ifBlank { "Contact" },
             text = gson.toJson(data),
             formatRanges = emptyList(),
             isPinned = pinOverride,
+            isArchived = archiveOverride ?: existing?.isArchived ?: false,
             isList = false,
             noteType = NoteType.CONTACT,
+            colorHex = colorHex,
+            isLocked = isLocked,
             labels = labels
         )
-        val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
     }
@@ -143,6 +150,30 @@ fun NewContactScreen(
                     }
                 },
                 actions = {
+                    // Share
+                    IconButton(onClick = {
+                        if (name.isNotBlank() || phoneNumber.isNotBlank()) {
+                            val shareText = buildString {
+                                if (name.isNotBlank()) { append(name); append("\n") }
+                                if (phoneNumber.isNotBlank()) append(phoneNumber)
+                            }
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                            }
+                            context.startActivity(android.content.Intent.createChooser(intent, "Share contact"))
+                        }
+                    }) { Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+
+                    // Archive
+                    IconButton(onClick = {
+                        if (name.isNotBlank() || phoneNumber.isNotBlank()) {
+                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                            save(pinOverride = false, archiveOverride = true)
+                            onNavigateBack()
+                        }
+                    }) { Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+
                     IconButton(onClick = {
                         isPinned = !isPinned
                         val savedId = save(isPinned)
@@ -158,6 +189,17 @@ fun NewContactScreen(
                         Icon(Icons.Filled.Label, "Label",
                             tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    IconButton(onClick = { if (name.isNotBlank() || phoneNumber.isNotBlank()) { isLocked = !isLocked; save() } }) {
+                        Icon(
+                            if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                            if (isLocked) "Locked" else "Unlocked",
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    ColorPickerMenuButton(
+                        selectedColor = colorHex,
+                        onColorSelected = { colorHex = it.ifBlank { null }; if (name.isNotBlank() || phoneNumber.isNotBlank()) save() }
+                    )
                     IconButton(onClick = { if (name.isNotBlank() || phoneNumber.isNotBlank()) { save(); onNavigateBack() } }) {
                         Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }

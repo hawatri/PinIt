@@ -61,6 +61,8 @@ fun NewQRScreen(
     var scannedValue by remember { mutableStateOf<String?>(null) }
     var noteTitle by remember { mutableStateOf("QR Code") }
     var isPinned by remember { mutableStateOf(false) }
+    var isLocked by remember { mutableStateOf(false) }
+    var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
     var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
@@ -78,6 +80,8 @@ fun NewQRScreen(
                 noteTitle = existing.title
                 scannedValue = existing.text
                 isPinned = existing.isPinned
+                isLocked = existing.isLocked
+                colorHex = existing.colorHex
                 labels = existing.labels
                 scanningActive = false
                 savedToGalleryAsked = true
@@ -126,18 +130,21 @@ fun NewQRScreen(
 
     LaunchedEffect(Unit) { if (!hasCameraPermission && scanningActive) cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }
 
-    fun save(pinOverride: Boolean = isPinned): String {
+    fun save(pinOverride: Boolean = isPinned, archiveOverride: Boolean? = null): String {
+        val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
             title = noteTitle,
             text = scannedValue ?: "",
             formatRanges = emptyList(),
             isPinned = pinOverride,
+            isArchived = archiveOverride ?: existing?.isArchived ?: false,
             isList = false,
             noteType = NoteType.QR,
+            colorHex = colorHex,
+            isLocked = isLocked,
             labels = labels
         )
-        val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
     }
@@ -179,6 +186,24 @@ fun NewQRScreen(
                         }
                     }
                     if (scannedValue != null && !scanningActive) {
+                        // Share
+                        IconButton(onClick = {
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, scannedValue ?: "")
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share QR content"))
+                        }) {
+                            Icon(Icons.Filled.Share, "Share", tint = Color.White)
+                        }
+                        // Archive
+                        IconButton(onClick = {
+                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                            save(pinOverride = false, archiveOverride = true)
+                            onNavigateBack()
+                        }) {
+                            Icon(Icons.Filled.Archive, "Archive", tint = Color.White)
+                        }
                         IconButton(onClick = {
                             isPinned = !isPinned
                             val savedId = save(isPinned)
@@ -195,6 +220,18 @@ fun NewQRScreen(
                             Icon(Icons.Filled.Label, "Label",
                                 tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.White)
                         }
+                        IconButton(onClick = { isLocked = !isLocked; save() }) {
+                            Icon(
+                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                                if (isLocked) "Locked" else "Unlocked",
+                                tint = if (isLocked) MaterialTheme.colorScheme.primary else Color.White
+                            )
+                        }
+                        ColorPickerMenuButton(
+                            selectedColor = colorHex,
+                            onColorSelected = { colorHex = it.ifBlank { null }; save() },
+                            iconTint = Color.White
+                        )
                         IconButton(onClick = { save(); onNavigateBack() }) {
                             Icon(Icons.Filled.Check, "Save", tint = Color.White)
                         }

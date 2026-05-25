@@ -52,10 +52,11 @@ import coil.compose.AsyncImage
 import com.google.gson.Gson
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.data.NoteType
+import androidx.compose.animation.togetherWith
 import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.viewmodel.PinItViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.animation.ExperimentalAnimationApi::class)
 @Composable
 fun HomeScreen(
     onNoteClick: (Note) -> Unit,
@@ -283,6 +284,19 @@ fun HomeScreen(
                     }
                 }
 
+                androidx.compose.animation.AnimatedContent(
+                    targetState = Triple(selectedBottomTab, selectedLabel, displayNotes.isEmpty()),
+                    transitionSpec = {
+                        (androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220)) +
+                            androidx.compose.animation.slideInHorizontally(
+                                animationSpec = androidx.compose.animation.core.tween(220),
+                                initialOffsetX = { fullWidth -> if (targetState.first > initialState.first) fullWidth / 6 else -fullWidth / 6 }
+                            )).togetherWith(
+                                androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(160))
+                            )
+                    },
+                    label = "tab_content"
+                ) { _ ->
                 when {
                     // Labels tab — no label selected: show label browser
                     selectedBottomTab == 2 && selectedLabel == null -> {
@@ -303,6 +317,7 @@ fun HomeScreen(
                     }
                     // Labels tab — label selected: show filtered notes
                     selectedBottomTab == 2 && selectedLabel != null -> {
+                        Column {
                         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { selectedLabel = null }) { Icon(Icons.Filled.ArrowBack, "Back") }
                             Text(selectedLabel!!, style = MaterialTheme.typography.titleMedium)
@@ -317,6 +332,7 @@ fun HomeScreen(
                             )
                         } else {
                             EmptyStateView(icon = Icons.Filled.Label, message = "No notes with label \"${selectedLabel}\"")
+                        }
                         }
                     }
                     // Home / Pinned tabs
@@ -363,6 +379,7 @@ fun HomeScreen(
                         EmptyStateView(icon = icon, message = msg)
                     }
                 }
+                }
             }
 
             // ICS import sheet
@@ -374,9 +391,17 @@ fun HomeScreen(
                 )
             }
 
-            if (showFabMenu && selectedBottomTab == 0 && !isSelectionMode) {
-                Box(modifier = Modifier.fillMaxSize().clickable { showFabMenu = false })
+            if (selectedBottomTab == 0 && !isSelectionMode) {
+                // Backdrop dim — fades in when FAB menu opens
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showFabMenu,
+                    enter = androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(150)),
+                    exit = androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(150))
+                ) {
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.25f)).clickable { showFabMenu = false })
+                }
                 FabMenu(
+                    visible = showFabMenu,
                     onDismiss = { showFabMenu = false },
                     onNewNoteClick = onNavigateToNewNote,
                     onNewListClick = onNavigateToNewList,
@@ -431,22 +456,36 @@ fun NotesGrid(
                 state = dismissState,
                 enableDismissFromStartToEnd = false,
                 enableDismissFromEndToStart = !isSelectionMode,
-                backgroundContent = {
-                    val color by animateColorAsState(
-                        targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
-                            MaterialTheme.colorScheme.errorContainer
-                        else MaterialTheme.colorScheme.surfaceVariant,
-                        label = "swipe_bg"
+                modifier = Modifier.animateItem(
+                    fadeInSpec = androidx.compose.animation.core.tween(220),
+                    fadeOutSpec = androidx.compose.animation.core.tween(180),
+                    placementSpec = androidx.compose.animation.core.spring(
+                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                        stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
                     )
-                    Box(
-                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).background(color),
-                        contentAlignment = Alignment.CenterEnd
-                    ) {
-                        Icon(
-                            Icons.Filled.Archive, "Archive",
-                            tint = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.padding(end = 16.dp)
+                ),
+                backgroundContent = {
+                    // Only render the archive background while the user is actually
+                    // swiping. Without this guard, translucent colored cards reveal the
+                    // archive icon behind them at rest.
+                    if (dismissState.currentValue != SwipeToDismissBoxValue.Settled ||
+                        dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
+                        val color by animateColorAsState(
+                            targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
+                                MaterialTheme.colorScheme.errorContainer
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            label = "swipe_bg"
                         )
+                        Box(
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).background(color),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Icon(
+                                Icons.Filled.Archive, "Archive",
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.padding(end = 16.dp)
+                            )
+                        }
                     }
                 }
             ) {

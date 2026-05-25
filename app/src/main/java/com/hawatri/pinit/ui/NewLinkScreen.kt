@@ -126,6 +126,8 @@ fun NewLinkScreen(
     var previewData by remember { mutableStateOf<LinkNoteData?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var isPinned by remember { mutableStateOf(false) }
+    var isLocked by remember { mutableStateOf(false) }
+    var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
     var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
@@ -143,6 +145,8 @@ fun NewLinkScreen(
                     linkText = data.url
                 } catch (e: Exception) { linkText = existing.text }
                 isPinned = existing.isPinned
+                isLocked = existing.isLocked
+                colorHex = existing.colorHex
                 labels = existing.labels
                 isInitialized = true
             }
@@ -170,19 +174,22 @@ fun NewLinkScreen(
         }
     }
 
-    fun save(pinOverride: Boolean = isPinned): String {
+    fun save(pinOverride: Boolean = isPinned, archiveOverride: Boolean? = null): String {
         val data = previewData ?: LinkNoteData(normalizeUrl(linkText), linkText, "", "")
+        val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
             title = data.title.ifBlank { data.url },
             text = gson.toJson(data),
             formatRanges = emptyList(),
             isPinned = pinOverride,
+            isArchived = archiveOverride ?: existing?.isArchived ?: false,
             isList = false,
             noteType = NoteType.LINK,
+            colorHex = colorHex,
+            isLocked = isLocked,
             labels = labels
         )
-        val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
     }
@@ -213,6 +220,29 @@ fun NewLinkScreen(
                         }) {
                             Icon(Icons.Filled.Refresh, "Refresh preview", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        // Share
+                        IconButton(onClick = {
+                            val shareText = buildString {
+                                if (previewData!!.title.isNotBlank()) { append(previewData!!.title); append("\n") }
+                                if (previewData!!.description.isNotBlank()) { append(previewData!!.description); append("\n") }
+                                append(previewData!!.url)
+                            }
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share link"))
+                        }) {
+                            Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        // Archive
+                        IconButton(onClick = {
+                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                            save(pinOverride = false, archiveOverride = true)
+                            onNavigateBack()
+                        }) {
+                            Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                     IconButton(onClick = {
                         isPinned = !isPinned
@@ -230,6 +260,19 @@ fun NewLinkScreen(
                     IconButton(onClick = { showLabelsSheet = true }) {
                         Icon(Icons.Filled.Label, "Label",
                             tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (previewData != null) {
+                        IconButton(onClick = { isLocked = !isLocked; save() }) {
+                            Icon(
+                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                                if (isLocked) "Locked" else "Unlocked",
+                                tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        ColorPickerMenuButton(
+                            selectedColor = colorHex,
+                            onColorSelected = { colorHex = it.ifBlank { null }; save() }
+                        )
                     }
                     IconButton(onClick = { if (previewData != null || linkText.isNotBlank()) { save(); onNavigateBack() } }) {
                         Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)

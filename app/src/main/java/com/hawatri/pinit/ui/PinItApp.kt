@@ -1,6 +1,12 @@
 package com.hawatri.pinit.ui
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -65,7 +71,34 @@ fun PinItApp(sharedText: String? = null, sharedImageUri: String? = null, sharedI
     // ICS share — navigate to home (the HomeScreen's import launcher handles it)
     val icsShareUri = remember(sharedIcsUri) { sharedIcsUri?.let { Uri.parse(it) } }
 
-    NavHost(navController = navController, startDestination = "home") {
+    NavHost(
+        navController = navController,
+        startDestination = "home",
+        enterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { fullWidth -> fullWidth / 4 },
+                animationSpec = tween(280)
+            ) + fadeIn(animationSpec = tween(220))
+        },
+        exitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { fullWidth -> -fullWidth / 6 },
+                animationSpec = tween(220)
+            ) + fadeOut(animationSpec = tween(180))
+        },
+        popEnterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { fullWidth -> -fullWidth / 6 },
+                animationSpec = tween(260)
+            ) + fadeIn(animationSpec = tween(220))
+        },
+        popExitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { fullWidth -> fullWidth / 4 },
+                animationSpec = tween(240)
+            ) + fadeOut(animationSpec = tween(180))
+        }
+    ) {
         composable("home") {
             HomeScreen(
                 onNoteClick = { note ->

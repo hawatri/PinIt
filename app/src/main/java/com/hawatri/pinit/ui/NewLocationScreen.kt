@@ -68,6 +68,8 @@ fun NewLocationScreen(
     var lat by remember { mutableStateOf<Double?>(null) }
     var lng by remember { mutableStateOf<Double?>(null) }
     var isPinned by remember { mutableStateOf(false) }
+    var isLocked by remember { mutableStateOf(false) }
+    var colorHex by remember { mutableStateOf<String?>(null) }
     var isLoadingLocation by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
@@ -176,6 +178,8 @@ fun NewLocationScreen(
                     }
                 } catch (e: Exception) { locationName = existing.title }
                 isPinned = existing.isPinned
+                isLocked = existing.isLocked
+                colorHex = existing.colorHex
                 labels = existing.labels
                 isInitialized = true
             }
@@ -245,19 +249,22 @@ fun NewLocationScreen(
         }
     }
 
-    fun save(pinOverride: Boolean = isPinned): String {
+    fun save(pinOverride: Boolean = isPinned, archiveOverride: Boolean? = null): String {
         val data = LocationNoteData(locationName, locationAddress, lat, lng)
+        val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
             title = locationName.ifBlank { "Location" },
             text = gson.toJson(data),
             formatRanges = emptyList(),
             isPinned = pinOverride,
+            isArchived = archiveOverride ?: existing?.isArchived ?: false,
             isList = false,
             noteType = NoteType.LOCATION,
+            colorHex = colorHex,
+            isLocked = isLocked,
             labels = labels
         )
-        val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
     }
@@ -270,6 +277,31 @@ fun NewLocationScreen(
                     IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = Color.White) }
                 },
                 actions = {
+                    // Share
+                    IconButton(onClick = {
+                        if (locationName.isNotBlank() || lat != null) {
+                            val shareText = buildString {
+                                if (locationName.isNotBlank()) { append(locationName); append("\n") }
+                                if (locationAddress.isNotBlank()) { append(locationAddress); append("\n") }
+                                if (lat != null && lng != null) append("https://maps.google.com/?q=$lat,$lng")
+                            }
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share location"))
+                        }
+                    }) { Icon(Icons.Filled.Share, "Share", tint = Color.White) }
+
+                    // Archive
+                    IconButton(onClick = {
+                        if (locationName.isNotBlank() || lat != null) {
+                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                            save(pinOverride = false, archiveOverride = true)
+                            onNavigateBack()
+                        }
+                    }) { Icon(Icons.Filled.Archive, "Archive", tint = Color.White) }
+
                     IconButton(onClick = {
                         isPinned = !isPinned
                         val savedId = save(isPinned)
@@ -284,6 +316,18 @@ fun NewLocationScreen(
                         Icon(Icons.Filled.Label, "Label",
                             tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.White)
                     }
+                    IconButton(onClick = { if (locationName.isNotBlank() || lat != null) { isLocked = !isLocked; save() } }) {
+                        Icon(
+                            if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                            if (isLocked) "Locked" else "Unlocked",
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else Color.White
+                        )
+                    }
+                    ColorPickerMenuButton(
+                        selectedColor = colorHex,
+                        onColorSelected = { colorHex = it.ifBlank { null }; if (locationName.isNotBlank() || lat != null) save() },
+                        iconTint = Color.White
+                    )
                     IconButton(onClick = { if (locationName.isNotBlank() || lat != null) { save(); onNavigateBack() } }) {
                         Icon(Icons.Filled.Check, "Save", tint = Color.White)
                     }

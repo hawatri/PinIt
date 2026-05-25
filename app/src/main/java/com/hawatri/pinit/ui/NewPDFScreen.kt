@@ -45,6 +45,8 @@ fun NewPDFScreen(
     var selectedPdfUri by remember { mutableStateOf<Uri?>(null) }
     var pdfTitle by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
+    var isLocked by remember { mutableStateOf(false) }
+    var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
     var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
@@ -59,6 +61,8 @@ fun NewPDFScreen(
                 pdfTitle = existing.title
                 selectedPdfUri = existing.text.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
                 isPinned = existing.isPinned
+                isLocked = existing.isLocked
+                colorHex = existing.colorHex
                 labels = existing.labels
                 isInitialized = true
             }
@@ -79,18 +83,21 @@ fun NewPDFScreen(
         }
     }
 
-    fun save(pinOverride: Boolean = isPinned): String {
+    fun save(pinOverride: Boolean = isPinned, archiveOverride: Boolean? = null): String {
+        val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
             title = pdfTitle.ifBlank { "PDF Document" },
             text = selectedPdfUri?.toString() ?: "",
             formatRanges = emptyList(),
             isPinned = pinOverride,
+            isArchived = archiveOverride ?: existing?.isArchived ?: false,
             isList = false,
             noteType = NoteType.PDF,
+            colorHex = colorHex,
+            isLocked = isLocked,
             labels = labels
         )
-        val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
     }
@@ -131,6 +138,14 @@ fun NewPDFScreen(
                         }) {
                             Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        // Archive
+                        IconButton(onClick = {
+                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                            save(pinOverride = false, archiveOverride = true)
+                            onNavigateBack()
+                        }) {
+                            Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                         IconButton(onClick = {
                             isPinned = !isPinned
                             val savedId = save(isPinned)
@@ -146,6 +161,17 @@ fun NewPDFScreen(
                             Icon(Icons.Filled.Label, "Label",
                                 tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        IconButton(onClick = { isLocked = !isLocked; save() }) {
+                            Icon(
+                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                                if (isLocked) "Locked" else "Unlocked",
+                                tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        ColorPickerMenuButton(
+                            selectedColor = colorHex,
+                            onColorSelected = { colorHex = it.ifBlank { null }; save() }
+                        )
                         IconButton(onClick = { save(); onNavigateBack() }) {
                             Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }

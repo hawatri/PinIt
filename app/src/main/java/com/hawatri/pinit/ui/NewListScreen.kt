@@ -420,16 +420,23 @@ fun NewListScreen(
 
                     // Checklist Items loop
                     items(
-                        count = checklistItems.size, 
-                        key = { checklistItems[it].id ?: UUID.randomUUID().toString() } 
+                        count = checklistItems.size,
+                        key = { checklistItems[it].id ?: UUID.randomUUID().toString() }
                     ) { index ->
                         val item = checklistItems[index]
                         val isDragging = draggedItemId == item.id // Check if this is the active item
-                        
+
                         EditableChecklistItem(
                             item = item,
                             isDragging = isDragging, // Pass this down
-                            modifier = Modifier,
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = androidx.compose.animation.core.tween(180),
+                                fadeOutSpec = androidx.compose.animation.core.tween(140),
+                                placementSpec = androidx.compose.animation.core.spring(
+                                    dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+                                )
+                            ),
                             onDragStart = { draggedItemId = item.id },
                             onDragEnd = { draggedItemId = null },
                             onTextChange = { newText -> 

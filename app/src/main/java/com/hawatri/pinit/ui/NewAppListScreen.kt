@@ -64,6 +64,8 @@ fun NewAppListScreen(
     var installedApps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
     val selectedApps = remember { mutableStateListOf<AppInfo>() }
     var isPinned by remember { mutableStateOf(false) }
+    var isLocked by remember { mutableStateOf(false) }
+    var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
     var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
@@ -90,26 +92,31 @@ fun NewAppListScreen(
                     selectedApps.addAll(restoredApps)
                 } catch (e: Exception) { /* ignore */ }
                 isPinned = existing.isPinned
+                isLocked = existing.isLocked
+                colorHex = existing.colorHex
                 labels = existing.labels
                 isInitialized = true
             }
         }
     }
 
-    fun save(pinOverride: Boolean = isPinned): String {
+    fun save(pinOverride: Boolean = isPinned, archiveOverride: Boolean? = null): String {
         val items = selectedApps.map { AppNoteItem(it.packageName, it.name) }
         val title = if (items.isEmpty()) "App Shortcuts" else "${items.size} App${if (items.size > 1) "s" else ""}"
+        val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
             title = title,
             text = gson.toJson(items),
             formatRanges = emptyList(),
             isPinned = pinOverride,
+            isArchived = archiveOverride ?: existing?.isArchived ?: false,
             isList = false,
             noteType = NoteType.APPLIST,
+            colorHex = colorHex,
+            isLocked = isLocked,
             labels = labels
         )
-        val existing = notesList.find { it.id == currentNoteId }
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
     }
@@ -122,6 +129,24 @@ fun NewAppListScreen(
                     IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                 },
                 actions = {
+                    if (selectedApps.isNotEmpty()) {
+                        // Share - share app list as text
+                        IconButton(onClick = {
+                            val shareText = selectedApps.joinToString("\n") { it.name }
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share app list"))
+                        }) { Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+
+                        // Archive
+                        IconButton(onClick = {
+                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                            save(pinOverride = false, archiveOverride = true)
+                            onNavigateBack()
+                        }) { Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    }
                     IconButton(onClick = {
                         isPinned = !isPinned
                         val savedId = save(isPinned)
@@ -136,6 +161,19 @@ fun NewAppListScreen(
                     IconButton(onClick = { showLabelsSheet = true }) {
                         Icon(Icons.Filled.Label, "Label",
                             tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (selectedApps.isNotEmpty()) {
+                        IconButton(onClick = { isLocked = !isLocked; save() }) {
+                            Icon(
+                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                                if (isLocked) "Locked" else "Unlocked",
+                                tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        ColorPickerMenuButton(
+                            selectedColor = colorHex,
+                            onColorSelected = { colorHex = it.ifBlank { null }; save() }
+                        )
                     }
                     IconButton(onClick = { if (selectedApps.isNotEmpty()) { save(); onNavigateBack() } }) {
                         Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
