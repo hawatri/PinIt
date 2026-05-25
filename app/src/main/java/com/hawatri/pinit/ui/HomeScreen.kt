@@ -1017,6 +1017,24 @@ fun NoteCard(
             val isContactType = note.noteType == NoteType.CONTACT
             val isPdfType = note.noteType == NoteType.PDF
             val isAudioType = note.noteType == NoteType.AUDIO
+            val isImageType = note.noteType == NoteType.IMAGE
+            val isAppListType = note.noteType == NoteType.APPLIST
+
+            // Helper: fire a share intent for the IMAGE / PDF row, picking the right
+            // mime so receivers (Gmail, Drive, WhatsApp, etc.) preview it correctly.
+            fun shareUri(mime: String) {
+                try {
+                    val uri = Uri.parse(note.text)
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = mime
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    }
+                    context.startActivity(Intent.createChooser(send, "Share"))
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(context, "Couldn't share", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
 
             Row(
                 modifier = Modifier
@@ -1068,6 +1086,25 @@ fun NoteCard(
                                     }
                                 }
                             }
+                            isImageType -> shareUri("image/*")
+                            isAppListType -> {
+                                // Launch the first app in the list — tapping a card already
+                                // opens the editor, so the action row does the more useful
+                                // thing of actually launching one.
+                                val items = try {
+                                    gson.fromJson(note.text, Array<AppNoteItem>::class.java).toList()
+                                } catch (e: Exception) { emptyList() }
+                                val first = items.firstOrNull()?.packageName
+                                if (first != null) {
+                                    val launch = context.packageManager.getLaunchIntentForPackage(first)
+                                    if (launch != null) {
+                                        launch.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        context.startActivity(launch)
+                                    } else {
+                                        android.widget.Toast.makeText(context, "App not installed", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
                             else -> onCopyClick(note.text)
                         }
                     }
@@ -1091,11 +1128,31 @@ fun NoteCard(
                     }
                     isPdfType -> {
                         Text("Open PDF", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Icon(Icons.Filled.PictureAsPdf, "Open", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Secondary share action — own click handler so it doesn't
+                            // bubble up and trigger the row's "open" path.
+                            Icon(
+                                Icons.Filled.Share, "Share PDF",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clickable { shareUri("application/pdf") }
+                            )
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Icon(Icons.Filled.PictureAsPdf, "Open", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                        }
                     }
                     isAudioType -> {
                         Text("Share", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
+                    isImageType -> {
+                        Text("Share", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
+                    isAppListType -> {
+                        Text("Open app", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.OpenInNew, "Open", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                     else -> {
                         Text("Copy", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
