@@ -66,4 +66,5 @@ kiro-gateway/*
 CLAUDE.md
 IMPLEMENTATION_LOG.md
 research.txt
-images/
+# Source assets for the app icon (kept out — final PNGs live under res/)
+/images/
