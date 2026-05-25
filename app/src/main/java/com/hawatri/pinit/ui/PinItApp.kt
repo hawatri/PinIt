@@ -47,7 +47,7 @@ fun PinItApp(
     val notes by sharedViewModel.notes.collectAsState()
     LaunchedEffect(notes) {
         com.hawatri.pinit.widget.PinItWidget.requestUpdate(context)
-        com.hawatri.pinit.widget.NoteWidget.requestUpdateAll(context)
+        com.hawatri.pinit.widget.AddWidgets.requestUpdateAll(context)
     }
 
     // Handle widget quick-action intents
@@ -55,10 +55,17 @@ fun PinItApp(
         when (widgetAction) {
             "new_note" -> navController.navigate("new_note")
             "new_list" -> navController.navigate("new_list")
+            "new_qr" -> navController.navigate("new_qr")
+            "new_link" -> navController.navigate("new_link")
+            "new_contact" -> navController.navigate("new_contact")
+            "new_location" -> navController.navigate("new_location")
+            "new_app_list" -> navController.navigate("new_app_list")
+            "new_image" -> navController.navigate("new_image")
+            "new_pdf" -> navController.navigate("new_pdf")
+            "new_audio" -> navController.navigate("new_audio")
         }
     }
 
-    // Handle "open this note" intents fired by tapping a NoteWidget header
     LaunchedEffect(widgetOpenNoteId, notes) {
         if (widgetOpenNoteId != null) {
             val note = notes.find { it.id == widgetOpenNoteId } ?: return@LaunchedEffect

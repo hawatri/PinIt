@@ -86,29 +86,100 @@
                 android:resource="@xml/appwidget_info" />
         </receiver>
 
-        <!-- Configurable note widget — binds to any non-locked note -->
-        <receiver
-            android:name=".widget.NoteWidget"
-            android:exported="true"
-            android:label="PinIt Note">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/note_widget_info" />
+        <!-- ============== Create-X widgets (1x1 shortcuts) ============== -->
+        <receiver android:name=".widget.CreateTextWidget" android:exported="true" android:label="Create Note">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_create_text_info" />
+        </receiver>
+        <receiver android:name=".widget.CreateListWidget" android:exported="true" android:label="Create Checklist">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_create_list_info" />
+        </receiver>
+        <receiver android:name=".widget.CreateQrWidget" android:exported="true" android:label="Create QR">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_create_qr_info" />
+        </receiver>
+        <receiver android:name=".widget.CreateLinkWidget" android:exported="true" android:label="Create Link">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_create_link_info" />
+        </receiver>
+        <receiver android:name=".widget.CreateContactWidget" android:exported="true" android:label="Create Contact">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_create_contact_info" />
+        </receiver>
+        <receiver android:name=".widget.CreateLocationWidget" android:exported="true" android:label="Create Location">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_create_location_info" />
+        </receiver>
+        <receiver android:name=".widget.CreateAppListWidget" android:exported="true" android:label="Create App List">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_create_applist_info" />
+        </receiver>
+        <receiver android:name=".widget.CreateImageWidget" android:exported="true" android:label="Create Image Note">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_create_image_info" />
+        </receiver>
+        <receiver android:name=".widget.CreatePdfWidget" android:exported="true" android:label="Create PDF Note">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_create_pdf_info" />
+        </receiver>
+        <receiver android:name=".widget.CreateAudioWidget" android:exported="true" android:label="Create Audio Note">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_create_audio_info" />
+        </receiver>
+
+        <!-- ============== Add-X widgets (display a chosen note's content) ============== -->
+        <receiver android:name=".widget.AddTextWidget" android:exported="true" android:label="Add Note to home">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_add_text_info" />
+        </receiver>
+        <receiver android:name=".widget.AddListWidget" android:exported="true" android:label="Add Checklist to home">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_add_list_info" />
+        </receiver>
+        <receiver android:name=".widget.AddQrWidget" android:exported="true" android:label="Add QR to home">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_add_qr_info" />
+        </receiver>
+        <receiver android:name=".widget.AddLinkWidget" android:exported="true" android:label="Add Link to home">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_add_link_info" />
+        </receiver>
+        <receiver android:name=".widget.AddContactWidget" android:exported="true" android:label="Add Contact to home">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_add_contact_info" />
+        </receiver>
+        <receiver android:name=".widget.AddLocationWidget" android:exported="true" android:label="Add Location to home">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_add_location_info" />
+        </receiver>
+        <receiver android:name=".widget.AddAppListWidget" android:exported="true" android:label="Add App List to home">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_add_applist_info" />
+        </receiver>
+        <receiver android:name=".widget.AddImageWidget" android:exported="true" android:label="Add Image to home">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_add_image_info" />
+        </receiver>
+        <receiver android:name=".widget.AddPdfWidget" android:exported="true" android:label="Add PDF to home">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_add_pdf_info" />
+        </receiver>
+        <receiver android:name=".widget.AddAudioWidget" android:exported="true" android:label="Add Audio to home">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_add_audio_info" />
         </receiver>
 
         <receiver
-            android:name=".widget.WidgetActionReceiver"
+            android:name=".widget.AddWidgetActionReceiver"
             android:exported="false" />
 
         <receiver
-            android:name=".widget.WidgetPinReceiver"
+            android:name=".widget.AddWidgetPinReceiver"
             android:exported="false" />
 
         <activity
-            android:name=".widget.NoteWidgetConfigActivity"
+            android:name=".widget.AddWidgetConfigActivity"
             android:exported="true"
             android:theme="@style/Theme.PinIt">
             <intent-filter>
@@ -117,7 +188,7 @@
         </activity>
 
         <service
-            android:name=".widget.NoteWidgetService"
+            android:name=".widget.AddWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
 

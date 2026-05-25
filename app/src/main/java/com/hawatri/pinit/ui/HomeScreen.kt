@@ -56,7 +56,7 @@ import com.hawatri.pinit.data.NoteType
 import androidx.compose.animation.togetherWith
 import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.viewmodel.PinItViewModel
-import com.hawatri.pinit.widget.NoteWidget
+import com.hawatri.pinit.widget.AddWidgets
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.animation.ExperimentalAnimationApi::class)
 @Composable
@@ -642,7 +642,7 @@ fun NoteCard(
                         if (note.isLocked) {
                             android.widget.Toast.makeText(context, "Locked notes can't be shown on the home screen", android.widget.Toast.LENGTH_SHORT).show()
                         } else {
-                            val ok = NoteWidget.requestPin(context, note.id)
+                            val ok = AddWidgets.requestPin(context, note.id, note.noteType)
                             if (!ok) {
                                 android.widget.Toast.makeText(context, "Your launcher doesn't support widget pinning", android.widget.Toast.LENGTH_SHORT).show()
                             }
