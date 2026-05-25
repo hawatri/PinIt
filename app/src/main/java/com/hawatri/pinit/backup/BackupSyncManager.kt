@@ -1,6 +1,9 @@
 package com.hawatri.pinit.backup
 
+import android.content.ContentValues
 import android.content.Context
+import android.os.Environment
+import android.provider.MediaStore
 import com.hawatri.pinit.data.AppPreferences
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.data.NoteDatabase
@@ -9,6 +12,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Orchestrates Google Drive backup / restore for PinIt.
@@ -76,6 +82,62 @@ object BackupSyncManager {
         } catch (e: Exception) {
             _state.value = State.Error(e.message ?: "Backup failed")
         }
+    }
+
+    /**
+     * "Take offline backup" — writes a `pinit_backup_<yyyyMMdd_HHmmss>.pinit` file into
+     * `Download/PinIt/` via MediaStore. No permissions required on Android 10+ since
+     * MediaStore.Downloads is the public, scoped-storage path. Visible to the user
+     * via Files / file managers / USB.
+     */
+    suspend fun backupOfflineNow(context: Context) {
+        _state.value = State.Working("Saving offline backup…")
+        try {
+            val savedPath = withContext(Dispatchers.IO) {
+                val notes = snapshotNotes(context)
+                val blobs = PinItBackup.collectAudioBlobs(context, notes)
+                val backup = PinItBackup(
+                    exportedAt = System.currentTimeMillis(),
+                    device = android.os.Build.MODEL ?: "Android",
+                    notes = notes,
+                    audioBlobs = blobs
+                )
+                val json = PinItBackup.toJson(backup)
+                writeToDownloads(context, json)
+            }
+            _state.value = State.Success("Saved to $savedPath")
+        } catch (e: Exception) {
+            _state.value = State.Error(e.message ?: "Offline backup failed")
+        }
+    }
+
+    private fun writeToDownloads(context: Context, json: String): String {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val filename = "pinit_backup_$timestamp.pinit"
+        val relativePath = Environment.DIRECTORY_DOWNLOADS + "/PinIt"
+
+        val resolver = context.contentResolver
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, filename)
+            put(MediaStore.Downloads.MIME_TYPE, PinItBackup.MIME_TYPE)
+            put(MediaStore.Downloads.RELATIVE_PATH, relativePath)
+            put(MediaStore.Downloads.IS_PENDING, 1)
+        }
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            ?: throw IllegalStateException("Couldn't create file in Downloads")
+
+        try {
+            resolver.openOutputStream(uri)?.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+                ?: throw IllegalStateException("Couldn't open Downloads stream")
+            // Mark visible to the system after the write completes.
+            val finalize = ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }
+            resolver.update(uri, finalize, null, null)
+        } catch (e: Exception) {
+            // Roll back the placeholder so we don't leave an empty file behind.
+            runCatching { resolver.delete(uri, null, null) }
+            throw e
+        }
+        return "Download/PinIt/$filename"
     }
 
     /** Manual "Restore" — runs the same merge logic as auto-sync, surfaces UI feedback. */

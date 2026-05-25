@@ -3,9 +3,12 @@ package com.hawatri.pinit.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,19 +20,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.hawatri.pinit.data.AppPreferences
-import com.hawatri.pinit.data.BackupMode
+import com.hawatri.pinit.backup.BackupSyncManager
+import com.hawatri.pinit.backup.GoogleAuthManager
 import com.hawatri.pinit.data.ThemeMode
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     currentTheme: ThemeMode,
     onThemeChange: (ThemeMode) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToSignIn: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var backupMode by remember { mutableStateOf(AppPreferences.getBackupMode(context)) }
+    val scope = rememberCoroutineScope()
+    val syncState by BackupSyncManager.state.collectAsState()
+    val signedIn = remember { GoogleAuthManager.currentAccount(context) != null }
 
     Scaffold(
         topBar = {
@@ -37,7 +44,7 @@ fun SettingsScreen(
                 title = { Text("Settings") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -50,6 +57,7 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             // Appearance
             SettingsSection(title = "Appearance") {
@@ -77,33 +85,34 @@ fun SettingsScreen(
 
             // Backup
             SettingsSection(title = "Backup") {
-                BackupOption(
-                    label = "Off",
-                    description = "No backups taken",
-                    icon = Icons.Filled.CloudOff,
-                    selected = backupMode == BackupMode.OFF,
-                    onClick = { backupMode = BackupMode.OFF; AppPreferences.setBackupMode(context, BackupMode.OFF) }
-                )
-                BackupOption(
-                    label = "Offline",
-                    description = "Save to local device storage",
-                    icon = Icons.Filled.Save,
-                    selected = backupMode == BackupMode.OFFLINE,
-                    onClick = { backupMode = BackupMode.OFFLINE; AppPreferences.setBackupMode(context, BackupMode.OFFLINE) }
-                )
-                BackupOption(
-                    label = "Online",
-                    description = "Sync to cloud (sign-in required)",
-                    icon = Icons.Filled.CloudUpload,
-                    selected = backupMode == BackupMode.ONLINE,
-                    onClick = { backupMode = BackupMode.ONLINE; AppPreferences.setBackupMode(context, BackupMode.ONLINE) }
-                )
-                Text(
-                    "Backup support is being built. Your selection is saved and will activate once available.",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp)
-                )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    BackupActionButton(
+                        title = "Take online backup",
+                        subtitle = if (signedIn) "Upload to your Google Drive" else "Sign in with Google first",
+                        icon = Icons.Filled.CloudUpload,
+                        enabled = syncState !is BackupSyncManager.State.Working,
+                        primary = true,
+                        onClick = {
+                            if (!signedIn) {
+                                onNavigateToSignIn()
+                            } else {
+                                scope.launch { BackupSyncManager.backupNow(context) }
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    BackupActionButton(
+                        title = "Take offline backup",
+                        subtitle = "Save a .pinit file to Download/PinIt/",
+                        icon = Icons.Filled.SaveAlt,
+                        enabled = syncState !is BackupSyncManager.State.Working,
+                        primary = false,
+                        onClick = {
+                            scope.launch { BackupSyncManager.backupOfflineNow(context) }
+                        }
+                    )
+                    SyncStatusInline(state = syncState)
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -120,6 +129,8 @@ fun SettingsScreen(
                     Text("1.0", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -164,26 +175,89 @@ private fun ThemeOption(
 }
 
 @Composable
-private fun BackupOption(
-    label: String,
-    description: String,
+private fun BackupActionButton(
+    title: String,
+    subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    selected: Boolean,
+    enabled: Boolean,
+    primary: Boolean,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+    val containerColor = if (primary)
+        MaterialTheme.colorScheme.primary
+    else
+        MaterialTheme.colorScheme.surface
+    val contentColor = if (primary)
+        MaterialTheme.colorScheme.onPrimary
+    else
+        MaterialTheme.colorScheme.onSurface
+    val subtitleColor = if (primary)
+        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+    else
+        MaterialTheme.colorScheme.onSurfaceVariant
+
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(14.dp),
+        color = containerColor,
+        contentColor = contentColor,
+        tonalElevation = if (primary) 0.dp else 1.dp,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(label, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(description, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (primary) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)
+                        else MaterialTheme.colorScheme.primaryContainer
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    null,
+                    tint = if (primary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = contentColor)
+                Text(subtitle, fontSize = 12.sp, color = subtitleColor)
+            }
+            Icon(
+                Icons.Filled.ChevronRight,
+                null,
+                tint = subtitleColor,
+                modifier = Modifier.size(20.dp)
+            )
         }
-        RadioButton(selected = selected, onClick = onClick)
     }
 }
+
+@Composable
+private fun SyncStatusInline(state: BackupSyncManager.State) {
+    if (state is BackupSyncManager.State.Idle) return
+    Spacer(modifier = Modifier.height(12.dp))
+    val (icon, msg, tint) = when (state) {
+        is BackupSyncManager.State.Working -> Triple(Icons.Filled.Sync, state.message, MaterialTheme.colorScheme.primary)
+        is BackupSyncManager.State.Success -> Triple(Icons.Filled.CheckCircle, state.message, MaterialTheme.colorScheme.primary)
+        is BackupSyncManager.State.Error -> Triple(Icons.Filled.Error, state.message, MaterialTheme.colorScheme.error)
+        else -> return
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(msg, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+

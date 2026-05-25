@@ -333,7 +333,8 @@ fun PinItApp(
             SettingsScreen(
                 currentTheme = currentTheme,
                 onThemeChange = onThemeChange,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSignIn = { navController.navigate("sign_in") }
             )
         }
 
