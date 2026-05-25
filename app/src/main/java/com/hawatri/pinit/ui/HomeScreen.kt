@@ -649,14 +649,7 @@ fun NotesGrid(
                                   else androidx.compose.ui.graphics.Color.Transparent,
                     label = "drag_tint"
                 )
-                Box(
-                    modifier = Modifier
-                        .background(tint)
-                        .then(
-                            if (reorderMode) Modifier.longPressDraggableHandle()
-                            else Modifier
-                        )
-                ) {
+                Box(modifier = Modifier.background(tint)) {
                     NoteCard(
                         note = note,
                         isSelected = selectedNoteIds.contains(note.id),
@@ -666,6 +659,17 @@ fun NotesGrid(
                         onCopyClick = if (reorderMode) ({}) else onCopyClick,
                         onToggleAllClick = if (reorderMode) ({}) else onToggleAllClick
                     )
+                    // In reorder mode, an invisible overlay sits on top of the card
+                    // and owns the drag handle. Without this, NoteCard's own
+                    // combinedClickable/long-press fires first and pops the card menu
+                    // instead of starting the drag.
+                    if (reorderMode) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .longPressDraggableHandle()
+                        )
+                    }
                 }
             }
         }
