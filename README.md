@@ -4,7 +4,9 @@
 
 # PinIt
 
-**Pin everything that matters — notes, lists, links, contacts, locations, QR codes, audio, images, PDFs and apps — straight to your notification shade and home screen.**
+**Want to remember anything or get notified? Just PinIt.**
+
+Pin notes, lists, links, contacts, locations, QR codes, audio, images, PDFs and apps — straight to your notification shade and home screen.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Android](https://img.shields.io/badge/Platform-Android%2010%2B-3DDC84.svg)](https://developer.android.com)
@@ -19,7 +21,9 @@
 
 ## What is PinIt?
 
-PinIt is an Android notes app that turns *every* type of saved item — a checklist, a phone number, a map location, a QR code, a voice memo — into something you can actually act on without opening the app. Pin a checklist to your notification shade and tick items from there. Pin a contact and call them with one tap. Drop a location on the home screen and navigate to it instantly.
+**Want to remember anything or get notified? Just PinIt.**
+
+That's the whole pitch. PinIt is an Android notes app that turns *every* type of saved item — a checklist, a phone number, a map location, a QR code, a voice memo — into something you can actually act on without opening the app. Pin a checklist to your notification shade and tick items from there. Pin a contact and call them with one tap. Drop a location on the home screen and navigate to it instantly. Set a reminder and the note pings you at exactly the right moment.
 
 Inspired by the *Ruppu* notes app, rebuilt from scratch with Material 3, Jetpack Compose, and Room.
 
@@ -76,8 +80,19 @@ Two ways to back up, your choice:
 
 Both formats are the same plain JSON inside, so an offline backup taken on one device can later be uploaded to Drive (or vice versa).
 
+### Reminders & alarms — get notified at exactly the right moment
+Every note can carry a **scheduled reminder** with custom text. Pick a date and time in the editor, type whatever you want the alert to say ("call dentist", "leave for airport", "take medicine"), and PinIt fires an exact alarm at that moment — full notification, sound, vibration, and the note ready to open in one tap.
+
+Under the hood it uses **`AlarmManager.setExactAndAllowWhileIdle`**, which means:
+
+- ⏰ **Exact timing** — alarms fire to the second, not on Android's "approximate" batch schedule. A 9:00 reminder fires at 9:00, not 9:14.
+- 🌙 **Doze-resistant** — the `AndIdle` part lets the alarm wake the device even from deep Doze sleep, so a reminder set the night before still fires on time in the morning.
+- 🔁 **Reboot-safe** — `BootReceiver` re-arms every pending reminder when your phone restarts, so a reminder you set today still fires next Tuesday after a reboot in between.
+- 🛡️ **Permission-aware** — on Android 12+, exact alarms need the `SCHEDULE_EXACT_ALARM` permission. PinIt asks for it during onboarding with a clear explanation; if you skip it, reminders downgrade gracefully to inexact (still fires, just within a ~10-minute window).
+
+Reminders show as a small bell on the note's card so you can see at a glance which ones are scheduled, and the reminder text is preserved across edits — change the note body without losing the alarm.
+
 ### Smart extras
-- **Reminders** — exact alarms with custom text, fires a notification at the chosen moment
 - **Archive** — long-press to enter selection mode, archive in bulk with undo, or browse archive separately
 - **Pinned tab badge** — count of currently-pinned notes shown on the bottom nav
 - **Share-to-PinIt** — receive text, links, images, or `.ics` calendar files from any app
