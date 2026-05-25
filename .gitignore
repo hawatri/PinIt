@@ -57,3 +57,12 @@ captures/
 .DS_Store
 kiro-gateway/
 kiro-gateway/*
+
+# AI-assistant artifacts (Claude Code, Kiro, Cursor, Aider, etc.)
+.claude/
+.cursor/
+.aider*
+.kiro/
+CLAUDE.md
+IMPLEMENTATION_LOG.md
+research.txt
