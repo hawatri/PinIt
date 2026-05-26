@@ -79,7 +79,7 @@ Ten **Create** widgets (1×1 shortcuts to start a new note of a specific type �
 <!-- HOME-SCREEN WIDGETS — add screenshot(s) here                    -->
 <!-- Suggested: docs/images/feature_widgets.png                      -->
 <!-- ============================================================== -->
-<img src="docs/images/feature_widgets.png" alt="Home-screen widgets" width="80%" />
+<img src="docs/images/feature_widgets.png" alt="Home-screen widgets" width="50%" />
 
 </div>
 
@@ -92,7 +92,7 @@ Mark any note as locked and biometric (fingerprint / face / PIN) auth gates acce
 <!-- LOCKED NOTES — add screenshot(s) here                           -->
 <!-- Suggested: docs/images/feature_locked.png                       -->
 <!-- ============================================================== -->
-<img src="docs/images/feature_locked.png" alt="Locked notes with blur preview" width="80%" />
+<img src="docs/images/feature_locked.png" alt="Locked notes with blur preview" width="30%" />
 
 </div>
 
@@ -105,7 +105,7 @@ Five sort orders: Newest first, Oldest first, Title A→Z, Title Z→A, and **Ma
 <!-- SORT + REORDER — add screenshot(s) here                         -->
 <!-- Suggested: docs/images/feature_reorder.png                      -->
 <!-- ============================================================== -->
-<img src="docs/images/feature_reorder.png" alt="Sort and drag-to-reorder" width="80%" />
+<img src="docs/images/feature_reorder.png" alt="Sort and drag-to-reorder" width="50%" />
 
 </div>
 
