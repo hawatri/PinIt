@@ -183,7 +183,7 @@ Reminders show as a small bell on the note's card so you can see at a glance whi
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/images/screen_home_light.png" alt="Home screen — light mode" width="280" /><br />
+      <img src="docs/images/screen_home_light.png" alt="Home screen — light mode" width="220" /><br />
       <sub><b>Home — light</b><br />The staggered grid of notes, with type-specific cards. Tap a card to open, long-press to enter selection mode.</sub>
     </td>
     <td width="50%" align="center">
