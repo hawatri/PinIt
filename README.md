@@ -15,6 +15,14 @@ Pin notes, lists, links, contacts, locations, QR codes, audio, images, PDFs and 
 
 ### No ads · No premium tier · No tracking · 100% open source
 
+<br />
+
+<a href="../../releases/latest">
+  <img src="https://img.shields.io/badge/⬇%20Download%20PinIt-Latest%20APK-3DDC84?style=for-the-badge&logoColor=white&labelColor=1B5E20" alt="Download PinIt — latest APK" height="64" />
+</a>
+
+<sub>Android 10 or newer · ~10 MB · Free forever</sub>
+
 </div>
 
 ---
