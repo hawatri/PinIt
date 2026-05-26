@@ -66,7 +66,7 @@ Every note can be **pinned** to the notification shade with a custom layout that
 <!-- PERSISTENT PINS — add screenshot(s) here                        -->
 <!-- Suggested: docs/images/feature_pins.png                         -->
 <!-- ============================================================== -->
-<img src="docs/images/feature_pins.png" alt="Persistent pins" width="80%" />
+<img src="docs/images/feature_pins.png" alt="Persistent pins" width="50%" />
 
 </div>
 
