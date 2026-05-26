@@ -29,6 +29,14 @@ It is built from scratch with Material 3, Jetpack Compose, and Room.
 
 <div align="center">
 
+<div align="center">
+
+PinIt is distributed exclusively through **GitHub Releases**. There is no Play Store listing — pre-built APKs are signed and posted to the [releases page](../../releases) for every tagged version.
+
+<a href="../../releases/latest"><img src="https://img.shields.io/badge/Get%20it%20on-GitHub%20Releases-181717?style=for-the-badge&logo=github" alt="Get it on GitHub Releases" /></a>
+
+</div>
+
 <!-- ============================================================== -->
 <!-- HERO IMAGE                                                     -->
 <!-- File: docs/images/hero.png                                     -->
@@ -439,8 +447,6 @@ widget/        → 20 widget providers + shared renderer / config / service
 ```
 
 Type-specific data (`LinkNoteData`, `LocationNoteData`, etc.) is stored as JSON inside `note.text`, parsed via Gson. Database migrations are data-preserving — no `fallbackToDestructiveMigration` anywhere.
-
-For deeper architecture notes see [`CLAUDE.md`](CLAUDE.md) and the per-session decision log in [`IMPLEMENTATION_LOG.md`](IMPLEMENTATION_LOG.md).
 
 ---
 
