@@ -25,7 +25,7 @@ Pin notes, lists, links, contacts, locations, QR codes, audio, images, PDFs and 
 
 That's the whole pitch. PinIt is an Android notes app that turns *every* type of saved item — a checklist, a phone number, a map location, a QR code, a voice memo — into something you can actually act on without opening the app. Pin a checklist to your notification shade and tick items from there. Pin a contact and call them with one tap. Drop a location on the home screen and navigate to it instantly. Set a reminder and the note pings you at exactly the right moment.
 
-Inspired by the *Ruppu* notes app, rebuilt from scratch with Material 3, Jetpack Compose, and Room.
+It is built from scratch with Material 3, Jetpack Compose, and Room.
 
 <div align="center">
 
@@ -60,17 +60,67 @@ Inspired by the *Ruppu* notes app, rebuilt from scratch with Material 3, Jetpack
 ### Persistent pins
 Every note can be **pinned** to the notification shade with a custom layout that matches its type — checkboxes for lists, big-picture QR codes, dial buttons for contacts, navigate buttons for locations, play/stop for audio. Pins survive reboot.
 
+<div align="center">
+
+<!-- ============================================================== -->
+<!-- PERSISTENT PINS — add screenshot(s) here                        -->
+<!-- Suggested: docs/images/feature_pins.png                         -->
+<!-- ============================================================== -->
+<img src="docs/images/feature_pins.png" alt="Persistent pins" width="80%" />
+
+</div>
+
 ### 20 home-screen widgets
 Ten **Create** widgets (1×1 shortcuts to start a new note of a specific type — tap and you're straight into the editor) and ten **Add** widgets (live-rendering tiles bound to one of your existing notes — they show real content, not just a shortcut). Each widget is type-specific in size: the checklist widget is portrait, the contact widget is short and wide, the image widget is a 3×3 square. All sizes fixed for consistency, no resize-to-mush.
+
+<div align="center">
+
+<!-- ============================================================== -->
+<!-- HOME-SCREEN WIDGETS — add screenshot(s) here                    -->
+<!-- Suggested: docs/images/feature_widgets.png                      -->
+<!-- ============================================================== -->
+<img src="docs/images/feature_widgets.png" alt="Home-screen widgets" width="80%" />
+
+</div>
 
 ### Locked notes with blur preview
 Mark any note as locked and biometric (fingerprint / face / PIN) auth gates access. The home screen still shows the card, but blurred — you can see *that* a private note exists in its slot without leaking the contents. Tapping prompts for auth before opening; the lock state also blocks the card's quick actions (copy, share, call) until you unlock.
 
+<div align="center">
+
+<!-- ============================================================== -->
+<!-- LOCKED NOTES — add screenshot(s) here                           -->
+<!-- Suggested: docs/images/feature_locked.png                       -->
+<!-- ============================================================== -->
+<img src="docs/images/feature_locked.png" alt="Locked notes with blur preview" width="80%" />
+
+</div>
+
 ### Sort + drag-to-reorder
 Five sort orders: Newest first, Oldest first, Title A→Z, Title Z→A, and **Manual**. Pick Manual and the home screen enters reorder mode — long-press any card to grab it, drag to reposition, watch the staggered grid auto-flow around your finger. Tick (✓) saves the new order; cross (✗) discards. Saved order survives restarts.
 
+<div align="center">
+
+<!-- ============================================================== -->
+<!-- SORT + REORDER — add screenshot(s) here                         -->
+<!-- Suggested: docs/images/feature_reorder.png                      -->
+<!-- ============================================================== -->
+<img src="docs/images/feature_reorder.png" alt="Sort and drag-to-reorder" width="80%" />
+
+</div>
+
 ### Labels (multi-tag organisation)
 Apply any number of labels to a note. The Labels tab browses every label you've made with a count badge per label; tap one to filter the home screen down to just those notes. Rename or delete labels with full undo — deleting a label strips it off every note that had it, but undo restores the *exact* prior label state per note (matters when notes had multiple labels).
+
+<div align="center">
+
+<!-- ============================================================== -->
+<!-- LABELS — add screenshot(s) here                                 -->
+<!-- Suggested: docs/images/feature_labels.png                       -->
+<!-- ============================================================== -->
+<img src="docs/images/feature_labels.png" alt="Labels" width="80%" />
+
+</div>
 
 ### Online + offline backup
 Two ways to back up, your choice:
@@ -79,6 +129,16 @@ Two ways to back up, your choice:
 - **Offline (local file)** — One tap writes a timestamped `pinit_backup_<date>.pinit` file to your `Downloads/PinIt/` folder. Visible in any file manager, transferable over USB, restorable anytime. No account required.
 
 Both formats are the same plain JSON inside, so an offline backup taken on one device can later be uploaded to Drive (or vice versa).
+
+<div align="center">
+
+<!-- ============================================================== -->
+<!-- BACKUP — add screenshot(s) here                                 -->
+<!-- Suggested: docs/images/feature_backup.png                       -->
+<!-- ============================================================== -->
+<img src="docs/images/feature_backup.png" alt="Online and offline backup" width="80%" />
+
+</div>
 
 ### Reminders & alarms — get notified at exactly the right moment
 Every note can carry a **scheduled reminder** with custom text. Pick a date and time in the editor, type whatever you want the alert to say ("call dentist", "leave for airport", "take medicine"), and PinIt fires an exact alarm at that moment — full notification, sound, vibration, and the note ready to open in one tap.
