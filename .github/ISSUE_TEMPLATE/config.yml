@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Email the developer
+    url: mailto:kiahawatri@gmail.com
+    about: For private issues, security reports, or anything you'd rather not post in public.
+  - name: Read the docs
+    url: https://github.com/hawatri/PinIt#readme
+    about: Check the README for features, permissions, and build instructions.

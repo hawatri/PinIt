@@ -1,0 +1,90 @@
+name: Bug report
+description: Something isn't working the way it should
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill in as much as you can — device + version info is usually what makes the difference between "fixed in 5 minutes" and "can't reproduce."
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I tap the pin icon on a checklist note, the app crashes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      placeholder: The note should pin to the notification shade.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps so someone else can see the same bug.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: PinIt version
+      description: Find it in Settings → About, or check the APK filename you installed.
+      placeholder: v1.0
+    validations:
+      required: true
+
+  - type: input
+    id: android-version
+    attributes:
+      label: Android version
+      placeholder: Android 14 (API 34)
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device model
+      placeholder: Pixel 7, Samsung Galaxy S23, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or screen recording
+      description: Drag images directly into this box. Optional but very helpful.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logcat output
+      description: |
+        Optional. If you can grab a logcat around the time of the crash, paste it here. From a connected device run:
+        ```
+        adb logcat -d *:E | grep pinit
+        ```
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I'm running the latest release from GitHub
+          required: true
+        - label: I searched existing issues and didn't find a duplicate
+          required: true
