@@ -187,7 +187,7 @@ Reminders show as a small bell on the note's card so you can see at a glance whi
       <sub><b>Home — light</b><br />The staggered grid of notes, with type-specific cards. Tap a card to open, long-press to enter selection mode.</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/images/screen_home_dark.png" alt="Home screen — dark mode" width="280" /><br />
+      <img src="docs/images/screen_home_dark.png" alt="Home screen — dark mode" width="220" /><br />
       <sub><b>Home — dark</b><br />Material You dark theme. Same card layout, deeper background, lavender accents from the dynamic palette.</sub>
     </td>
   </tr>
@@ -245,21 +245,21 @@ Reminders show as a small bell on the note's card so you can see at a glance whi
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/images/screen_notif_checklist.png" alt="Checklist notification" width="280" /><br />
+      <img src="docs/images/screen_notif_checklist.png" alt="Checklist notification" width="220" /><br />
       <sub><b>Checklist on the shade</b><br />Two-column tickable rows, "Add task" inline input, Check all / Remove actions. Survives reboot.</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/images/screen_notif_contact.png" alt="Contact notification" width="280" /><br />
+      <img src="docs/images/screen_notif_contact.png" alt="Contact notification" width="220" /><br />
       <sub><b>Contact one-tap dial</b><br />Pin a contact and the notification gets a dedicated <b>Call</b> button — fires the dialler with no extra permission.</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/images/screen_notif_qr.png" alt="QR notification" width="280" /><br />
+      <img src="docs/images/screen_notif_qr.png" alt="QR notification" width="220" /><br />
       <sub><b>QR on the shade</b><br />Big-picture style with the regenerated QR bitmap. Open / Copy actions for URL payloads.</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/images/screen_notif_location.png" alt="Location notification" width="280" /><br />
+      <img src="docs/images/screen_notif_location.png" alt="Location notification" width="220" /><br />
       <sub><b>Location with Navigate</b><br />Address as the body, <b>Navigate</b> action sends a <code>geo:</code> intent to your default maps app.</sub>
     </td>
   </tr>
@@ -270,11 +270,11 @@ Reminders show as a small bell on the note's card so you can see at a glance whi
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/images/screen_lock_blur.png" alt="Locked card with blur" width="280" /><br />
+      <img src="docs/images/screen_lock_blur.png" alt="Locked card with blur" width="220" /><br />
       <sub><b>Blurred preview</b><br />Locked notes still take their slot in the grid, but their contents are blurred. The lock icon overlays the card; quick-action taps are blocked until you unlock.</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/images/screen_lock_unlock.png" alt="Biometric prompt" width="280" /><br />
+      <img src="docs/images/screen_lock_unlock.png" alt="Biometric prompt" width="220" /><br />
       <sub><b>Biometric prompt</b><br />Tap a locked card → fingerprint / face / PIN. On success the note opens; failure leaves it sealed.</sub>
     </td>
   </tr>
@@ -285,11 +285,11 @@ Reminders show as a small bell on the note's card so you can see at a glance whi
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/images/screen_sort_menu.png" alt="Sort menu" width="280" /><br />
+      <img src="docs/images/screen_sort_menu.png" alt="Sort menu" width="220" /><br />
       <sub><b>Sort menu</b><br />Five orders. Newest, Oldest, Title A→Z, Title Z→A, and Manual. Tap Manual to enter drag mode.</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/images/screen_drag_reorder.png" alt="Drag to reorder" width="280" /><br />
+      <img src="docs/images/screen_drag_reorder.png" alt="Drag to reorder" width="220" /><br />
       <sub><b>Manual reorder</b><br />Long-press any card and drag. The grid reflows live. ✓ saves the new order; ✗ discards. Order survives app restarts.</sub>
     </td>
   </tr>
@@ -300,11 +300,11 @@ Reminders show as a small bell on the note's card so you can see at a glance whi
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/images/screen_labels_browser.png" alt="Labels tab" width="280" /><br />
+      <img src="docs/images/screen_labels_browser.png" alt="Labels tab" width="220" /><br />
       <sub><b>Labels tab</b><br />Every label you've ever used with a count badge. Tap to filter, kebab menu to rename or delete.</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/images/screen_labels_editor.png" alt="Labels editor on a note" width="280" /><br />
+      <img src="docs/images/screen_labels_editor.png" alt="Labels editor on a note" width="220" /><br />
       <sub><b>Apply labels</b><br />Full-screen sheet on every editor. Search, create new on the fly, multi-select. Rename / delete with full undo.</sub>
     </td>
   </tr>
@@ -334,11 +334,11 @@ Reminders show as a small bell on the note's card so you can see at a glance whi
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/images/screen_backup_online.png" alt="Online backup to Drive" width="280" /><br />
+      <img src="docs/images/screen_backup_online.png" alt="Online backup to Drive" width="220" /><br />
       <sub><b>Online — Google Drive</b><br />One-tap upload to <code>My Drive/PinIt/pinit_backup.pinit</code>. Uses the <code>DRIVE_FILE</code> scope, so PinIt can only see files it created — never the rest of your Drive.</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/images/screen_backup_offline.png" alt="Offline backup to Downloads" width="280" /><br />
+      <img src="docs/images/screen_backup_offline.png" alt="Offline backup to Downloads" width="220" /><br />
       <sub><b>Offline — local file</b><br />Saves a timestamped <code>.pinit</code> archive to <code>Download/PinIt/</code>. No account, no permissions, transferable over USB.</sub>
     </td>
   </tr>
