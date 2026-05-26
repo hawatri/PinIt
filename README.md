@@ -21,7 +21,7 @@ Pin notes, lists, links, contacts, locations, QR codes, audio, images, PDFs and 
   <img src="https://img.shields.io/badge/⬇%20Download%20PinIt-Latest%20APK-3DDC84?style=for-the-badge&logoColor=white&labelColor=1B5E20" alt="Download PinIt — latest APK" height="64" />
 </a>
 
-<sub>Android 10 or newer · ~10 MB · Free forever</sub>
+<sub>Android 10 or newer · ~80 MB · Free forever</sub>
 
 </div>
 
@@ -407,7 +407,7 @@ PinIt is distributed exclusively through **GitHub Releases**. There is no Play S
 ### Clone & build
 
 ```bash
-git clone https://github.com/<your-username>/PinIt.git
+git clone https://github.com/hawatri/PinIt.git
 cd PinIt
 ./gradlew assembleDebug          # macOS / Linux
 gradlew.bat assembleDebug        # Windows PowerShell
@@ -422,17 +422,28 @@ adb shell am start -n com.hawatri.pinit/.MainActivity
 ```
 
 ### Release build
-A release build needs a signing keystore at the project root (`pinit_keystore`). Generate one if needed:
+The release build is wired to read its signing credentials from a `keystore.properties` file at the project root (gitignored). Generate a keystore if you don't have one:
 
 ```bash
 keytool -genkey -v -keystore pinit_keystore -alias pinit -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-Then add a `signingConfigs.release` block to `app/build.gradle.kts` and run:
+Then create `keystore.properties` next to `gradlew.bat` with the matching values:
+
+```properties
+storeFile=pinit_keystore
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=pinit
+keyPassword=YOUR_KEY_PASSWORD
+```
+
+And build:
 
 ```bash
 ./gradlew assembleRelease
 ```
+
+The signed APK lands in `app/build/outputs/apk/release/app-release.apk`.
 
 ### Cloud backup setup (optional)
 
@@ -531,5 +542,5 @@ PinIt is released under the [MIT License](LICENSE). You're free to use, modify, 
 ---
 
 <div align="center">
-<sub>Made with care by <a href="https://github.com/<your-username>">Kia Hawatri</a></sub>
+<sub>Made with care by <a href="https://github.com/hawatri">Kia Hawatri</a></sub>
 </div>
