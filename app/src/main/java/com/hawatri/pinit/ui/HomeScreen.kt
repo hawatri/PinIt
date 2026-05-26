@@ -1,5 +1,8 @@
 package com.hawatri.pinit.ui
 
+import android.app.Activity
+import android.app.KeyguardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.biometric.BiometricManager
@@ -186,16 +189,53 @@ fun HomeScreen(
             .build()
     }
 
+    // Fallback for devices with no biometric enrolled — opens the system PIN /
+    // pattern / password sheet via KeyguardManager. Resolves the pending locked
+    // note on Activity.RESULT_OK; any other result clears the pending state.
+    val credentialLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            pendingLockedNote.value?.let { onNoteClick(it) }
+        }
+        pendingLockedNote.value = null
+    }
+
     fun handleNoteClick(note: Note) {
         if (note.isLocked) {
-            val canAuth = BiometricManager.from(context)
-                .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-            if (canAuth == BiometricManager.BIOMETRIC_SUCCESS) {
-                pendingLockedNote.value = note
-                biometricPrompt.authenticate(biometricPromptInfo)
-            } else {
-                // No biometric enrolled — open directly (degrade gracefully)
-                onNoteClick(note)
+            val biometricManager = BiometricManager.from(context)
+            val canBiometric = biometricManager.canAuthenticate(
+                BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            )
+            when (canBiometric) {
+                BiometricManager.BIOMETRIC_SUCCESS -> {
+                    pendingLockedNote.value = note
+                    biometricPrompt.authenticate(biometricPromptInfo)
+                }
+                else -> {
+                    // No biometric / device credential combo accepted by BiometricPrompt.
+                    // Fall through to KeyguardManager: PIN, pattern, or password sheet.
+                    val keyguard = context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+                    if (keyguard?.isDeviceSecure == true) {
+                        @Suppress("DEPRECATION")
+                        val intent = keyguard.createConfirmDeviceCredentialIntent(
+                            "Unlock Note",
+                            "Enter your PIN, pattern, or password to open this note"
+                        )
+                        if (intent != null) {
+                            pendingLockedNote.value = note
+                            credentialLauncher.launch(intent)
+                        } else {
+                            // Couldn't build the credential intent — open directly.
+                            // The home-screen blur stays because note.isLocked is unchanged.
+                            onNoteClick(note)
+                        }
+                    } else {
+                        // Device has no screen lock (or swipe-only). Nothing to prompt
+                        // with, so open the note. The blur on the card stays in place.
+                        onNoteClick(note)
+                    }
+                }
             }
         } else {
             onNoteClick(note)
