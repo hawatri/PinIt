@@ -118,7 +118,7 @@ Apply any number of labels to a note. The Labels tab browses every label you've 
 <!-- LABELS — add screenshot(s) here                                 -->
 <!-- Suggested: docs/images/feature_labels.png                       -->
 <!-- ============================================================== -->
-<img src="docs/images/feature_labels.png" alt="Labels" width="80%" />
+<img src="docs/images/feature_labels.png" alt="Labels" width="50%" />
 
 </div>
 
@@ -136,7 +136,7 @@ Both formats are the same plain JSON inside, so an offline backup taken on one d
 <!-- BACKUP — add screenshot(s) here                                 -->
 <!-- Suggested: docs/images/feature_backup.png                       -->
 <!-- ============================================================== -->
-<img src="docs/images/feature_backup.png" alt="Online and offline backup" width="80%" />
+<img src="docs/images/feature_backup.png" alt="Online and offline backup" width="30%" />
 
 </div>
 
