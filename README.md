@@ -498,7 +498,7 @@ PinIt's privacy story is short: **everything stays on your device, unless you ex
 
 ## Contributing
 
-Issues and pull requests are welcome. If you're planning anything bigger than a bug fix, please open an issue first so we can talk it through. Coding style follows the conventions called out in [`CLAUDE.md`](CLAUDE.md) — read that before diving in.
+Found a bug or have an idea? Just [open an issue](../../issues/new) — that's the easiest way to get in touch. You can also tap **Report an issue** in the app's Settings screen, which opens your mail app pre-addressed to <kiahawatri@gmail.com>.
 
 ---
 
