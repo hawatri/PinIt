@@ -48,6 +48,9 @@ captures/
 # Keystore files
 *.jks
 *.keystore
+pinit_keystore
+pinit_keystore_*
+keystore.properties
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
