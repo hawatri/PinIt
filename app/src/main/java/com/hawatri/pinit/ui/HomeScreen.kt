@@ -502,19 +502,55 @@ fun HomeScreen(
                 androidx.compose.animation.AnimatedContent(
                     targetState = selectedBottomTab to selectedLabel,
                     transitionSpec = {
-                        (androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220)) +
+                        // Issue #1: a fade-only exit left the outgoing content sitting at
+                        // center while the new content slid in only `fullWidth/6` — the
+                        // two overlapped at the same x and looked "doubled". Pair the
+                        // slide-in with a matching slide-out so they swap past each other.
+                        val forward = targetState.first > initialState.first
+                        val enter = androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(180)) +
                             androidx.compose.animation.slideInHorizontally(
                                 animationSpec = androidx.compose.animation.core.tween(220),
-                                initialOffsetX = { fullWidth -> if (targetState.first > initialState.first) fullWidth / 6 else -fullWidth / 6 }
-                            )).togetherWith(
-                                androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(160))
+                                initialOffsetX = { fullWidth -> if (forward) fullWidth else -fullWidth }
                             )
+                        val exit = androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(180)) +
+                            androidx.compose.animation.slideOutHorizontally(
+                                animationSpec = androidx.compose.animation.core.tween(220),
+                                targetOffsetX = { fullWidth -> if (forward) -fullWidth else fullWidth }
+                            )
+                        enter.togetherWith(exit)
                     },
                     label = "tab_content"
-                ) { _ ->
+                ) { (animTab, animLabel) ->
+                // Each panel computes its OWN filtered/sorted list keyed on the lambda's
+                // (tab, label), not the outer `displayNotes`. Without this, the outgoing
+                // panel re-reads the new tab's data the instant `selectedBottomTab` flips
+                // and snaps to the new content before the slide even begins — producing
+                // the "tab loads twice, once without animation then again with" flicker.
+                val panelNotes = remember(animTab, animLabel, allNotes, searchQuery, sortOrder, manualOrder) {
+                    val base = when (animTab) {
+                        1 -> allNotes.filter { it.isPinned && !it.isArchived }
+                        2 -> if (animLabel != null) allNotes.filter { !it.isArchived && animLabel in it.labels } else emptyList()
+                        else -> allNotes.filter { !it.isArchived }
+                    }
+                    val filtered = base.filter { note ->
+                        if (searchQuery.isBlank()) true
+                        else note.title.contains(searchQuery, ignoreCase = true) ||
+                             note.text.contains(searchQuery, ignoreCase = true)
+                    }
+                    when (sortOrder) {
+                        SortOrder.NEWEST_FIRST -> filtered.sortedByDescending { it.timestamp }
+                        SortOrder.OLDEST_FIRST -> filtered.sortedBy { it.timestamp }
+                        SortOrder.TITLE_AZ -> filtered.sortedBy { it.title.lowercase() }
+                        SortOrder.TITLE_ZA -> filtered.sortedByDescending { it.title.lowercase() }
+                        SortOrder.MANUAL -> {
+                            val rank = manualOrder.withIndex().associate { it.value to it.index }
+                            filtered.sortedWith(compareBy({ rank[it.id] ?: Int.MAX_VALUE }, { -it.timestamp }))
+                        }
+                    }
+                }
                 when {
                     // Labels tab — no label selected: show label browser
-                    selectedBottomTab == 2 && selectedLabel == null -> {
+                    animTab == 2 && animLabel == null -> {
                         val allLabels = remember(allNotes) {
                             allNotes.filter { !it.isArchived }
                                 .flatMap { it.labels }
@@ -531,14 +567,14 @@ fun HomeScreen(
                         )
                     }
                     // Labels tab — label selected: show filtered notes
-                    selectedBottomTab == 2 && selectedLabel != null -> {
+                    animTab == 2 && animLabel != null -> {
                         Column {
                         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { selectedLabel = null }) { Icon(Icons.Filled.ArrowBack, "Back") }
-                            Text(selectedLabel!!, style = MaterialTheme.typography.titleMedium)
+                            Text(animLabel, style = MaterialTheme.typography.titleMedium)
                         }
-                        if (displayNotes.isNotEmpty()) {
-                            NotesGrid(notes = displayNotes, selectedNoteIds = selectedNoteIds, isSelectionMode = isSelectionMode,
+                        if (panelNotes.isNotEmpty()) {
+                            NotesGrid(notes = panelNotes, selectedNoteIds = selectedNoteIds, isSelectionMode = isSelectionMode,
                                 onNoteClick = { id -> if (isSelectionMode) selectedNoteIds = if (id in selectedNoteIds) selectedNoteIds - id else selectedNoteIds + id else allNotes.find { it.id == id }?.let { handleNoteClick(it) } },
                                 onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
                                 onPinClick = { note -> runWithNotifPermission { viewModel.togglePin(note); if (!note.isPinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType) else notificationHelper.unpinNoteFromNotification(note.id) } },
@@ -546,16 +582,18 @@ fun HomeScreen(
                                 onToggleAllClick = { note -> val g = Gson(); val items = try { g.fromJson(note.text, Array<ChecklistItemData>::class.java).toList() } catch (e: Exception) { emptyList() }; val all = items.isNotEmpty() && items.all { it.isChecked }; val n = note.copy(text = g.toJson(items.map { it.copy(isChecked = !all) })); viewModel.updateNote(n); if (n.isPinned) notificationHelper.pinNoteToNotification(n.id, n.title, n.text, true) }
                             )
                         } else {
-                            EmptyStateView(icon = Icons.Filled.Label, message = "No notes with label \"${selectedLabel}\"")
+                            EmptyStateView(icon = Icons.Filled.Label, message = "No notes with label \"$animLabel\"")
                         }
                         }
                     }
                     // Home / Pinned tabs
-                    displayNotes.isNotEmpty() -> {
+                    panelNotes.isNotEmpty() -> {
                         // In reorder mode the user is editing draftOrder; outside it
-                        // we just show the sorted displayNotes. draftOrder is committed
+                        // we just show this panel's notes. draftOrder is committed
                         // to manualOrder when the user taps ✓ in the reorder top bar.
-                        val gridSource = if (reorderMode) draftOrder else displayNotes
+                        // Reorder only applies to the currently-active tab — outgoing
+                        // panels always show their own panelNotes.
+                        val gridSource = if (reorderMode && animTab == selectedBottomTab && animLabel == selectedLabel) draftOrder else panelNotes
                         NotesGrid(
                             notes = gridSource,
                             selectedNoteIds = selectedNoteIds,
@@ -589,7 +627,7 @@ fun HomeScreen(
                                 viewModel.updateNote(newNote)
                                 if (newNote.isPinned) notificationHelper.pinNoteToNotification(newNote.id, newNote.title, newNote.text, true)
                             },
-                            reorderMode = reorderMode,
+                            reorderMode = reorderMode && animTab == selectedBottomTab && animLabel == selectedLabel,
                             onMove = { from, to ->
                                 draftOrder = draftOrder.toMutableList().apply {
                                     add(to, removeAt(from))
@@ -598,8 +636,8 @@ fun HomeScreen(
                         )
                     }
                     else -> {
-                        val icon = if (selectedBottomTab == 1) Icons.Filled.PushPin else Icons.Filled.Article
-                        val msg = if (selectedBottomTab == 1) "No pinned items" else "No items"
+                        val icon = if (animTab == 1) Icons.Filled.PushPin else Icons.Filled.Article
+                        val msg = if (animTab == 1) "No pinned items" else "No items"
                         EmptyStateView(icon = icon, message = msg)
                     }
                 }
