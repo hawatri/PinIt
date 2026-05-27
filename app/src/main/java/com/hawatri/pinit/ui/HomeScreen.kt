@@ -711,6 +711,16 @@ fun HomeScreen(
                     modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 120.dp)
                 )
             }
+
+            // Post-update banner — sits above the bottom nav AND above the FAB
+            // so the + button never covers it. Drawn last in the Box so its
+            // z-order is on top of everything else on Home. Auto-dismisses after
+            // first view (× tap or "Show Full Changelog" tap).
+            PostUpdateBanner(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 96.dp)
+            )
         }
     }
 }

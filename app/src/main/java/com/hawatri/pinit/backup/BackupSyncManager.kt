@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import com.hawatri.pinit.data.AppPreferences
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.data.NoteDatabase
@@ -34,6 +35,8 @@ import java.util.Locale
  * sync would need a tombstone table, deferred for v1.
  */
 object BackupSyncManager {
+
+    private const val TAG = "PinItBackup"
 
     sealed class State {
         data object Idle : State()
@@ -80,6 +83,7 @@ object BackupSyncManager {
             AppPreferences.setLastSyncAt(context, System.currentTimeMillis())
             _state.value = State.Success("Backed up ${json.length / 1024} KB to Drive")
         } catch (e: Exception) {
+            Log.e(TAG, "backupNow failed", e)
             _state.value = State.Error(e.message ?: "Backup failed")
         }
     }
@@ -107,6 +111,7 @@ object BackupSyncManager {
             }
             _state.value = State.Success("Saved to $savedPath")
         } catch (e: Exception) {
+            Log.e(TAG, "backupOfflineNow failed", e)
             _state.value = State.Error(e.message ?: "Offline backup failed")
         }
     }
@@ -205,6 +210,7 @@ object BackupSyncManager {
                 else "Up to date — ${result.finalCount} notes"
             )
         } catch (e: Exception) {
+            Log.e(TAG, "$source merge failed", e)
             _state.value = State.Error(e.message ?: "$source failed")
         }
     }

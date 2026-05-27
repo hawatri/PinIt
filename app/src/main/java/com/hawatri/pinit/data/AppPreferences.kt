@@ -17,6 +17,7 @@ object AppPreferences {
     private const val KEY_INITIAL_MERGE_DONE = "initial_merge_done"
     private const val KEY_ONBOARDING_DONE = "onboarding_done"
     private const val KEY_MANUAL_ORDER = "manual_order"
+    private const val KEY_LAST_SEEN_VERSION_CODE = "last_seen_version_code"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -84,5 +85,13 @@ object AppPreferences {
 
     fun setManualOrder(context: Context, ids: List<String>) {
         prefs(context).edit().putString(KEY_MANUAL_ORDER, ids.joinToString(",")).apply()
+    }
+
+    /** versionCode the user has already seen the post-update banner for. -1 = never seen. */
+    fun getLastSeenVersionCode(context: Context): Int =
+        prefs(context).getInt(KEY_LAST_SEEN_VERSION_CODE, -1)
+
+    fun setLastSeenVersionCode(context: Context, code: Int) {
+        prefs(context).edit().putInt(KEY_LAST_SEEN_VERSION_CODE, code).apply()
     }
 }
