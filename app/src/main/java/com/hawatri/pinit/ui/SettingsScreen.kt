@@ -23,6 +23,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.hawatri.pinit.backup.BackupSyncManager
 import com.hawatri.pinit.backup.GoogleAuthManager
 import com.hawatri.pinit.data.ThemeMode
@@ -40,6 +42,16 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val syncState by BackupSyncManager.state.collectAsState()
     val signedIn = remember { GoogleAuthManager.currentAccount(context) != null }
+
+    // Restore-from-file picker — accepts our .pinit archives (octet-stream)
+    // and any file the user explicitly picks from a manager.
+    val restorePickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch { BackupSyncManager.restoreFromUri(context, uri) }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -112,6 +124,17 @@ fun SettingsScreen(
                         primary = false,
                         onClick = {
                             scope.launch { BackupSyncManager.backupOfflineNow(context) }
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    BackupActionButton(
+                        title = "Restore from file",
+                        subtitle = "Pick a .pinit file from your device",
+                        icon = Icons.Filled.FileOpen,
+                        enabled = syncState !is BackupSyncManager.State.Working,
+                        primary = false,
+                        onClick = {
+                            restorePickerLauncher.launch(arrayOf("application/octet-stream", "*/*"))
                         }
                     )
                     SyncStatusInline(state = syncState)

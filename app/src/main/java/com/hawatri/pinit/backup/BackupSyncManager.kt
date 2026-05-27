@@ -150,6 +150,44 @@ object BackupSyncManager {
         runMerge(context, source = "Restore")
     }
 
+    /**
+     * Restore from a `.pinit` file the user picked from local storage. Uses the
+     * same merge-by-timestamp logic as Drive restore so a partial local archive
+     * can be combined with whatever's already on the device. No Drive round-trip.
+     */
+    suspend fun restoreFromUri(context: Context, uri: android.net.Uri) {
+        _state.value = State.Working("Restoring from file…")
+        try {
+            val result = withContext(Dispatchers.IO) {
+                val json = context.contentResolver.openInputStream(uri)?.use { stream ->
+                    stream.bufferedReader(Charsets.UTF_8).readText()
+                } ?: throw IllegalStateException("Couldn't read file")
+
+                val archive = PinItBackup.fromJson(json)
+                val pathRemap = PinItBackup.writeAudioBlobs(context, archive.audioBlobs)
+                val archiveNotes = PinItBackup.rewriteAudioPaths(archive.notes, pathRemap)
+                val localNotes = snapshotNotes(context)
+
+                val merged = mergeByTimestamp(localNotes, archiveNotes)
+                val dao = NoteDatabase.getDatabase(context).noteDao()
+                merged.forEach { dao.insertNote(it) }
+
+                MergeOutcome(
+                    uploaded = merged.size,
+                    restored = archiveNotes.count { a -> localNotes.none { it.id == a.id } },
+                    finalCount = merged.size
+                )
+            }
+            _state.value = State.Success(
+                if (result.restored > 0) "Restored ${result.restored} notes; ${result.finalCount} total"
+                else "Up to date — ${result.finalCount} notes"
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "restoreFromUri failed", e)
+            _state.value = State.Error(e.message ?: "Restore from file failed")
+        }
+    }
+
     private suspend fun runMerge(context: Context, source: String) {
         _state.value = State.Working("$source — checking Drive…")
         try {
