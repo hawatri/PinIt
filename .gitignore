@@ -69,6 +69,8 @@ kiro-gateway/*
 CLAUDE.md
 IMPLEMENTATION_LOG.md
 research.txt
+BETA.md
+HowToBuild.md
 # Source assets for the app icon (kept out — final PNGs live under res/)
 /images/
 pinit_keystore.old.bak
