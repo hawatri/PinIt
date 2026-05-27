@@ -49,5 +49,6 @@ data class Note(
     val isLocked: Boolean = false,
     val labels: List<String> = emptyList(),
     val timestamp: Long = System.currentTimeMillis(),
-    val reminderText: String? = null
+    val reminderText: String? = null,
+    val reminders: List<Long> = emptyList()
 )

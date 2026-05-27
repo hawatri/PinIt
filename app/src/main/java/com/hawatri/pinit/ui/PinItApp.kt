@@ -32,6 +32,8 @@ import com.hawatri.pinit.viewmodel.PinItViewModelFactory
 fun PinItApp(
     sharedText: String? = null,
     sharedImageUri: String? = null,
+    sharedPdfUri: String? = null,
+    sharedAudioUri: String? = null,
     sharedIcsUri: String? = null,
     widgetAction: String? = null,
     widgetOpenNoteId: String? = null,
@@ -112,6 +114,26 @@ fun PinItApp(
         if (sharedImageUri != null) {
             val encoded = Uri.encode(sharedImageUri)
             navController.navigate("new_image?imageUri=$encoded")
+        }
+    }
+
+    LaunchedEffect(sharedPdfUri) {
+        if (sharedPdfUri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    Uri.parse(sharedPdfUri),
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) { }
+            val encoded = Uri.encode(sharedPdfUri)
+            navController.navigate("new_pdf?pdfUri=$encoded")
+        }
+    }
+
+    LaunchedEffect(sharedAudioUri) {
+        if (sharedAudioUri != null) {
+            val encoded = Uri.encode(sharedAudioUri)
+            navController.navigate("new_audio?audioUri=$encoded")
         }
     }
 
@@ -290,22 +312,30 @@ fun PinItApp(
         }
 
         composable(
-            route = "new_pdf?noteId={noteId}",
-            arguments = listOf(navArgument("noteId") { type = NavType.StringType; nullable = true; defaultValue = null })
+            route = "new_pdf?noteId={noteId}&pdfUri={pdfUri}",
+            arguments = listOf(
+                navArgument("noteId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("pdfUri") { type = NavType.StringType; nullable = true; defaultValue = null }
+            )
         ) { backStackEntry ->
             NewPDFScreen(
                 noteId = backStackEntry.arguments?.getString("noteId"),
+                prefillPdfUri = backStackEntry.arguments?.getString("pdfUri"),
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = sharedViewModel
             )
         }
 
         composable(
-            route = "new_audio?noteId={noteId}",
-            arguments = listOf(navArgument("noteId") { type = NavType.StringType; nullable = true; defaultValue = null })
+            route = "new_audio?noteId={noteId}&audioUri={audioUri}",
+            arguments = listOf(
+                navArgument("noteId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("audioUri") { type = NavType.StringType; nullable = true; defaultValue = null }
+            )
         ) { backStackEntry ->
             NewAudioScreen(
                 noteId = backStackEntry.arguments?.getString("noteId"),
+                prefillAudioUri = backStackEntry.arguments?.getString("audioUri"),
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = sharedViewModel
             )

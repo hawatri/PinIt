@@ -32,7 +32,7 @@ import com.google.gson.Gson
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.data.NoteType
 import com.hawatri.pinit.util.NotificationHelper
-import com.hawatri.pinit.util.cancelAlarm
+import com.hawatri.pinit.util.cancelAlarmAt
 import com.hawatri.pinit.util.formatAlarmText
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import java.util.UUID
@@ -81,7 +81,7 @@ fun NewContactScreen(
     var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
     var showLabelsSheet by remember { mutableStateOf(false) }
-    var currentReminderText by remember { mutableStateOf<String?>(null) }
+    var reminders by remember { mutableStateOf(listOf<Long>()) }
     var showReminderMenu by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -106,7 +106,7 @@ fun NewContactScreen(
                 isLocked = existing.isLocked
                 colorHex = existing.colorHex
                 labels = existing.labels
-                currentReminderText = existing.reminderText
+                reminders = existing.reminders
                 isInitialized = true
             }
         }
@@ -127,7 +127,8 @@ fun NewContactScreen(
             colorHex = colorHex,
             isLocked = isLocked,
             labels = labels,
-            reminderText = currentReminderText
+            reminderText = reminders.minOrNull()?.let { formatAlarmText(it) },
+            reminders = reminders
         )
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
@@ -172,49 +173,63 @@ fun NewContactScreen(
                 },
                 actions = {
                     // Share
-                    IconButton(onClick = {
-                        if (name.isNotBlank() || phoneNumber.isNotBlank()) {
-                            val shareText = buildString {
-                                if (name.isNotBlank()) { append(name); append("\n") }
-                                if (phoneNumber.isNotBlank()) append(phoneNumber)
+                    TooltipIconButton(
+                        tooltip = "Share",
+                        icon = Icons.Filled.Share,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
+                            if (name.isNotBlank() || phoneNumber.isNotBlank()) {
+                                val shareText = buildString {
+                                    if (name.isNotBlank()) { append(name); append("\n") }
+                                    if (phoneNumber.isNotBlank()) append(phoneNumber)
+                                }
+                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                                }
+                                context.startActivity(android.content.Intent.createChooser(intent, "Share contact"))
                             }
-                            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(android.content.Intent.EXTRA_TEXT, shareText)
-                            }
-                            context.startActivity(android.content.Intent.createChooser(intent, "Share contact"))
                         }
-                    }) { Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    )
 
                     // Archive
-                    IconButton(onClick = {
-                        if (name.isNotBlank() || phoneNumber.isNotBlank()) {
-                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
-                            save(pinOverride = false, archiveOverride = true)
-                            onNavigateBack()
+                    TooltipIconButton(
+                        tooltip = "Archive",
+                        icon = Icons.Filled.Archive,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
+                            if (name.isNotBlank() || phoneNumber.isNotBlank()) {
+                                if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                                save(pinOverride = false, archiveOverride = true)
+                                onNavigateBack()
+                            }
                         }
-                    }) { Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    )
 
-                    IconButton(onClick = {
-                        isPinned = !isPinned
-                        val savedId = save(isPinned)
-                        if (isPinned) {
-                            val text = gson.toJson(ContactNoteData(name, phoneNumber))
-                            notificationHelper.pinNoteToNotification(savedId, name.ifBlank { "Contact" }, text, isList = false, noteType = NoteType.CONTACT)
-                        } else notificationHelper.unpinNoteFromNotification(savedId)
-                    }) {
-                        Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
-                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    TooltipIconButton(
+                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                        tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
+                            isPinned = !isPinned
+                            val savedId = save(isPinned)
+                            if (isPinned) {
+                                val text = gson.toJson(ContactNoteData(name, phoneNumber))
+                                notificationHelper.pinNoteToNotification(savedId, name.ifBlank { "Contact" }, text, isList = false, noteType = NoteType.CONTACT)
+                            } else notificationHelper.unpinNoteFromNotification(savedId)
+                        }
+                    )
                     // Reminder
                     Box {
-                        IconButton(onClick = {
-                            checkNotificationPermission()
-                            showReminderMenu = true
-                        }) {
-                            Icon(Icons.Filled.Notifications, "Set Reminder",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        TooltipIconButton(
+                            tooltip = "Set reminder",
+                            icon = Icons.Filled.Notifications,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                checkNotificationPermission()
+                                showReminderMenu = true
+                            }
+                        )
                         DropdownMenu(
                             expanded = showReminderMenu,
                             onDismissRequest = { showReminderMenu = false }
@@ -224,47 +239,43 @@ fun NewContactScreen(
                                 onClick = {
                                     showReminderMenu = false
                                     if (name.isBlank() && phoneNumber.isBlank()) return@DropdownMenuItem
+                                    val time = com.hawatri.pinit.util.tomorrowAt8AmMillis()
+                                    if (time in reminders) return@DropdownMenuItem
+                                    reminders = (reminders + time).sorted()
                                     val noteToPinId = save()
-                                    val scheduled = com.hawatri.pinit.util.setTomorrowAlarm(
-                                        context = context, noteId = noteToPinId, noteTitle = name.ifBlank { "Contact" }
-                                    )
-                                    if (scheduled) {
-                                        currentReminderText = formatAlarmText(
-                                            java.util.Calendar.getInstance().apply {
-                                                add(java.util.Calendar.DAY_OF_YEAR, 1)
-                                                set(java.util.Calendar.HOUR_OF_DAY, 8)
-                                                set(java.util.Calendar.MINUTE, 0)
-                                                set(java.util.Calendar.SECOND, 0)
-                                            }
-                                        )
-                                        save()
-                                    }
+                                    val ok = com.hawatri.pinit.util.scheduleAlarmAt(context, noteToPinId, name.ifBlank { "Contact" }, time)
+                                    if (ok) android.widget.Toast.makeText(context, "Reminder added", android.widget.Toast.LENGTH_SHORT).show()
+                                    else { reminders = reminders - time; save() }
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Pick date and time") },
+                                text = { Text(if (reminders.isEmpty()) "Pick date and time" else "Add another reminder") },
                                 onClick = { showReminderMenu = false; showDatePicker = true }
                             )
                         }
                     }
-                    IconButton(onClick = { showLabelsSheet = true }) {
-                        Icon(Icons.Filled.Label, "Label",
-                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = { if (name.isNotBlank() || phoneNumber.isNotBlank()) { isLocked = !isLocked; save() } }) {
-                        Icon(
-                            if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                            if (isLocked) "Locked" else "Unlocked",
-                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    TooltipIconButton(
+                        tooltip = "Labels",
+                        icon = Icons.Filled.Label,
+                        tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { showLabelsSheet = true }
+                    )
+                    TooltipIconButton(
+                        tooltip = if (isLocked) "Unlock note" else "Lock note",
+                        icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                        tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { if (name.isNotBlank() || phoneNumber.isNotBlank()) { isLocked = !isLocked; save() } }
+                    )
                     ColorPickerMenuButton(
                         selectedColor = colorHex,
                         onColorSelected = { colorHex = it.ifBlank { null }; if (name.isNotBlank() || phoneNumber.isNotBlank()) save() }
                     )
-                    IconButton(onClick = { if (name.isNotBlank() || phoneNumber.isNotBlank()) { save(); onNavigateBack() } }) {
-                        Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    TooltipIconButton(
+                        tooltip = "Save",
+                        icon = Icons.Filled.Check,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { if (name.isNotBlank() || phoneNumber.isNotBlank()) { save(); onNavigateBack() } }
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -276,21 +287,15 @@ fun NewContactScreen(
             verticalArrangement = Arrangement.Bottom
         ) {
             Spacer(modifier = Modifier.weight(1f))
-            if (currentReminderText != null) {
-                AssistChip(
-                    onClick = { showReminderMenu = true },
-                    label = { Text(currentReminderText!!) },
-                    leadingIcon = { Icon(Icons.Filled.Notifications, null, modifier = Modifier.size(16.dp)) },
-                    trailingIcon = {
-                        Icon(
-                            Icons.Filled.Close, "Remove Alarm",
-                            modifier = Modifier.size(16.dp).clickable {
-                                cancelAlarm(context, currentNoteId)
-                                currentReminderText = null
-                                if (name.isNotBlank() || phoneNumber.isNotBlank()) save()
-                            }
-                        )
+            if (reminders.isNotEmpty()) {
+                RemindersChipRow(
+                    reminders = reminders,
+                    onRemove = { time ->
+                        cancelAlarmAt(context, currentNoteId, time)
+                        reminders = reminders - time
+                        if (name.isNotBlank() || phoneNumber.isNotBlank()) save()
                     },
+                    onEditClick = { showReminderMenu = true },
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
                 )
             }
@@ -365,20 +370,20 @@ fun NewContactScreen(
                 TextButton(onClick = {
                     showTimePicker = false
                     if (name.isBlank() && phoneNumber.isBlank()) return@TextButton
-                    val calendar = java.util.Calendar.getInstance().apply {
-                        timeInMillis = selectedDateMillis ?: System.currentTimeMillis()
-                        set(java.util.Calendar.HOUR_OF_DAY, timePickerState.hour)
-                        set(java.util.Calendar.MINUTE, timePickerState.minute)
+                    val time = com.hawatri.pinit.util.computeAlarmMillis(
+                        selectedDateMillis,
+                        timePickerState.hour,
+                        timePickerState.minute
+                    ) ?: return@TextButton
+                    if (time in reminders) {
+                        android.widget.Toast.makeText(context, "Reminder already set for that time", android.widget.Toast.LENGTH_SHORT).show()
+                        return@TextButton
                     }
+                    reminders = (reminders + time).sorted()
                     val noteToPinId = save()
-                    val scheduled = com.hawatri.pinit.util.scheduleCustomAlarm(
-                        context = context, noteId = noteToPinId, noteTitle = name.ifBlank { "Contact" },
-                        dateMillis = selectedDateMillis, hour = timePickerState.hour, minute = timePickerState.minute
-                    )
-                    if (scheduled) {
-                        currentReminderText = formatAlarmText(calendar)
-                        save()
-                    }
+                    val ok = com.hawatri.pinit.util.scheduleAlarmAt(context, noteToPinId, name.ifBlank { "Contact" }, time)
+                    if (ok) android.widget.Toast.makeText(context, "Reminder set", android.widget.Toast.LENGTH_SHORT).show()
+                    else { reminders = reminders - time; save() }
                 }) { Text("OK") }
             },
             dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text("Cancel") } }

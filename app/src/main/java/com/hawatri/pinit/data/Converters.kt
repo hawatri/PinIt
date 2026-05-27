@@ -24,4 +24,12 @@ class Converters {
     fun toStringList(value: String): List<String> = try {
         gson.fromJson(value, Array<String>::class.java).toList()
     } catch (e: Exception) { emptyList() }
+
+    @TypeConverter
+    fun fromLongList(value: List<Long>): String = gson.toJson(value)
+
+    @TypeConverter
+    fun toLongList(value: String): List<Long> = try {
+        gson.fromJson(value, Array<Long>::class.java).toList()
+    } catch (e: Exception) { emptyList() }
 }

@@ -228,26 +228,23 @@ fun IcsImportSheet(
                                             if (event.description.isNotBlank()) { append(event.description); append("\n") }
                                             if (event.location.isNotBlank()) append("📍 ${event.location}")
                                         }.trim()
+                                        val reminderTime = event.startCalendar?.timeInMillis?.takeIf { it > System.currentTimeMillis() }
                                         val note = Note(
                                             title = event.summary,
                                             text = noteText,
                                             formatRanges = emptyList(),
                                             noteType = NoteType.TEXT,
-                                            reminderText = event.startLabel.takeIf { it != "No date" }
+                                            reminderText = event.startLabel.takeIf { it != "No date" },
+                                            reminders = listOfNotNull(reminderTime)
                                         )
                                         viewModel.addNote(note)
-                                        // Schedule alarm if the event is in the future
-                                        event.startCalendar?.let { cal ->
-                                            if (cal.timeInMillis > System.currentTimeMillis()) {
-                                                com.hawatri.pinit.util.scheduleCustomAlarm(
-                                                    context = context,
-                                                    noteId = note.id,
-                                                    noteTitle = note.title,
-                                                    dateMillis = cal.timeInMillis,
-                                                    hour = cal.get(Calendar.HOUR_OF_DAY),
-                                                    minute = cal.get(Calendar.MINUTE)
-                                                )
-                                            }
+                                        if (reminderTime != null) {
+                                            com.hawatri.pinit.util.scheduleAlarmAt(
+                                                context = context,
+                                                noteId = note.id,
+                                                noteTitle = note.title,
+                                                timeMillis = reminderTime
+                                            )
                                         }
                                     }
                                     onDismiss()

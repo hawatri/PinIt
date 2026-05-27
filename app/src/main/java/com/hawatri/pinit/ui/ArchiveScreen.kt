@@ -86,18 +86,26 @@ fun ArchiveScreen(
                 },
                 actions = {
                     if (isSelectionMode) {
-                        IconButton(onClick = {
-                            selectedNoteIds.forEach { id ->
-                                allNotes.find { it.id == id }?.let { note -> viewModel.toggleArchive(note) }
+                        TooltipIconButton(
+                            tooltip = "Unarchive",
+                            icon = Icons.Filled.Unarchive,
+                            onClick = {
+                                selectedNoteIds.forEach { id ->
+                                    allNotes.find { it.id == id }?.let { note -> viewModel.toggleArchive(note) }
+                                }
+                                selectedNoteIds = emptySet()
                             }
-                            selectedNoteIds = emptySet()
-                        }) { Icon(Icons.Filled.Unarchive, "Unarchive") }
+                        )
 
-                        IconButton(onClick = {
-                            val ids = selectedNoteIds
-                            selectedNoteIds = emptySet()
-                            deleteSelectedWithUndo(ids)
-                        }) { Icon(Icons.Filled.Delete, "Delete") }
+                        TooltipIconButton(
+                            tooltip = "Delete",
+                            icon = Icons.Filled.Delete,
+                            onClick = {
+                                val ids = selectedNoteIds
+                                selectedNoteIds = emptySet()
+                                deleteSelectedWithUndo(ids)
+                            }
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)

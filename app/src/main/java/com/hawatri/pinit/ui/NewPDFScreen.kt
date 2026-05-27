@@ -36,14 +36,19 @@ import java.util.UUID
 @Composable
 fun NewPDFScreen(
     noteId: String? = null,
+    prefillPdfUri: String? = null,
     onNavigateBack: () -> Unit,
     viewModel: PinItViewModel
 ) {
     val context = LocalContext.current
     val notificationHelper = remember(context) { NotificationHelper(context) }
 
-    var selectedPdfUri by remember { mutableStateOf<Uri?>(null) }
-    var pdfTitle by remember { mutableStateOf("") }
+    var selectedPdfUri by remember { mutableStateOf<Uri?>(prefillPdfUri?.let { Uri.parse(it) }) }
+    var pdfTitle by remember {
+        mutableStateOf(
+            prefillPdfUri?.let { Uri.parse(it).lastPathSegment?.substringAfterLast('/')?.substringBeforeLast('.') } ?: ""
+        )
+    }
     var isPinned by remember { mutableStateOf(false) }
     var isLocked by remember { mutableStateOf(false) }
     var colorHex by remember { mutableStateOf<String?>(null) }
@@ -114,67 +119,80 @@ fun NewPDFScreen(
                 actions = {
                     if (selectedPdfUri != null) {
                         // Open PDF with system viewer
-                        IconButton(onClick = {
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    setDataAndType(selectedPdfUri, "application/pdf")
+                        TooltipIconButton(
+                            tooltip = "Open PDF",
+                            icon = Icons.Filled.OpenInBrowser,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                                        setDataAndType(selectedPdfUri, "application/pdf")
+                                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    android.widget.Toast.makeText(context, "No PDF viewer installed", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
+                        // Share PDF
+                        TooltipIconButton(
+                            tooltip = "Share",
+                            icon = Icons.Filled.Share,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "application/pdf"
+                                    putExtra(Intent.EXTRA_STREAM, selectedPdfUri)
                                     flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                                 }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                android.widget.Toast.makeText(context, "No PDF viewer installed", android.widget.Toast.LENGTH_SHORT).show()
+                                context.startActivity(Intent.createChooser(intent, "Share PDF"))
                             }
-                        }) {
-                            Icon(Icons.Filled.OpenInBrowser, "Open", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        // Share PDF
-                        IconButton(onClick = {
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "application/pdf"
-                                putExtra(Intent.EXTRA_STREAM, selectedPdfUri)
-                                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            }
-                            context.startActivity(Intent.createChooser(intent, "Share PDF"))
-                        }) {
-                            Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        )
                         // Archive
-                        IconButton(onClick = {
-                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
-                            save(pinOverride = false, archiveOverride = true)
-                            onNavigateBack()
-                        }) {
-                            Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        IconButton(onClick = {
-                            isPinned = !isPinned
-                            val savedId = save(isPinned)
-                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, pdfTitle.ifBlank { "PDF" }, selectedPdfUri?.toString() ?: "", isList = false, noteType = NoteType.PDF)
-                            else notificationHelper.unpinNoteFromNotification(savedId)
-                        }) {
-                            Icon(
-                                if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
-                                tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        IconButton(onClick = { showLabelsSheet = true }) {
-                            Icon(Icons.Filled.Label, "Label",
-                                tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        IconButton(onClick = { isLocked = !isLocked; save() }) {
-                            Icon(
-                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                                if (isLocked) "Locked" else "Unlocked",
-                                tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        TooltipIconButton(
+                            tooltip = "Archive",
+                            icon = Icons.Filled.Archive,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                                save(pinOverride = false, archiveOverride = true)
+                                onNavigateBack()
+                            }
+                        )
+                        TooltipIconButton(
+                            tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                            icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                isPinned = !isPinned
+                                val savedId = save(isPinned)
+                                if (isPinned) notificationHelper.pinNoteToNotification(savedId, pdfTitle.ifBlank { "PDF" }, selectedPdfUri?.toString() ?: "", isList = false, noteType = NoteType.PDF)
+                                else notificationHelper.unpinNoteFromNotification(savedId)
+                            }
+                        )
+                        TooltipIconButton(
+                            tooltip = "Labels",
+                            icon = Icons.Filled.Label,
+                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { showLabelsSheet = true }
+                        )
+                        TooltipIconButton(
+                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { isLocked = !isLocked; save() }
+                        )
                         ColorPickerMenuButton(
                             selectedColor = colorHex,
                             onColorSelected = { colorHex = it.ifBlank { null }; save() }
                         )
-                        IconButton(onClick = { save(); onNavigateBack() }) {
-                            Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        TooltipIconButton(
+                            tooltip = "Save",
+                            icon = Icons.Filled.Check,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { save(); onNavigateBack() }
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)

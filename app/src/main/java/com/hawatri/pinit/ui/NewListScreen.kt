@@ -50,7 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.hawatri.pinit.util.NotificationHelper
-import com.hawatri.pinit.util.cancelAlarm
+import com.hawatri.pinit.util.cancelAlarmAt
 import com.hawatri.pinit.util.formatAlarmText
 import com.google.gson.Gson
 import androidx.compose.material3.rememberDatePickerState
@@ -103,7 +103,7 @@ fun NewListScreen(
     val notesList by viewModel.notes.collectAsState()
     var isInitialized by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId) }
-    var currentReminderText by remember { mutableStateOf<String?>(null) }
+    var reminders by remember { mutableStateOf(listOf<Long>()) }
 
     LaunchedEffect(notesList, noteId) {
         if (noteId != null && !isInitialized && notesList.isNotEmpty()) {
@@ -113,10 +113,10 @@ fun NewListScreen(
                 val items = try {
                     gson.fromJson(existingNote.text, Array<ChecklistItemData>::class.java).toList()
                 } catch (e: Exception) { emptyList() }
-                
+
                 checklistItems.clear()
                 checklistItems.addAll(items)
-                currentReminderText = existingNote.reminderText
+                reminders = existingNote.reminders
                 isPinned = existingNote.isPinned
                 colorHex = existingNote.colorHex
                 isLocked = existingNote.isLocked
@@ -134,9 +134,9 @@ fun NewListScreen(
         // --- NEW: Update instead of add ---
         val idToUse = currentNoteId ?: noteId ?: java.util.UUID.randomUUID().toString()
         val existing = notesList.find { it.id == idToUse }
-        
+
         val jsonText = gson.toJson(validItems)
-        
+
         val pinState = pinOverride ?: isPinned
         val isArchived = archiveOverride ?: existing?.isArchived ?: false
 
@@ -152,7 +152,8 @@ fun NewListScreen(
             colorHex = colorHex,
             isLocked = isLocked,
             labels = labels,
-            reminderText = currentReminderText
+            reminderText = reminders.minOrNull()?.let { formatAlarmText(it) },
+            reminders = reminders
         )
 
         if (existing != null) {
@@ -199,7 +200,11 @@ fun NewListScreen(
                 },
                 actions = {
                     // SHARE BUTTON
-                    IconButton(onClick = {
+                    TooltipIconButton(
+                        tooltip = "Share",
+                        icon = Icons.Filled.Share,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
                         val validItems = checklistItems.filter { it.text.isNotBlank() }
                         val shareText = buildString {
                             if (title.isNotBlank()) { append(title); append("\n\n") }
@@ -216,12 +221,14 @@ fun NewListScreen(
                             }
                             context.startActivity(android.content.Intent.createChooser(intent, "Share list"))
                         }
-                    }) { Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    })
 
                     // ARCHIVE BUTTON
-                    IconButton(onClick = {
-                        val validItems = checklistItems.filter { it.text.isNotBlank() }
-                        val jsonText = gson.toJson(validItems)
+                    TooltipIconButton(
+                        tooltip = "Archive",
+                        icon = Icons.Filled.Archive,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
                         // Unpin notification before archiving
                         if (isPinned) {
                             val idToUnpin = currentNoteId ?: noteId
@@ -230,46 +237,43 @@ fun NewListScreen(
                         }
                         saveList(archiveOverride = true)
                         onNavigateBack()
-                    }) { Icon(Icons.Filled.Archive, contentDescription = "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    })
 
                     // PIN TOGGLE BUTTON
-                    IconButton(onClick = {
+                    TooltipIconButton(
+                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                        tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
                         val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
                         } else true
 
                         if (!hasPermission) {
                             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            return@IconButton
+                            return@TooltipIconButton
                         }
                         isPinned = !isPinned
                         val validItems = checklistItems.filter { it.text.isNotBlank() }
                         val jsonText = gson.toJson(validItems)
-                        val savedNoteId = saveList() ?: return@IconButton
+                        val savedNoteId = saveList() ?: return@TooltipIconButton
                         if (isPinned) {
                             notificationHelper.pinNoteToNotification(savedNoteId, title, jsonText, isList = true)
                         } else {
                             notificationHelper.unpinNoteFromNotification(savedNoteId)
                         }
-                    }) {
-                        Icon(
-                            if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
-                            contentDescription = "Pin",
-                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    
+                    })
+
                     Box {
-                        IconButton(onClick = { 
-                            checkNotificationPermission()
-                            showReminderMenu = true 
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.Notifications,
-                                contentDescription = "Set Reminder",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        TooltipIconButton(
+                            tooltip = "Set reminder",
+                            icon = Icons.Filled.Notifications,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                checkNotificationPermission()
+                                showReminderMenu = true
+                            }
+                        )
 
                         DropdownMenu(
                             expanded = showReminderMenu,
@@ -279,27 +283,17 @@ fun NewListScreen(
                                 text = { Text("Tomorrow (8:00 AM)") },
                                 onClick = {
                                     showReminderMenu = false
+                                    val time = com.hawatri.pinit.util.tomorrowAt8AmMillis()
+                                    if (time in reminders) return@DropdownMenuItem
+                                    reminders = (reminders + time).sorted()
                                     val noteToPinId = saveList() ?: return@DropdownMenuItem
-                                    val scheduled = com.hawatri.pinit.util.setTomorrowAlarm(
-                                        context = context,
-                                        noteId = noteToPinId,
-                                        noteTitle = title
-                                    )
-                                    if (scheduled) {
-                                        currentReminderText = formatAlarmText(
-                                            java.util.Calendar.getInstance().apply {
-                                                add(java.util.Calendar.DAY_OF_YEAR, 1)
-                                                set(java.util.Calendar.HOUR_OF_DAY, 8)
-                                                set(java.util.Calendar.MINUTE, 0)
-                                                set(java.util.Calendar.SECOND, 0)
-                                            }
-                                        )
-                                        saveList()
-                                    }
+                                    val ok = com.hawatri.pinit.util.scheduleAlarmAt(context, noteToPinId, title, time)
+                                    if (ok) android.widget.Toast.makeText(context, "Reminder added", android.widget.Toast.LENGTH_SHORT).show()
+                                    else { reminders = reminders - time; saveList() }
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Pick date and time") },
+                                text = { Text(if (reminders.isEmpty()) "Pick date and time" else "Add another reminder") },
                                 onClick = {
                                     showReminderMenu = false
                                     showDatePicker = true
@@ -307,21 +301,25 @@ fun NewListScreen(
                             )
                         }
                     }
-                    IconButton(onClick = { showLabelsSheet = true }) {
-                        Icon(Icons.Filled.Label, "Label",
-                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = { isLocked = !isLocked; saveList() }) {
-                        Icon(
-                            if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                            contentDescription = if (isLocked) "Locked" else "Unlocked",
-                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    TooltipIconButton(
+                        tooltip = "Labels",
+                        icon = Icons.Filled.Label,
+                        tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { showLabelsSheet = true }
+                    )
+                    TooltipIconButton(
+                        tooltip = if (isLocked) "Unlock note" else "Lock note",
+                        icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                        tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { isLocked = !isLocked; saveList() }
+                    )
                     // SAVE BUTTON
-                    IconButton(onClick = { saveList(); onNavigateBack() }) {
-                        Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    TooltipIconButton(
+                        tooltip = "Save",
+                        icon = Icons.Filled.Check,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { saveList(); onNavigateBack() }
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -382,37 +380,18 @@ fun NewListScreen(
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        if (currentReminderText != null) {
-                            AssistChip(
-                                onClick = { showReminderMenu = true },
-                                label = { Text(currentReminderText!!) },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Filled.Notifications,
-                                        contentDescription = "Alarm",
-                                        modifier = Modifier.size(16.dp)
-                                    )
+                        if (reminders.isNotEmpty()) {
+                            RemindersChipRow(
+                                reminders = reminders,
+                                onRemove = { time ->
+                                    val idToCancel = currentNoteId ?: noteId
+                                    if (idToCancel != null) {
+                                        cancelAlarmAt(context, idToCancel, time)
+                                    }
+                                    reminders = reminders - time
+                                    saveList()
                                 },
-                                trailingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Filled.Close,
-                                        contentDescription = "Remove Alarm",
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .clickable {
-                                                val idToCancel = currentNoteId ?: noteId
-                                                if (idToCancel != null) {
-                                                    cancelAlarm(context, idToCancel)
-                                                }
-                                                currentReminderText = null
-                                                saveList()
-                                            }
-                                    )
-                                },
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                ),
-                                border = null,
+                                onEditClick = { showReminderMenu = true },
                                 modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
                             )
                         }
@@ -546,27 +525,28 @@ fun NewListScreen(
                 TextButton(
                     onClick = {
                         showTimePicker = false
-                        
-                        val calendar = java.util.Calendar.getInstance()
-                        calendar.timeInMillis = selectedDateMillis ?: System.currentTimeMillis()
-                        calendar.set(java.util.Calendar.HOUR_OF_DAY, timePickerState.hour)
-                        calendar.set(java.util.Calendar.MINUTE, timePickerState.minute)
-                        val sdf = java.text.SimpleDateFormat("MMM dd, h:mm a", java.util.Locale.getDefault())
-                        currentReminderText = sdf.format(calendar.time)
-                        
+
+                        val time = com.hawatri.pinit.util.computeAlarmMillis(
+                            selectedDateMillis,
+                            timePickerState.hour,
+                            timePickerState.minute
+                        ) ?: return@TextButton
+
+                        if (time in reminders) {
+                            android.widget.Toast.makeText(context, "Reminder already set for that time", android.widget.Toast.LENGTH_SHORT).show()
+                            return@TextButton
+                        }
+
+                        reminders = (reminders + time).sorted()
                         val noteToPinId = saveList() ?: return@TextButton
-                        
-                        val scheduled = com.hawatri.pinit.util.scheduleCustomAlarm(
-                            context = context,
-                            noteId = noteToPinId,
-                            noteTitle = title,
-                            dateMillis = selectedDateMillis,
-                            hour = timePickerState.hour,
-                            minute = timePickerState.minute
-                        )
-                        if (!scheduled) return@TextButton
-                        currentReminderText = formatAlarmText(calendar)
-                        saveList()
+
+                        val ok = com.hawatri.pinit.util.scheduleAlarmAt(context, noteToPinId, title, time)
+                        if (ok) {
+                            android.widget.Toast.makeText(context, "Reminder set", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            reminders = reminders - time
+                            saveList()
+                        }
                     }
                 ) {
                     Text("OK")

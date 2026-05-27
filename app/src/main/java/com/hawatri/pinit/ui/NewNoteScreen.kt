@@ -7,6 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,7 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.util.NotificationHelper
-import com.hawatri.pinit.util.cancelAlarm
+import com.hawatri.pinit.util.cancelAlarmAt
 import com.hawatri.pinit.util.formatAlarmText
 import com.hawatri.pinit.viewmodel.PinItViewModel
 
@@ -122,7 +124,7 @@ fun NewNoteScreen(
 
     val notesList by viewModel.notes.collectAsState()
     var isInitialized by remember { mutableStateOf(false) }
-    var currentReminderText by remember { mutableStateOf<String?>(null) }
+    var reminders by remember { mutableStateOf(listOf<Long>()) }
 
     fun saveOrUpdateNote(): String? {
         val idToUse = currentNoteId ?: noteId ?: java.util.UUID.randomUUID().toString()
@@ -136,7 +138,8 @@ fun NewNoteScreen(
             formatRanges = formatRanges,
             isPinned = isPinned,
             isArchived = existing?.isArchived ?: false,
-            reminderText = currentReminderText,
+            reminderText = reminders.minOrNull()?.let { formatAlarmText(it) },
+            reminders = reminders,
             noteType = com.hawatri.pinit.data.NoteType.TEXT,
             colorHex = colorHex,
             isLocked = isLocked,
@@ -199,7 +202,7 @@ fun NewNoteScreen(
                 title = existingNote.title
                 noteText = TextFieldValue(existingNote.text, selection = TextRange(existingNote.text.length))
                 formatRanges = existingNote.formatRanges
-                currentReminderText = existingNote.reminderText
+                reminders = existingNote.reminders
                 isPinned = existingNote.isPinned
                 colorHex = existingNote.colorHex
                 isLocked = existingNote.isLocked
@@ -263,7 +266,11 @@ fun NewNoteScreen(
                 },
                 actions = {
                     // Share button
-                    IconButton(onClick = {
+                    TooltipIconButton(
+                        tooltip = "Share",
+                        icon = Icons.Filled.Share,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
                         val shareText = buildString {
                             if (title.isNotBlank()) { append(title); append("\n\n") }
                             append(noteText.text)
@@ -275,11 +282,13 @@ fun NewNoteScreen(
                             }
                             context.startActivity(android.content.Intent.createChooser(intent, "Share note"))
                         }
-                    }) {
-                        Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    })
                     // Archive button
-                    IconButton(onClick = {
+                    TooltipIconButton(
+                        tooltip = "Archive",
+                        icon = Icons.Filled.Archive,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
                         val idToUse = currentNoteId ?: noteId
                         if (idToUse != null) {
                             notesList.find { it.id == idToUse }?.let { note ->
@@ -294,11 +303,12 @@ fun NewNoteScreen(
                             }
                         }
                         onNavigateBack()
-                    }) {
-                        Icon(Icons.Filled.Archive, contentDescription = "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    })
                     // Pin toggle button
-                    IconButton(
+                    TooltipIconButton(
+                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                        tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
@@ -307,24 +317,17 @@ fun NewNoteScreen(
                                 togglePin()
                             }
                         }
-                    ) {
-                        Icon(
-                            if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
-                            contentDescription = "Pin",
-                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    )
                     Box {
-                        IconButton(onClick = { 
-                            checkNotificationPermission()
-                            showReminderMenu = true 
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.Notifications,
-                                contentDescription = "Set Reminder",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        TooltipIconButton(
+                            tooltip = "Set reminder",
+                            icon = Icons.Filled.Notifications,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                checkNotificationPermission()
+                                showReminderMenu = true
+                            }
+                        )
 
                         DropdownMenu(
                             expanded = showReminderMenu,
@@ -334,28 +337,17 @@ fun NewNoteScreen(
                                 text = { Text("Tomorrow (8:00 AM)") },
                                 onClick = {
                                     showReminderMenu = false
-                                    currentReminderText = "Tomorrow, 8:00 AM"
+                                    val time = com.hawatri.pinit.util.tomorrowAt8AmMillis()
+                                    if (time in reminders) return@DropdownMenuItem
+                                    reminders = (reminders + time).sorted()
                                     val noteToPinId = saveOrUpdateNote() ?: return@DropdownMenuItem
-                                    val scheduled = com.hawatri.pinit.util.setTomorrowAlarm(
-                                        context = context,
-                                        noteId = noteToPinId,
-                                        noteTitle = title
-                                    )
-                                    if (scheduled) {
-                                        currentReminderText = formatAlarmText(
-                                            java.util.Calendar.getInstance().apply {
-                                                add(java.util.Calendar.DAY_OF_YEAR, 1)
-                                                set(java.util.Calendar.HOUR_OF_DAY, 8)
-                                                set(java.util.Calendar.MINUTE, 0)
-                                                set(java.util.Calendar.SECOND, 0)
-                                            }
-                                        )
-                                        saveOrUpdateNote()
-                                    }
+                                    val ok = com.hawatri.pinit.util.scheduleAlarmAt(context, noteToPinId, title, time)
+                                    if (ok) android.widget.Toast.makeText(context, "Reminder added", android.widget.Toast.LENGTH_SHORT).show()
+                                    else { reminders = reminders - time; saveOrUpdateNote() }
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Pick date and time") },
+                                text = { Text(if (reminders.isEmpty()) "Pick date and time" else "Add another reminder") },
                                 onClick = {
                                     showReminderMenu = false
                                     showDatePicker = true
@@ -363,25 +355,29 @@ fun NewNoteScreen(
                             )
                         }
                     }
-                    IconButton(onClick = { showLabelsSheet = true }) {
-                        Icon(Icons.Filled.Label, "Label",
-                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = { isLocked = !isLocked; saveOrUpdateNote() }) {
-                        Icon(
-                            if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                            contentDescription = if (isLocked) "Locked" else "Unlocked",
-                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    TooltipIconButton(
+                        tooltip = "Labels",
+                        icon = Icons.Filled.Label,
+                        tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { showLabelsSheet = true }
+                    )
+                    TooltipIconButton(
+                        tooltip = if (isLocked) "Unlock note" else "Lock note",
+                        icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                        tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { isLocked = !isLocked; saveOrUpdateNote() }
+                    )
                     ColorPickerMenuButton(
                         selectedColor = colorHex,
                         onColorSelected = { colorHex = it.ifBlank { null }; saveOrUpdateNote() }
                     )
 
-                    IconButton(onClick = { saveOrUpdateNote(); onNavigateBack() }) {
-                        Icon(Icons.Filled.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    TooltipIconButton(
+                        tooltip = "Save",
+                        icon = Icons.Filled.Check,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { saveOrUpdateNote(); onNavigateBack() }
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -392,20 +388,18 @@ fun NewNoteScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .imePadding(),
-            verticalArrangement = Arrangement.Bottom
+                .imePadding()
         ) {
-
-            Spacer(modifier = Modifier.weight(1f))
 
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                    .weight(1f)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
                     Text(
                         text = "*Mandatory field",
                         color = Color(0xFFD32F2F),
@@ -429,37 +423,18 @@ fun NewNoteScreen(
                             .onFocusChanged { focusState -> if (focusState.isFocused) isBodyFocused = false }
                     )
 
-                    if (currentReminderText != null) {
-                        androidx.compose.material3.AssistChip(
-                            onClick = { showReminderMenu = true },
-                            label = { Text(currentReminderText!!) },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.Notifications,
-                                    contentDescription = "Alarm",
-                                    modifier = Modifier.size(16.dp)
-                                )
+                    if (reminders.isNotEmpty()) {
+                        RemindersChipRow(
+                            reminders = reminders,
+                            onRemove = { time ->
+                                val idToCancel = currentNoteId ?: noteId
+                                if (idToCancel != null) {
+                                    com.hawatri.pinit.util.cancelAlarmAt(context, idToCancel, time)
+                                }
+                                reminders = reminders - time
+                                saveOrUpdateNote()
                             },
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.Close,
-                                    contentDescription = "Remove Alarm",
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clickable {
-                                            val idToCancel = currentNoteId ?: noteId
-                                            if (idToCancel != null) {
-                                                cancelAlarm(context, idToCancel)
-                                            }
-                                            currentReminderText = null
-                                            saveOrUpdateNote()
-                                        }
-                                )
-                            },
-                            colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                            border = null,
+                            onEditClick = { showReminderMenu = true },
                             modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
                         )
                     }
@@ -530,6 +505,7 @@ fun NewNoteScreen(
                         visualTransformation = RichTextVisualTransformation(formatRanges),
                         modifier = Modifier
                             .fillMaxWidth()
+                            .weight(1f)
                             .onFocusChanged { focusState -> if (focusState.isFocused) isBodyFocused = true }
                     )
                 }
@@ -538,6 +514,7 @@ fun NewNoteScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -657,27 +634,28 @@ fun NewNoteScreen(
                 TextButton(
                     onClick = {
                         showTimePicker = false
-                        
-                        val calendar = java.util.Calendar.getInstance()
-                        calendar.timeInMillis = selectedDateMillis ?: System.currentTimeMillis()
-                        calendar.set(java.util.Calendar.HOUR_OF_DAY, timePickerState.hour)
-                        calendar.set(java.util.Calendar.MINUTE, timePickerState.minute)
-                        val sdf = java.text.SimpleDateFormat("MMM dd, h:mm a", java.util.Locale.getDefault())
-                        currentReminderText = sdf.format(calendar.time)
-                        
+
+                        val time = com.hawatri.pinit.util.computeAlarmMillis(
+                            selectedDateMillis,
+                            timePickerState.hour,
+                            timePickerState.minute
+                        ) ?: return@TextButton
+
+                        if (time in reminders) {
+                            android.widget.Toast.makeText(context, "Reminder already set for that time", android.widget.Toast.LENGTH_SHORT).show()
+                            return@TextButton
+                        }
+
+                        reminders = (reminders + time).sorted()
                         val noteToPinId = saveOrUpdateNote() ?: return@TextButton
-                        
-                        val scheduled = com.hawatri.pinit.util.scheduleCustomAlarm(
-                            context = context,
-                            noteId = noteToPinId,
-                            noteTitle = title,
-                            dateMillis = selectedDateMillis,
-                            hour = timePickerState.hour,
-                            minute = timePickerState.minute
-                        )
-                        if (!scheduled) return@TextButton
-                        currentReminderText = formatAlarmText(calendar)
-                        saveOrUpdateNote()
+
+                        val ok = com.hawatri.pinit.util.scheduleAlarmAt(context, noteToPinId, title, time)
+                        if (ok) {
+                            android.widget.Toast.makeText(context, "Reminder set", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            reminders = reminders - time
+                            saveOrUpdateNote()
+                        }
                     }
                 ) {
                     Text("OK")

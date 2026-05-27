@@ -137,49 +137,65 @@ fun NewImageScreen(
                 actions = {
                     if (selectedImageUri != null) {
                         // Share image
-                        IconButton(onClick = {
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "image/*"
-                                putExtra(Intent.EXTRA_STREAM, selectedImageUri)
-                                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        TooltipIconButton(
+                            tooltip = "Share",
+                            icon = Icons.Filled.Share,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "image/*"
+                                    putExtra(Intent.EXTRA_STREAM, selectedImageUri)
+                                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Share image"))
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share image"))
-                        }) { Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        )
 
                         // Archive
-                        IconButton(onClick = {
-                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
-                            save(pinOverride = false, archiveOverride = true)
-                            onNavigateBack()
-                        }) { Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        TooltipIconButton(
+                            tooltip = "Archive",
+                            icon = Icons.Filled.Archive,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                                save(pinOverride = false, archiveOverride = true)
+                                onNavigateBack()
+                            }
+                        )
 
-                        IconButton(onClick = {
-                            isPinned = !isPinned
-                            val savedId = save(isPinned)
-                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, imageTitle.ifBlank { "Image" }, selectedImageUri?.toString() ?: "", isList = false, noteType = NoteType.IMAGE)
-                            else notificationHelper.unpinNoteFromNotification(savedId)
-                        }) {
-                            Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
-                                tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        IconButton(onClick = { showLabelsSheet = true }) {
-                            Icon(Icons.Filled.Label, "Label",
-                                tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        IconButton(onClick = { isLocked = !isLocked; save() }) {
-                            Icon(
-                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                                if (isLocked) "Locked" else "Unlocked",
-                                tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        TooltipIconButton(
+                            tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                            icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                isPinned = !isPinned
+                                val savedId = save(isPinned)
+                                if (isPinned) notificationHelper.pinNoteToNotification(savedId, imageTitle.ifBlank { "Image" }, selectedImageUri?.toString() ?: "", isList = false, noteType = NoteType.IMAGE)
+                                else notificationHelper.unpinNoteFromNotification(savedId)
+                            }
+                        )
+                        TooltipIconButton(
+                            tooltip = "Labels",
+                            icon = Icons.Filled.Label,
+                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { showLabelsSheet = true }
+                        )
+                        TooltipIconButton(
+                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { isLocked = !isLocked; save() }
+                        )
                         ColorPickerMenuButton(
                             selectedColor = colorHex,
                             onColorSelected = { colorHex = it.ifBlank { null }; save() }
                         )
-                        IconButton(onClick = { save(); onNavigateBack() }) {
-                            Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        TooltipIconButton(
+                            tooltip = "Save",
+                            icon = Icons.Filled.Check,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { save(); onNavigateBack() }
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)

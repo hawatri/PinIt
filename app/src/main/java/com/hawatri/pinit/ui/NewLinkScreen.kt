@@ -214,69 +214,79 @@ fun NewLinkScreen(
                 },
                 actions = {
                     if (previewData != null) {
-                        IconButton(onClick = {
-                            // Re-fetch preview
-                            resolvePreview(previewData!!.url)
-                        }) {
-                            Icon(Icons.Filled.Refresh, "Refresh preview", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        // Share
-                        IconButton(onClick = {
-                            val shareText = buildString {
-                                if (previewData!!.title.isNotBlank()) { append(previewData!!.title); append("\n") }
-                                if (previewData!!.description.isNotBlank()) { append(previewData!!.description); append("\n") }
-                                append(previewData!!.url)
+                        TooltipIconButton(
+                            tooltip = "Refresh preview",
+                            icon = Icons.Filled.Refresh,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { resolvePreview(previewData!!.url) }
+                        )
+                        TooltipIconButton(
+                            tooltip = "Share",
+                            icon = Icons.Filled.Share,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                val shareText = buildString {
+                                    if (previewData!!.title.isNotBlank()) { append(previewData!!.title); append("\n") }
+                                    if (previewData!!.description.isNotBlank()) { append(previewData!!.description); append("\n") }
+                                    append(previewData!!.url)
+                                }
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Share link"))
                             }
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, shareText)
+                        )
+                        TooltipIconButton(
+                            tooltip = "Archive",
+                            icon = Icons.Filled.Archive,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                                save(pinOverride = false, archiveOverride = true)
+                                onNavigateBack()
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share link"))
-                        }) {
-                            Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        // Archive
-                        IconButton(onClick = {
-                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
-                            save(pinOverride = false, archiveOverride = true)
-                            onNavigateBack()
-                        }) {
-                            Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        )
                     }
-                    IconButton(onClick = {
-                        isPinned = !isPinned
-                        val savedId = save(isPinned)
-                        if (isPinned) {
-                            val data = previewData ?: LinkNoteData(normalizeUrl(linkText), linkText, "", "")
-                            notificationHelper.pinNoteToNotification(savedId, data.title.ifBlank { data.url }, gson.toJson(data), isList = false, noteType = NoteType.LINK)
-                        } else {
-                            notificationHelper.unpinNoteFromNotification(savedId)
+                    TooltipIconButton(
+                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                        tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
+                            isPinned = !isPinned
+                            val savedId = save(isPinned)
+                            if (isPinned) {
+                                val data = previewData ?: LinkNoteData(normalizeUrl(linkText), linkText, "", "")
+                                notificationHelper.pinNoteToNotification(savedId, data.title.ifBlank { data.url }, gson.toJson(data), isList = false, noteType = NoteType.LINK)
+                            } else {
+                                notificationHelper.unpinNoteFromNotification(savedId)
+                            }
                         }
-                    }) {
-                        Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
-                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = { showLabelsSheet = true }) {
-                        Icon(Icons.Filled.Label, "Label",
-                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    )
+                    TooltipIconButton(
+                        tooltip = "Labels",
+                        icon = Icons.Filled.Label,
+                        tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { showLabelsSheet = true }
+                    )
                     if (previewData != null) {
-                        IconButton(onClick = { isLocked = !isLocked; save() }) {
-                            Icon(
-                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                                if (isLocked) "Locked" else "Unlocked",
-                                tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        TooltipIconButton(
+                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { isLocked = !isLocked; save() }
+                        )
                         ColorPickerMenuButton(
                             selectedColor = colorHex,
                             onColorSelected = { colorHex = it.ifBlank { null }; save() }
                         )
                     }
-                    IconButton(onClick = { if (previewData != null || linkText.isNotBlank()) { save(); onNavigateBack() } }) {
-                        Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    TooltipIconButton(
+                        tooltip = "Save",
+                        icon = Icons.Filled.Check,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { if (previewData != null || linkText.isNotBlank()) { save(); onNavigateBack() } }
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )

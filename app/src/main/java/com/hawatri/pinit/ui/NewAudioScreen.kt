@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -47,6 +48,7 @@ private enum class RecordingState { IDLE, RECORDING, RECORDED, PLAYING }
 @Composable
 fun NewAudioScreen(
     noteId: String? = null,
+    prefillAudioUri: String? = null,
     onNavigateBack: () -> Unit,
     viewModel: PinItViewModel
 ) {
@@ -73,6 +75,49 @@ fun NewAudioScreen(
 
     val notesList by viewModel.notes.collectAsState()
     var isInitialized by remember { mutableStateOf(false) }
+
+    // Import shared audio: copy the content URI into filesDir/recordings so
+    // playback through AudioPlayback (which uses MediaPlayer.setDataSource(path))
+    // keeps working after the share's transient permission expires.
+    LaunchedEffect(prefillAudioUri) {
+        if (prefillAudioUri != null && currentFilePath == null) {
+            try {
+                val srcUri = Uri.parse(prefillAudioUri)
+                val displayName = run {
+                    var name = "audio"
+                    if (srcUri.scheme == "content") {
+                        context.contentResolver.query(srcUri, null, null, null, null)?.use { cursor ->
+                            if (cursor.moveToFirst()) {
+                                val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                                if (idx >= 0) name = cursor.getString(idx) ?: name
+                            }
+                        }
+                    } else {
+                        name = srcUri.lastPathSegment ?: name
+                    }
+                    name
+                }
+                val baseName = displayName.substringBeforeLast('.')
+                val dir = File(context.filesDir, "recordings").also { it.mkdirs() }
+                val dest = File(dir, "${UUID.randomUUID()}.m4a")
+                context.contentResolver.openInputStream(srcUri)?.use { input ->
+                    dest.outputStream().use { output -> input.copyTo(output) }
+                }
+                currentFilePath = dest.absolutePath
+                if (noteTitle.isBlank()) noteTitle = baseName
+                durationMs = try {
+                    val mmr = android.media.MediaMetadataRetriever()
+                    mmr.setDataSource(dest.absolutePath)
+                    val d = mmr.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+                    mmr.release()
+                    d
+                } catch (e: Exception) { 0L }
+                state = RecordingState.RECORDED
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(context, "Could not import audio: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     LaunchedEffect(notesList, noteId) {
         if (noteId != null && !isInitialized && notesList.isNotEmpty()) {
@@ -215,58 +260,74 @@ fun NewAudioScreen(
                 actions = {
                     if (state == RecordingState.RECORDED || state == RecordingState.PLAYING) {
                         // Share audio file
-                        IconButton(onClick = {
-                            val path = currentFilePath ?: return@IconButton
-                            try {
-                                val file = File(path)
-                                val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
-                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                    type = "audio/*"
-                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                                    flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        TooltipIconButton(
+                            tooltip = "Share",
+                            icon = Icons.Filled.Share,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                val path = currentFilePath ?: return@TooltipIconButton
+                                try {
+                                    val file = File(path)
+                                    val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "audio/*"
+                                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                        flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    }
+                                    context.startActivity(android.content.Intent.createChooser(intent, "Share recording"))
+                                } catch (e: Exception) {
+                                    android.widget.Toast.makeText(context, "Could not share recording", android.widget.Toast.LENGTH_SHORT).show()
                                 }
-                                context.startActivity(android.content.Intent.createChooser(intent, "Share recording"))
-                            } catch (e: Exception) {
-                                android.widget.Toast.makeText(context, "Could not share recording", android.widget.Toast.LENGTH_SHORT).show()
                             }
-                        }) { Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        )
 
                         // Archive
-                        IconButton(onClick = {
-                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
-                            save(pinOverride = false, archiveOverride = true)
-                            onNavigateBack()
-                        }) { Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        TooltipIconButton(
+                            tooltip = "Archive",
+                            icon = Icons.Filled.Archive,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                                save(pinOverride = false, archiveOverride = true)
+                                onNavigateBack()
+                            }
+                        )
 
-                        IconButton(onClick = {
-                            isPinned = !isPinned
-                            val savedId = save(isPinned)
-                            if (isPinned) {
-                                val data = AudioNoteData(currentFilePath ?: "", durationMs)
-                                notificationHelper.pinNoteToNotification(savedId, noteTitle.ifBlank { "Audio" }, gson.toJson(data), isList = false, noteType = NoteType.AUDIO)
-                            } else notificationHelper.unpinNoteFromNotification(savedId)
-                        }) {
-                            Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
-                                tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        IconButton(onClick = { showLabelsSheet = true }) {
-                            Icon(Icons.Filled.Label, "Label",
-                                tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        IconButton(onClick = { isLocked = !isLocked; save() }) {
-                            Icon(
-                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                                if (isLocked) "Locked" else "Unlocked",
-                                tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        TooltipIconButton(
+                            tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                            icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                isPinned = !isPinned
+                                val savedId = save(isPinned)
+                                if (isPinned) {
+                                    val data = AudioNoteData(currentFilePath ?: "", durationMs)
+                                    notificationHelper.pinNoteToNotification(savedId, noteTitle.ifBlank { "Audio" }, gson.toJson(data), isList = false, noteType = NoteType.AUDIO)
+                                } else notificationHelper.unpinNoteFromNotification(savedId)
+                            }
+                        )
+                        TooltipIconButton(
+                            tooltip = "Labels",
+                            icon = Icons.Filled.Label,
+                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { showLabelsSheet = true }
+                        )
+                        TooltipIconButton(
+                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { isLocked = !isLocked; save() }
+                        )
                         ColorPickerMenuButton(
                             selectedColor = colorHex,
                             onColorSelected = { colorHex = it.ifBlank { null }; save() }
                         )
-                        IconButton(onClick = { if (currentFilePath != null) { save(); onNavigateBack() } }) {
-                            Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        TooltipIconButton(
+                            tooltip = "Save",
+                            icon = Icons.Filled.Check,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { if (currentFilePath != null) { save(); onNavigateBack() } }
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)

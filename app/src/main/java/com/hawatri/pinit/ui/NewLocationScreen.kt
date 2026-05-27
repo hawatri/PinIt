@@ -278,59 +278,75 @@ fun NewLocationScreen(
                 },
                 actions = {
                     // Share
-                    IconButton(onClick = {
-                        if (locationName.isNotBlank() || lat != null) {
-                            val shareText = buildString {
-                                if (locationName.isNotBlank()) { append(locationName); append("\n") }
-                                if (locationAddress.isNotBlank()) { append(locationAddress); append("\n") }
-                                if (lat != null && lng != null) append("https://maps.google.com/?q=$lat,$lng")
+                    TooltipIconButton(
+                        tooltip = "Share",
+                        icon = Icons.Filled.Share,
+                        tint = Color.White,
+                        onClick = {
+                            if (locationName.isNotBlank() || lat != null) {
+                                val shareText = buildString {
+                                    if (locationName.isNotBlank()) { append(locationName); append("\n") }
+                                    if (locationAddress.isNotBlank()) { append(locationAddress); append("\n") }
+                                    if (lat != null && lng != null) append("https://maps.google.com/?q=$lat,$lng")
+                                }
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Share location"))
                             }
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, shareText)
-                            }
-                            context.startActivity(Intent.createChooser(intent, "Share location"))
                         }
-                    }) { Icon(Icons.Filled.Share, "Share", tint = Color.White) }
+                    )
 
                     // Archive
-                    IconButton(onClick = {
-                        if (locationName.isNotBlank() || lat != null) {
-                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
-                            save(pinOverride = false, archiveOverride = true)
-                            onNavigateBack()
+                    TooltipIconButton(
+                        tooltip = "Archive",
+                        icon = Icons.Filled.Archive,
+                        tint = Color.White,
+                        onClick = {
+                            if (locationName.isNotBlank() || lat != null) {
+                                if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                                save(pinOverride = false, archiveOverride = true)
+                                onNavigateBack()
+                            }
                         }
-                    }) { Icon(Icons.Filled.Archive, "Archive", tint = Color.White) }
+                    )
 
-                    IconButton(onClick = {
-                        isPinned = !isPinned
-                        val savedId = save(isPinned)
-                        val text = gson.toJson(LocationNoteData(locationName, locationAddress, lat, lng))
-                        if (isPinned) notificationHelper.pinNoteToNotification(savedId, locationName.ifBlank { "Location" }, text, isList = false, noteType = NoteType.LOCATION)
-                        else notificationHelper.unpinNoteFromNotification(savedId)
-                    }) {
-                        Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
-                            tint = if (isPinned) MaterialTheme.colorScheme.primary else Color.White)
-                    }
-                    IconButton(onClick = { showLabelsSheet = true }) {
-                        Icon(Icons.Filled.Label, "Label",
-                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.White)
-                    }
-                    IconButton(onClick = { if (locationName.isNotBlank() || lat != null) { isLocked = !isLocked; save() } }) {
-                        Icon(
-                            if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                            if (isLocked) "Locked" else "Unlocked",
-                            tint = if (isLocked) MaterialTheme.colorScheme.primary else Color.White
-                        )
-                    }
+                    TooltipIconButton(
+                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                        tint = if (isPinned) MaterialTheme.colorScheme.primary else Color.White,
+                        onClick = {
+                            isPinned = !isPinned
+                            val savedId = save(isPinned)
+                            val text = gson.toJson(LocationNoteData(locationName, locationAddress, lat, lng))
+                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, locationName.ifBlank { "Location" }, text, isList = false, noteType = NoteType.LOCATION)
+                            else notificationHelper.unpinNoteFromNotification(savedId)
+                        }
+                    )
+                    TooltipIconButton(
+                        tooltip = "Labels",
+                        icon = Icons.Filled.Label,
+                        tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.White,
+                        onClick = { showLabelsSheet = true }
+                    )
+                    TooltipIconButton(
+                        tooltip = if (isLocked) "Unlock note" else "Lock note",
+                        icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                        tint = if (isLocked) MaterialTheme.colorScheme.primary else Color.White,
+                        onClick = { if (locationName.isNotBlank() || lat != null) { isLocked = !isLocked; save() } }
+                    )
                     ColorPickerMenuButton(
                         selectedColor = colorHex,
                         onColorSelected = { colorHex = it.ifBlank { null }; if (locationName.isNotBlank() || lat != null) save() },
                         iconTint = Color.White
                     )
-                    IconButton(onClick = { if (locationName.isNotBlank() || lat != null) { save(); onNavigateBack() } }) {
-                        Icon(Icons.Filled.Check, "Save", tint = Color.White)
-                    }
+                    TooltipIconButton(
+                        tooltip = "Save",
+                        icon = Icons.Filled.Check,
+                        tint = Color.White,
+                        onClick = { if (locationName.isNotBlank() || lat != null) { save(); onNavigateBack() } }
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )

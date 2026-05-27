@@ -347,20 +347,28 @@ fun HomeScreen(
                     TopAppBar(
                         title = { Text("Drag to reorder") },
                         navigationIcon = {
-                            IconButton(onClick = {
-                                reorderMode = false
-                                draftOrder = emptyList()
-                                if (manualOrder.isEmpty()) sortOrder = SortOrder.NEWEST_FIRST
-                            }) { Icon(Icons.Filled.Close, "Discard") }
+                            TooltipIconButton(
+                                tooltip = "Discard order",
+                                icon = Icons.Filled.Close,
+                                onClick = {
+                                    reorderMode = false
+                                    draftOrder = emptyList()
+                                    if (manualOrder.isEmpty()) sortOrder = SortOrder.NEWEST_FIRST
+                                }
+                            )
                         },
                         actions = {
-                            IconButton(onClick = {
-                                val ids = draftOrder.map { it.id }
-                                manualOrder = ids
-                                AppPreferences.setManualOrder(context, ids)
-                                reorderMode = false
-                                draftOrder = emptyList()
-                            }) { Icon(Icons.Filled.Check, "Save order") }
+                            TooltipIconButton(
+                                tooltip = "Save order",
+                                icon = Icons.Filled.Check,
+                                onClick = {
+                                    val ids = draftOrder.map { it.id }
+                                    manualOrder = ids
+                                    AppPreferences.setManualOrder(context, ids)
+                                    reorderMode = false
+                                    draftOrder = emptyList()
+                                }
+                            )
                         },
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                     )
@@ -373,37 +381,51 @@ fun HomeScreen(
                         actions = {
                             // Duplicate selected notes
                             if (selectedNoteIds.size == 1) {
-                                IconButton(onClick = {
-                                    selectedNoteIds.firstOrNull()?.let { id ->
-                                        allNotes.find { it.id == id }?.let { note ->
-                                            viewModel.addNote(note.copy(
-                                                id = java.util.UUID.randomUUID().toString(),
-                                                title = if (note.title.isBlank()) "" else "${note.title} (copy)",
-                                                isPinned = false,
-                                                timestamp = System.currentTimeMillis()
-                                            ))
+                                TooltipIconButton(
+                                    tooltip = "Duplicate",
+                                    icon = Icons.Filled.ContentCopy,
+                                    onClick = {
+                                        selectedNoteIds.firstOrNull()?.let { id ->
+                                            allNotes.find { it.id == id }?.let { note ->
+                                                viewModel.addNote(note.copy(
+                                                    id = java.util.UUID.randomUUID().toString(),
+                                                    title = if (note.title.isBlank()) "" else "${note.title} (copy)",
+                                                    isPinned = false,
+                                                    timestamp = System.currentTimeMillis()
+                                                ))
+                                            }
                                         }
+                                        selectedNoteIds = emptySet()
                                     }
-                                    selectedNoteIds = emptySet()
-                                }) { Icon(Icons.Filled.ContentCopy, "Duplicate") }
+                                )
                             }
 
                             // Apply labels to all selected notes
-                            IconButton(onClick = { showBulkLabelsSheet = true }) {
-                                Icon(Icons.Filled.Label, "Add label")
-                            }
+                            TooltipIconButton(
+                                tooltip = "Add label",
+                                icon = Icons.Filled.Label,
+                                onClick = { showBulkLabelsSheet = true }
+                            )
 
-                            IconButton(onClick = {
-                                val ids = selectedNoteIds
-                                selectedNoteIds = emptySet()
-                                archiveSelectedWithUndo(ids)
-                            }) { Icon(Icons.Filled.Archive, "Archive") }
+                            TooltipIconButton(
+                                tooltip = "Archive",
+                                icon = Icons.Filled.Archive,
+                                onClick = {
+                                    val ids = selectedNoteIds
+                                    selectedNoteIds = emptySet()
+                                    archiveSelectedWithUndo(ids)
+                                }
+                            )
 
-                            IconButton(onClick = {
-                                val ids = selectedNoteIds
-                                selectedNoteIds = emptySet()
-                                deleteSelectedWithUndo(ids)
-                            }) { Icon(Icons.Filled.Delete, "Delete") }
+                            TooltipIconButton(
+                                tooltip = "Delete",
+                                icon = Icons.Filled.Delete,
+                                onClick = {
+                                    val ids = selectedNoteIds
+                                    selectedNoteIds = emptySet()
+                                    deleteSelectedWithUndo(ids)
+                                }
+                            )
                         },
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                     )
@@ -478,7 +500,7 @@ fun HomeScreen(
                 }
 
                 androidx.compose.animation.AnimatedContent(
-                    targetState = Triple(selectedBottomTab, selectedLabel, displayNotes.isEmpty()),
+                    targetState = selectedBottomTab to selectedLabel,
                     transitionSpec = {
                         (androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220)) +
                             androidx.compose.animation.slideInHorizontally(

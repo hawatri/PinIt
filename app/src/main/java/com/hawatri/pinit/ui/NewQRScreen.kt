@@ -181,60 +181,78 @@ fun NewQRScreen(
                 },
                 actions = {
                     if (scanningActive) {
-                        IconButton(onClick = { galleryLauncher.launch("image/*") }) {
-                            Icon(Icons.Filled.Image, "Pick from gallery", tint = Color.White)
-                        }
+                        TooltipIconButton(
+                            tooltip = "Pick from gallery",
+                            icon = Icons.Filled.Image,
+                            tint = Color.White,
+                            onClick = { galleryLauncher.launch("image/*") }
+                        )
                     }
                     if (scannedValue != null && !scanningActive) {
                         // Share
-                        IconButton(onClick = {
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, scannedValue ?: "")
+                        TooltipIconButton(
+                            tooltip = "Share",
+                            icon = Icons.Filled.Share,
+                            tint = Color.White,
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, scannedValue ?: "")
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Share QR content"))
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share QR content"))
-                        }) {
-                            Icon(Icons.Filled.Share, "Share", tint = Color.White)
-                        }
+                        )
                         // Archive
-                        IconButton(onClick = {
-                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
-                            save(pinOverride = false, archiveOverride = true)
-                            onNavigateBack()
-                        }) {
-                            Icon(Icons.Filled.Archive, "Archive", tint = Color.White)
-                        }
-                        IconButton(onClick = {
-                            isPinned = !isPinned
-                            val savedId = save(isPinned)
-                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, noteTitle, scannedValue ?: "", isList = false, noteType = NoteType.QR)
-                            else notificationHelper.unpinNoteFromNotification(savedId)
-                        }) {
-                            Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
-                                tint = if (isPinned) MaterialTheme.colorScheme.primary else Color.White)
-                        }
-                        IconButton(onClick = { scanningActive = true; scannedValue = null; savedToGalleryAsked = false }) {
-                            Icon(Icons.Filled.QrCodeScanner, "Rescan", tint = Color.White)
-                        }
-                        IconButton(onClick = { showLabelsSheet = true }) {
-                            Icon(Icons.Filled.Label, "Label",
-                                tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.White)
-                        }
-                        IconButton(onClick = { isLocked = !isLocked; save() }) {
-                            Icon(
-                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                                if (isLocked) "Locked" else "Unlocked",
-                                tint = if (isLocked) MaterialTheme.colorScheme.primary else Color.White
-                            )
-                        }
+                        TooltipIconButton(
+                            tooltip = "Archive",
+                            icon = Icons.Filled.Archive,
+                            tint = Color.White,
+                            onClick = {
+                                if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                                save(pinOverride = false, archiveOverride = true)
+                                onNavigateBack()
+                            }
+                        )
+                        TooltipIconButton(
+                            tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                            icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                            tint = if (isPinned) MaterialTheme.colorScheme.primary else Color.White,
+                            onClick = {
+                                isPinned = !isPinned
+                                val savedId = save(isPinned)
+                                if (isPinned) notificationHelper.pinNoteToNotification(savedId, noteTitle, scannedValue ?: "", isList = false, noteType = NoteType.QR)
+                                else notificationHelper.unpinNoteFromNotification(savedId)
+                            }
+                        )
+                        TooltipIconButton(
+                            tooltip = "Rescan",
+                            icon = Icons.Filled.QrCodeScanner,
+                            tint = Color.White,
+                            onClick = { scanningActive = true; scannedValue = null; savedToGalleryAsked = false }
+                        )
+                        TooltipIconButton(
+                            tooltip = "Labels",
+                            icon = Icons.Filled.Label,
+                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.White,
+                            onClick = { showLabelsSheet = true }
+                        )
+                        TooltipIconButton(
+                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else Color.White,
+                            onClick = { isLocked = !isLocked; save() }
+                        )
                         ColorPickerMenuButton(
                             selectedColor = colorHex,
                             onColorSelected = { colorHex = it.ifBlank { null }; save() },
                             iconTint = Color.White
                         )
-                        IconButton(onClick = { save(); onNavigateBack() }) {
-                            Icon(Icons.Filled.Check, "Save", tint = Color.White)
-                        }
+                        TooltipIconButton(
+                            tooltip = "Save",
+                            icon = Icons.Filled.Check,
+                            tint = Color.White,
+                            onClick = { save(); onNavigateBack() }
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)

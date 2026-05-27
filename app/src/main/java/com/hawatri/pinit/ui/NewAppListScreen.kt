@@ -131,53 +131,69 @@ fun NewAppListScreen(
                 actions = {
                     if (selectedApps.isNotEmpty()) {
                         // Share - share app list as text
-                        IconButton(onClick = {
-                            val shareText = selectedApps.joinToString("\n") { it.name }
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, shareText)
+                        TooltipIconButton(
+                            tooltip = "Share",
+                            icon = Icons.Filled.Share,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                val shareText = selectedApps.joinToString("\n") { it.name }
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Share app list"))
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share app list"))
-                        }) { Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        )
 
                         // Archive
-                        IconButton(onClick = {
-                            if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
-                            save(pinOverride = false, archiveOverride = true)
-                            onNavigateBack()
-                        }) { Icon(Icons.Filled.Archive, "Archive", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        TooltipIconButton(
+                            tooltip = "Archive",
+                            icon = Icons.Filled.Archive,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                if (isPinned) notificationHelper.unpinNoteFromNotification(currentNoteId)
+                                save(pinOverride = false, archiveOverride = true)
+                                onNavigateBack()
+                            }
+                        )
                     }
-                    IconButton(onClick = {
-                        isPinned = !isPinned
-                        val savedId = save(isPinned)
-                        val items = selectedApps.map { AppNoteItem(it.packageName, it.name) }
-                        val titleText = if (items.isEmpty()) "App Shortcuts" else "${items.size} App${if (items.size > 1) "s" else ""}"
-                        if (isPinned) notificationHelper.pinNoteToNotification(savedId, titleText, gson.toJson(items), isList = false, noteType = NoteType.APPLIST)
-                        else notificationHelper.unpinNoteFromNotification(savedId)
-                    }) {
-                        Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, "Pin",
-                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = { showLabelsSheet = true }) {
-                        Icon(Icons.Filled.Label, "Label",
-                            tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    if (selectedApps.isNotEmpty()) {
-                        IconButton(onClick = { isLocked = !isLocked; save() }) {
-                            Icon(
-                                if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                                if (isLocked) "Locked" else "Unlocked",
-                                tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    TooltipIconButton(
+                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                        tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
+                            isPinned = !isPinned
+                            val savedId = save(isPinned)
+                            val items = selectedApps.map { AppNoteItem(it.packageName, it.name) }
+                            val titleText = if (items.isEmpty()) "App Shortcuts" else "${items.size} App${if (items.size > 1) "s" else ""}"
+                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, titleText, gson.toJson(items), isList = false, noteType = NoteType.APPLIST)
+                            else notificationHelper.unpinNoteFromNotification(savedId)
                         }
+                    )
+                    TooltipIconButton(
+                        tooltip = "Labels",
+                        icon = Icons.Filled.Label,
+                        tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { showLabelsSheet = true }
+                    )
+                    if (selectedApps.isNotEmpty()) {
+                        TooltipIconButton(
+                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { isLocked = !isLocked; save() }
+                        )
                         ColorPickerMenuButton(
                             selectedColor = colorHex,
                             onColorSelected = { colorHex = it.ifBlank { null }; save() }
                         )
                     }
-                    IconButton(onClick = { if (selectedApps.isNotEmpty()) { save(); onNavigateBack() } }) {
-                        Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    TooltipIconButton(
+                        tooltip = "Save",
+                        icon = Icons.Filled.Check,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { if (selectedApps.isNotEmpty()) { save(); onNavigateBack() } }
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )

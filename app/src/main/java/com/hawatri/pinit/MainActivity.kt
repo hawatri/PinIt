@@ -32,6 +32,16 @@ class MainActivity : FragmentActivity() {
             intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.toString()
         } else null
 
+        @Suppress("DEPRECATION")
+        val sharedPdfUri = if (intent?.action == Intent.ACTION_SEND && intent.type == "application/pdf") {
+            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.toString()
+        } else null
+
+        @Suppress("DEPRECATION")
+        val sharedAudioUri = if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("audio/") == true) {
+            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.toString()
+        } else null
+
         val widgetAction = intent?.getStringExtra("WIDGET_ACTION")
         val widgetOpenNoteId = intent?.getStringExtra("WIDGET_OPEN_NOTE_ID")
 
@@ -54,6 +64,8 @@ class MainActivity : FragmentActivity() {
                     PinItApp(
                         sharedText = sharedText,
                         sharedImageUri = sharedImageUri,
+                        sharedPdfUri = sharedPdfUri,
+                        sharedAudioUri = sharedAudioUri,
                         sharedIcsUri = sharedIcsUri,
                         widgetAction = widgetAction,
                         widgetOpenNoteId = widgetOpenNoteId,
