@@ -20,6 +20,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.hawatri.pinit.backup.BackupSyncManager
@@ -92,6 +94,7 @@ fun SignInScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(24.dp))
+            val photoUrl = account?.photoUrl?.toString()
             Box(
                 modifier = Modifier
                     .size(96.dp)
@@ -99,12 +102,25 @@ fun SignInScreen(
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    if (account != null) Icons.Filled.Person else Icons.Filled.PersonOutline,
-                    null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(48.dp)
-                )
+                if (!photoUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(photoUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Profile photo",
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Icon(
+                        if (account != null) Icons.Filled.Person else Icons.Filled.PersonOutline,
+                        null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
             }
             Spacer(Modifier.height(24.dp))
 
