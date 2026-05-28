@@ -41,6 +41,14 @@ object GoogleAuthManager {
         }
 
     /**
+     * Whether [account] currently holds the DRIVE_FILE scope. First-time sign-in
+     * frequently returns an identity token before the scope grant has propagated,
+     * so callers should check this and re-prompt for the scope before proceeding.
+     */
+    fun hasDriveScope(account: GoogleSignInAccount): Boolean =
+        GoogleSignIn.hasPermissions(account, Scope(DriveScopes.DRIVE_FILE))
+
+    /**
      * Build a [GoogleAccountCredential] tied to [account] for the Drive REST client.
      * Never returns null — caller has already verified the account exists.
      */

@@ -44,6 +44,12 @@ fun SignInScreen(
     val lastSyncAt by remember { derivedStateOf { AppPreferences.getLastSyncAt(context) } }
     var lastSyncDisplay by remember { mutableStateOf(formatLastSync(lastSyncAt)) }
 
+    // First-time sign-in often returns an identity token before the Drive scope
+    // grant has propagated. We retry once: if the first launcher result doesn't
+    // carry DRIVE_FILE, we relaunch the same intent (Google then prompts only
+    // for the missing scope). The retry flag prevents an infinite loop if the
+    // user denies the second time.
+    var scopeRetryAttempted by remember { mutableStateOf(false) }
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -51,7 +57,23 @@ fun SignInScreen(
         try {
             val signed = task.getResult(ApiException::class.java) ?: return@rememberLauncherForActivityResult
             AppPreferences.setUser(context, signed.displayName, signed.email)
+
+            if (!GoogleAuthManager.hasDriveScope(signed)) {
+                if (!scopeRetryAttempted) {
+                    scopeRetryAttempted = true
+                    BackupSyncManager.setWorking("Granting Drive access…")
+                    return@rememberLauncherForActivityResult
+                } else {
+                    BackupSyncManager.setError(
+                        "Drive access not granted. Tap 'Sign in with Google' again and approve the Drive permission."
+                    )
+                    return@rememberLauncherForActivityResult
+                }
+            }
+
+            scopeRetryAttempted = false
             account = signed
+            BackupSyncManager.setWorking("Signed in — syncing…")
             scope.launch {
                 BackupSyncManager.signInAndSync(context)
                 lastSyncDisplay = formatLastSync(AppPreferences.getLastSyncAt(context))
@@ -69,6 +91,15 @@ fun SignInScreen(
             BackupSyncManager.setError(msg)
         } catch (e: Exception) {
             BackupSyncManager.setError("Sign-in failed: ${e.localizedMessage ?: "unknown"}")
+        }
+    }
+
+    // When the first sign-in returns without the Drive scope, fire a second
+    // launch to prompt only for the missing scope. Done as a side-effect so we
+    // can read scopeRetryAttempted reactively and avoid stale-launcher issues.
+    LaunchedEffect(scopeRetryAttempted) {
+        if (scopeRetryAttempted && account == null) {
+            signInLauncher.launch(GoogleAuthManager.signInIntent(context))
         }
     }
 

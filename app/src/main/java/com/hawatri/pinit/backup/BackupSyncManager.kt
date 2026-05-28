@@ -277,4 +277,7 @@ object BackupSyncManager {
 
     /** Surface a sign-in or other auth-layer error in the same status flow the UI watches. */
     fun setError(message: String) { _state.value = State.Error(message) }
+
+    /** Surface a transient auth-layer progress message in the same status flow the UI watches. */
+    fun setWorking(message: String) { _state.value = State.Working(message) }
 }
