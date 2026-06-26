@@ -712,15 +712,31 @@ fun HomeScreen(
                 )
             }
 
-            // Post-update banner — sits above the bottom nav AND above the FAB
-            // so the + button never covers it. Drawn last in the Box so its
-            // z-order is on top of everything else on Home. Auto-dismisses after
-            // first view (× tap or "Show Full Changelog" tap).
-            PostUpdateBanner(
+            // Unbacked-changes warning — sits just above the post-update banner.
+            // Persistent (re-shows on every Home composition while there are unsaved
+            // changes), unlike the one-time post-update card.
+            UnbackedChangesBanner(
+                onSignInClick = onNavigateToSignIn,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 96.dp)
             )
+
+            // Post-update banner — sits above the bottom nav AND above the FAB
+            // so the + button never covers it. Drawn last in the Box so its
+            // z-order is on top of everything else on Home. Auto-dismisses after
+            // first view (× tap or "Show Full Changelog" tap). When the unbacked-
+            // changes banner is also visible, this floats above it.
+            PostUpdateBanner(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 320.dp)
+            )
+
+            // Stale-backup nag dialog: if last successful backup is >14 days old
+            // and the user hasn't dismissed forever, show a one-time prompt with
+            // Backup / Remind later / Don't ask again.
+            StaleBackupDialog(onNavigateToSignIn = onNavigateToSignIn)
         }
     }
 }

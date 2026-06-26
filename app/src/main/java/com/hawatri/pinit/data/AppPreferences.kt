@@ -18,6 +18,11 @@ object AppPreferences {
     private const val KEY_ONBOARDING_DONE = "onboarding_done"
     private const val KEY_MANUAL_ORDER = "manual_order"
     private const val KEY_LAST_SEEN_VERSION_CODE = "last_seen_version_code"
+    private const val KEY_LAST_MODIFIED_AT = "last_modified_at"
+    private const val KEY_LAST_BACKUP_AT = "last_backup_at"
+    private const val KEY_STALE_DIALOG_DISMISSED_AT = "stale_dialog_dismissed_at"
+    private const val KEY_STALE_DIALOG_SUPPRESSED_FOREVER = "stale_dialog_suppressed_forever"
+    private const val KEY_BACKUP_REMINDERS_ENABLED = "backup_reminders_enabled"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -93,5 +98,63 @@ object AppPreferences {
 
     fun setLastSeenVersionCode(context: Context, code: Int) {
         prefs(context).edit().putInt(KEY_LAST_SEEN_VERSION_CODE, code).apply()
+    }
+
+    /**
+     * Wall-clock millis of the most recent local note mutation (insert / update /
+     * delete / pin toggle / archive / label edit). Used to decide whether the user
+     * has unbacked-up changes vs. [getLastBackupAt]. Restore paths must not bump
+     * this — restoring from cloud should leave lastModified == lastBackup.
+     */
+    fun getLastModifiedAt(context: Context): Long =
+        prefs(context).getLong(KEY_LAST_MODIFIED_AT, 0L)
+
+    fun setLastModifiedNow(context: Context) {
+        prefs(context).edit().putLong(KEY_LAST_MODIFIED_AT, System.currentTimeMillis()).apply()
+    }
+
+    /**
+     * Wall-clock millis of the most recent successful backup (online OR offline) or
+     * restore. Compared against [getLastModifiedAt] to surface "you have unsaved
+     * changes" warnings. 0 = never backed up. After a successful restore, set this
+     * to match lastModifiedAt so the banner clears.
+     */
+    fun getLastBackupAt(context: Context): Long =
+        prefs(context).getLong(KEY_LAST_BACKUP_AT, 0L)
+
+    fun setLastBackupNow(context: Context) {
+        val now = System.currentTimeMillis()
+        prefs(context).edit()
+            .putLong(KEY_LAST_BACKUP_AT, now)
+            .putLong(KEY_LAST_MODIFIED_AT, now)
+            .apply()
+    }
+
+    /** True if the user tapped "Don't ask again" on the stale-backup dialog. */
+    fun isStaleDialogSuppressedForever(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_STALE_DIALOG_SUPPRESSED_FOREVER, false)
+
+    fun setStaleDialogSuppressedForever(context: Context) {
+        prefs(context).edit().putBoolean(KEY_STALE_DIALOG_SUPPRESSED_FOREVER, true).apply()
+    }
+
+    /** Wall-clock millis when the user last dismissed the stale-backup dialog. */
+    fun getStaleDialogDismissedAt(context: Context): Long =
+        prefs(context).getLong(KEY_STALE_DIALOG_DISMISSED_AT, 0L)
+
+    fun setStaleDialogDismissedNow(context: Context) {
+        prefs(context).edit().putLong(KEY_STALE_DIALOG_DISMISSED_AT, System.currentTimeMillis()).apply()
+    }
+
+    /**
+     * Whether the proactive backup nudges (the persistent Home banner and the
+     * 14-day stale-backup dialog) are shown. Defaults to true. The user can
+     * turn these off in Settings if the constant reminders are unwanted.
+     */
+    fun isBackupRemindersEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_BACKUP_REMINDERS_ENABLED, true)
+
+    fun setBackupRemindersEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_BACKUP_REMINDERS_ENABLED, enabled).apply()
     }
 }

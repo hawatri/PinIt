@@ -27,6 +27,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.hawatri.pinit.backup.BackupSyncManager
 import com.hawatri.pinit.backup.GoogleAuthManager
+import com.hawatri.pinit.data.AppPreferences
 import com.hawatri.pinit.data.ThemeMode
 import kotlinx.coroutines.launch
 
@@ -42,6 +43,15 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val syncState by BackupSyncManager.state.collectAsState()
     val signedIn = remember { GoogleAuthManager.currentAccount(context) != null }
+    var remindersEnabled by remember { mutableStateOf(AppPreferences.isBackupRemindersEnabled(context)) }
+    // Recompute on each sync state change so a successful backup clears the warning.
+    val hasUnbackedChanges by remember(syncState) {
+        derivedStateOf {
+            val mod = AppPreferences.getLastModifiedAt(context)
+            val bak = AppPreferences.getLastBackupAt(context)
+            mod > 0L && mod > bak
+        }
+    }
 
     // Restore-from-file picker — accepts our .pinit archives (octet-stream)
     // and any file the user explicitly picks from a manager.
@@ -101,6 +111,10 @@ fun SettingsScreen(
             // Backup
             SettingsSection(title = "Backup") {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    if (hasUnbackedChanges) {
+                        UnbackedInlineWarning()
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
                     BackupActionButton(
                         title = "Take online backup",
                         subtitle = if (signedIn) "Upload to your Google Drive" else "Sign in with Google first",
@@ -138,6 +152,15 @@ fun SettingsScreen(
                         }
                     )
                     SyncStatusInline(state = syncState)
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    BackupReminderToggle(
+                        enabled = remindersEnabled,
+                        onToggle = {
+                            remindersEnabled = it
+                            AppPreferences.setBackupRemindersEnabled(context, it)
+                        }
+                    )
                 }
             }
 
@@ -315,6 +338,81 @@ private fun BackupActionButton(
                 tint = subtitleColor,
                 modifier = Modifier.size(20.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun BackupReminderToggle(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle(!enabled) }
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Filled.NotificationsActive,
+            null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "Backup reminders",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                "Show a banner and reminders when you have unbacked-up changes",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Switch(checked = enabled, onCheckedChange = onToggle)
+    }
+}
+
+@Composable
+private fun UnbackedInlineWarning() {
+    val warnContainer = Color(0xFFFFF3CD)
+    val warnContent = Color(0xFF664D03)
+    val warnAccent = Color(0xFFB8860B)
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = warnContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Filled.CloudOff,
+                contentDescription = null,
+                tint = warnAccent,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "You have unbacked-up changes",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = warnContent
+                )
+                Text(
+                    "Take a backup before uninstalling, switching phones, or wiping data.",
+                    fontSize = 11.sp,
+                    color = warnContent
+                )
+            }
         }
     }
 }

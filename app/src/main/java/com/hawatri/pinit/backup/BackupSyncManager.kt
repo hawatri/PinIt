@@ -81,6 +81,7 @@ object BackupSyncManager {
                 folderId to json
             }
             AppPreferences.setLastSyncAt(context, System.currentTimeMillis())
+            AppPreferences.setLastBackupNow(context)
             _state.value = State.Success("Backed up ${json.length / 1024} KB to Drive")
         } catch (e: Exception) {
             Log.e(TAG, "backupNow failed", e)
@@ -109,6 +110,7 @@ object BackupSyncManager {
                 val json = PinItBackup.toJson(backup)
                 writeToDownloads(context, json)
             }
+            AppPreferences.setLastBackupNow(context)
             _state.value = State.Success("Saved to $savedPath")
         } catch (e: Exception) {
             Log.e(TAG, "backupOfflineNow failed", e)
@@ -178,6 +180,7 @@ object BackupSyncManager {
                     finalCount = merged.size
                 )
             }
+            AppPreferences.setLastBackupNow(context)
             _state.value = State.Success(
                 if (result.restored > 0) "Restored ${result.restored} notes; ${result.finalCount} total"
                 else "Up to date — ${result.finalCount} notes"
@@ -243,6 +246,7 @@ object BackupSyncManager {
             }
 
             AppPreferences.setLastSyncAt(context, System.currentTimeMillis())
+            AppPreferences.setLastBackupNow(context)
             _state.value = State.Success(
                 if (result.restored > 0) "Restored ${result.restored} notes; ${result.finalCount} total"
                 else "Up to date — ${result.finalCount} notes"

@@ -53,7 +53,7 @@ fun PinItApp(
     val database = NoteDatabase.getDatabase(context)
     val dao = database.noteDao()
 
-    val sharedViewModel: PinItViewModel = viewModel(factory = PinItViewModelFactory(dao))
+    val sharedViewModel: PinItViewModel = viewModel(factory = PinItViewModelFactory(dao, context.applicationContext))
 
     // Refresh widget whenever notes change (pin state may have changed)
     val notes by sharedViewModel.notes.collectAsState()
