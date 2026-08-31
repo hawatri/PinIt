@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import com.hawatri.pinit.util.LocaleHelper
 
 class PinItWidget : AppWidgetProvider() {
 
@@ -54,7 +55,7 @@ class PinItWidget : AppWidgetProvider() {
             views.setOnClickPendingIntent(R.id.widget_header, openPending)
 
             // Pinned count label
-            views.setTextViewText(R.id.widget_pinned_count, if (pinnedCount > 0) "$pinnedCount pinned" else "")
+            views.setTextViewText(R.id.widget_pinned_count, if (pinnedCount > 0) LocaleHelper.wrap(context).resources.getQuantityString(R.plurals.plural_pinned, pinnedCount, pinnedCount) else "")
 
             // New Note button
             val newNoteIntent = Intent(context, MainActivity::class.java).apply {

@@ -20,8 +20,8 @@ android {
         applicationId = "com.hawatri.pinit"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 210
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -56,6 +56,19 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    lint {
+        // LocalContextGetResourceValueCall guards against reading resource values
+        // *during composition* and caching them across a configuration change. Our
+        // remaining `context.getString(...)` calls all sit in non-composable scope —
+        // Toast callbacks, coroutine bodies, share-sheet chooser titles, biometric
+        // prompt builders and local save()/updateMarker() helpers — where
+        // stringResource() is a compile error. They resolve at event time, and an
+        // in-app language change recreates the Activity (see MainActivity), so the
+        // stale-value case the check exists for cannot occur. Kept as a warning
+        // rather than disabled so new occurrences stay visible in reports.
+        warning += "LocalContextGetResourceValueCall"
     }
 }
 

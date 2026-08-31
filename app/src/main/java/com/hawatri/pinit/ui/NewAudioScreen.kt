@@ -39,6 +39,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.UUID
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 data class AudioNoteData(val path: String, val durationMs: Long = 0L)
 
@@ -114,7 +116,7 @@ fun NewAudioScreen(
                 } catch (e: Exception) { 0L }
                 state = RecordingState.RECORDED
             } catch (e: Exception) {
-                android.widget.Toast.makeText(context, "Could not import audio: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, context.getString(R.string.msg_import_audio_failed, e.message ?: ""), android.widget.Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -194,7 +196,7 @@ fun NewAudioScreen(
         rec.setAudioSamplingRate(44100)
         rec.setOutputFile(file.absolutePath)
         try { rec.prepare(); rec.start(); recorder = rec; state = RecordingState.RECORDING }
-        catch (e: Exception) { rec.release(); android.widget.Toast.makeText(context, "Recording failed: ${e.message}", android.widget.Toast.LENGTH_SHORT).show() }
+        catch (e: Exception) { rec.release(); android.widget.Toast.makeText(context, context.getString(R.string.msg_recording_failed, e.message ?: ""), android.widget.Toast.LENGTH_SHORT).show() }
     }
 
     fun stopRecording() {
@@ -208,7 +210,7 @@ fun NewAudioScreen(
     fun startPlaying() {
         val path = currentFilePath ?: return
         val file = File(path)
-        if (!file.exists()) { android.widget.Toast.makeText(context, "Recording file not found", android.widget.Toast.LENGTH_SHORT).show(); return }
+        if (!file.exists()) { android.widget.Toast.makeText(context, context.getString(R.string.msg_recording_not_found), android.widget.Toast.LENGTH_SHORT).show(); return }
         val mp = MediaPlayer()
         mp.setDataSource(path)
         mp.setOnCompletionListener { state = RecordingState.RECORDED; playerPosition = 0f }
@@ -229,7 +231,9 @@ fun NewAudioScreen(
         val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
-            title = noteTitle.ifBlank { "Recording ${formatDuration(durationMs)}" },
+            title = noteTitle.ifBlank {
+                context.getString(R.string.audio_recording_label, formatDuration(durationMs))
+            },
             text = gson.toJson(data),
             formatRanges = emptyList(),
             isPinned = pinOverride,
@@ -256,12 +260,12 @@ fun NewAudioScreen(
         topBar = {
             TopAppBar(
                 title = { },
-                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant) } },
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.onSurfaceVariant) } },
                 actions = {
                     if (state == RecordingState.RECORDED || state == RecordingState.PLAYING) {
                         // Share audio file
                         TooltipIconButton(
-                            tooltip = "Share",
+                            tooltip = stringResource(R.string.action_share),
                             icon = Icons.Filled.Share,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -274,16 +278,16 @@ fun NewAudioScreen(
                                         putExtra(android.content.Intent.EXTRA_STREAM, uri)
                                         flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
                                     }
-                                    context.startActivity(android.content.Intent.createChooser(intent, "Share recording"))
+                                    context.startActivity(android.content.Intent.createChooser(intent, context.getString(R.string.share_recording)))
                                 } catch (e: Exception) {
-                                    android.widget.Toast.makeText(context, "Could not share recording", android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(context, context.getString(R.string.msg_could_not_share_recording), android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
                         )
 
                         // Archive
                         TooltipIconButton(
-                            tooltip = "Archive",
+                            tooltip = stringResource(R.string.action_archive),
                             icon = Icons.Filled.Archive,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -294,7 +298,7 @@ fun NewAudioScreen(
                         )
 
                         TooltipIconButton(
-                            tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                            tooltip = if (isPinned) stringResource(R.string.unpin_from_notifications) else stringResource(R.string.pin_to_notifications),
                             icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                             tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -302,18 +306,18 @@ fun NewAudioScreen(
                                 val savedId = save(isPinned)
                                 if (isPinned) {
                                     val data = AudioNoteData(currentFilePath ?: "", durationMs)
-                                    notificationHelper.pinNoteToNotification(savedId, noteTitle.ifBlank { "Audio" }, gson.toJson(data), isList = false, noteType = NoteType.AUDIO)
+                                    notificationHelper.pinNoteToNotification(savedId, noteTitle.ifBlank { context.getString(R.string.type_audio) }, gson.toJson(data), isList = false, noteType = NoteType.AUDIO)
                                 } else notificationHelper.unpinNoteFromNotification(savedId)
                             }
                         )
                         TooltipIconButton(
-                            tooltip = "Labels",
+                            tooltip = stringResource(R.string.labels),
                             icon = Icons.Filled.Label,
                             tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { showLabelsSheet = true }
                         )
                         TooltipIconButton(
-                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            tooltip = if (isLocked) stringResource(R.string.unlock_note) else stringResource(R.string.lock_note),
                             icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                             tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { isLocked = !isLocked; save() }
@@ -323,7 +327,7 @@ fun NewAudioScreen(
                             onColorSelected = { colorHex = it.ifBlank { null }; save() }
                         )
                         TooltipIconButton(
-                            tooltip = "Save",
+                            tooltip = stringResource(R.string.action_save),
                             icon = Icons.Filled.Check,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { if (currentFilePath != null) { save(); onNavigateBack() } }
@@ -345,7 +349,7 @@ fun NewAudioScreen(
                 OutlinedTextField(
                     value = noteTitle,
                     onValueChange = { noteTitle = it },
-                    placeholder = { Text("Recording title (optional)") },
+                    placeholder = { Text(stringResource(R.string.field_recording_title)) },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp).padding(bottom = 32.dp)
@@ -368,10 +372,10 @@ fun NewAudioScreen(
             // Recording status label
             Text(
                 text = when (state) {
-                    RecordingState.IDLE -> if (hasAudioPermission) "Tap to record" else "Microphone permission required"
-                    RecordingState.RECORDING -> "Recording…"
-                    RecordingState.RECORDED -> "Recording ready"
-                    RecordingState.PLAYING -> "Playing"
+                    RecordingState.IDLE -> if (hasAudioPermission) stringResource(R.string.audio_tap_to_record) else stringResource(R.string.audio_mic_permission)
+                    RecordingState.RECORDING -> stringResource(R.string.audio_recording_progress)
+                    RecordingState.RECORDED -> stringResource(R.string.audio_recording_ready)
+                    RecordingState.PLAYING -> stringResource(R.string.audio_playing)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -410,7 +414,7 @@ fun NewAudioScreen(
                             RecordingState.PLAYING -> Icons.Filled.Pause
                             else -> Icons.Filled.Mic
                         },
-                        contentDescription = "Record",
+                        contentDescription = stringResource(R.string.action_record),
                         tint = when (state) {
                             RecordingState.RECORDING -> Color.White
                             RecordingState.PLAYING -> Color.White
@@ -433,7 +437,7 @@ fun NewAudioScreen(
                         onClick = { startPlaying() },
                         modifier = Modifier.size(56.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer)
                     ) {
-                        Icon(Icons.Filled.PlayArrow, "Play", tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(32.dp))
+                        Icon(Icons.Filled.PlayArrow, stringResource(R.string.action_play), tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(32.dp))
                     }
                     // Discard & re-record button
                     IconButton(
@@ -446,7 +450,7 @@ fun NewAudioScreen(
                         },
                         modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.errorContainer)
                     ) {
-                        Icon(Icons.Filled.Delete, "Discard", tint = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.size(24.dp))
+                        Icon(Icons.Filled.Delete, stringResource(R.string.action_discard), tint = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.size(24.dp))
                     }
                 }
             }

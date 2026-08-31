@@ -1,3 +1,525 @@
 <resources>
-    <string name="app_name">PinIt</string>
+    <string name="app_name" translatable="false">PinIt</string>
+
+    <!-- Common actions -->
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_ok">OK</string>
+    <string name="action_undo">Undo</string>
+    <string name="action_back">Back</string>
+    <string name="action_add">Add</string>
+    <string name="action_share">Share</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_open">Open</string>
+    <string name="action_browse">Browse</string>
+    <string name="action_browse_files">Browse Files</string>
+    <string name="action_call">Call</string>
+    <string name="action_navigate">Navigate</string>
+    <string name="action_play">Play</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_record">Record</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_select">Select</string>
+    <string name="action_skip">Skip</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_dismiss">Dismiss</string>
+    <string name="action_archive">Archive</string>
+    <string name="action_unarchive">Unarchive</string>
+    <string name="action_duplicate">Duplicate</string>
+    <string name="action_rescan">Rescan</string>
+    <string name="action_grant_permission">Grant permission</string>
+    <string name="action_check_all">Check All</string>
+    <string name="action_uncheck_all">Uncheck all</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_more">More</string>
+
+    <!-- Home / navigation -->
+    <string name="tab_home">Home</string>
+    <string name="tab_pinned">Pinned</string>
+    <string name="tab_labels">Labels</string>
+    <string name="home_empty">No items</string>
+    <string name="home_empty_pinned">No pinned items</string>
+    <string name="home_drag_to_reorder">Drag to reorder</string>
+    <string name="home_save_order">Save order</string>
+    <string name="home_discard_order">Discard order</string>
+    <string name="home_add_to_home_screen">Add to Home Screen</string>
+    <string name="home_press_back_again">Press back again to exit</string>
+    <string name="home_tap_to_unlock">Tap to unlock</string>
+    <string name="home_open_link">Open Link</string>
+    <string name="home_open_pdf">Open PDF</string>
+    <string name="home_open_app">Open app</string>
+    <string name="home_copy_label">Copied Note</string>
+
+    <!-- Search / top bar -->
+    <string name="search">Search</string>
+    <string name="search_clear">Clear search</string>
+    <string name="sort">Sort</string>
+    <string name="profile">Profile</string>
+    <string name="account">Account</string>
+    <string name="archived_notes">Archived Notes</string>
+    <string name="back_up_to_drive">Back up to Drive</string>
+
+    <!-- Sort orders -->
+    <string name="sort_newest_first">Newest first</string>
+    <string name="sort_oldest_first">Oldest first</string>
+    <string name="sort_title_az">Title A → Z</string>
+    <string name="sort_title_za">Title Z → A</string>
+    <string name="sort_manual">Manual order</string>
+
+    <!-- Note type names -->
+    <string name="type_note">Note</string>
+    <string name="type_list">Checklist</string>
+    <string name="type_qr">QR code</string>
+    <string name="type_link">Link</string>
+    <string name="type_contact">Contact</string>
+    <string name="type_location">Location</string>
+    <string name="type_applist">App list</string>
+    <string name="type_image">Image</string>
+    <string name="type_pdf">PDF</string>
+    <string name="type_audio">Audio</string>
+
+    <!-- Edit screens: fields and top bar -->
+    <string name="field_title_required">Title*</string>
+    <string name="field_text_required">Text*</string>
+    <string name="field_link_required">Link*</string>
+    <string name="field_name_required">Name*</string>
+    <string name="field_phone_required">Phone Number*</string>
+    <string name="field_title">Title</string>
+    <string name="field_mandatory_note">*Mandatory field</string>
+    <string name="field_location_name">Location name</string>
+    <string name="field_recording_title">Recording title (optional)</string>
+    <string name="field_item">Item</string>
+    <string name="field_add_item">Add item</string>
+    <string name="pin_to_notifications">Pin to notifications</string>
+    <string name="unpin_from_notifications">Unpin from notifications</string>
+    <string name="lock_note">Lock note</string>
+    <string name="unlock_note">Unlock note</string>
+    <string name="note_color">Note Color</string>
+    <string name="labels">Labels</string>
+    <string name="add_label">Add label</string>
+    <string name="label_name">Label name</string>
+    <string name="rename_label">Rename label</string>
+    <string name="delete_label_title">Delete label?</string>
+    <string name="edit_link">Edit link</string>
+    <string name="refresh_preview">Refresh preview</string>
+    <string name="list_type">List Type</string>
+    <string name="drag">Drag</string>
+
+    <!-- Share sheet titles -->
+    <string name="share_note">Share note</string>
+    <string name="share_list">Share list</string>
+    <string name="share_link">Share link</string>
+    <string name="share_contact">Share contact</string>
+    <string name="share_location">Share location</string>
+    <string name="share_image">Share image</string>
+    <string name="share_pdf">Share PDF</string>
+    <string name="share_app_list">Share app list</string>
+    <string name="share_qr_content">Share QR content</string>
+    <string name="share_recording">Share recording</string>
+
+    <!-- Reminders -->
+    <string name="set_reminder">Set reminder</string>
+    <string name="add_another_reminder">Add another reminder</string>
+    <string name="remove_reminder">Remove reminder</string>
+    <string name="reminder_added">Reminder added</string>
+    <string name="reminder_set">Reminder set</string>
+    <string name="reminder_set_bang">Reminder set!</string>
+    <string name="reminder_duplicate">Reminder already set for that time</string>
+    <string name="reminder_tomorrow_8am">Tomorrow (8:00 AM)</string>
+    <string name="reminder_set_tomorrow_8am">Reminder set for tomorrow at 8:00 AM</string>
+    <string name="reminder_pick_date_time">Pick date and time</string>
+    <string name="reminder_select_time">Select time</string>
+    <string name="reminder_past">Cannot set reminder in the past</string>
+    <string name="reminder_needs_notifications">Reminders won\'t show without notification permission</string>
+    <string name="reminder_allow_notifications">Please allow notifications for reminders</string>
+    <string name="reminder_exact_alarm_missing">Exact alarm permission missing. Reminder may be delayed.</string>
+    <string name="reminder_default_body">It\'s time for your reminder</string>
+    <string name="alarm">Alarm</string>
+
+    <!-- Locked notes -->
+    <string name="unlock_note_title">Unlock Note</string>
+    <string name="unlock_note_subtitle">Authenticate to open this note</string>
+    <string name="unlock_note_device_credential">Enter your PIN, pattern, or password to open this note</string>
+    <string name="locked">Locked</string>
+
+    <!-- QR -->
+    <string name="qr_code">QR Code</string>
+    <string name="qr_point_camera">Point camera at a QR code</string>
+    <string name="qr_camera_permission">Camera permission required to scan QR codes.</string>
+    <string name="qr_pick_from_gallery">Pick from gallery</string>
+    <string name="qr_pick_from_gallery_instead">Pick from gallery instead</string>
+    <string name="qr_save_to_gallery">Save to gallery?</string>
+    <string name="qr_saved_to_gallery">Saved to gallery</string>
+    <string name="qr_no_code_found">No QR code found in image</string>
+    <string name="qr_not_a_link_copied">Not a link — copied</string>
+
+    <!-- Images / PDF / audio -->
+    <string name="pick_image">Pick Image</string>
+    <string name="select_an_image">Select an image</string>
+    <string name="selected_image">Selected Image</string>
+    <string name="select_pdf_to_pin">Select a PDF file to pin</string>
+    <string name="pdf_document">PDF Document</string>
+    <string name="pdf_first_page">PDF first page</string>
+    <string name="pdf_preview">PDF preview</string>
+    <string name="recording">Recording</string>
+
+    <!-- App list -->
+    <string name="app_shortcuts">App Shortcuts</string>
+    <string name="apps">Apps</string>
+    <string name="pick_app_or_shortcut">Pick App or Shortcut</string>
+
+    <!-- Location -->
+    <string name="search_a_place">Search a place</string>
+    <string name="selected_location">Selected Location</string>
+
+    <!-- Calendar import -->
+    <string name="import_calendar_events">Import Calendar Events</string>
+    <string name="no_events_in_file">No events found in the calendar file.</string>
+    <string name="no_date">No date</string>
+
+    <!-- Toasts / errors -->
+    <string name="msg_copied">Copied</string>
+    <string name="msg_copied_to_clipboard">Copied to clipboard</string>
+    <string name="msg_archived">Archived</string>
+    <string name="msg_deleted">Deleted</string>
+    <string name="msg_could_not_open">Could not open</string>
+    <string name="msg_could_not_open_image">Could not open image</string>
+    <string name="msg_failed_to_read_image">Failed to read image</string>
+    <string name="msg_failed_to_save">Failed to save</string>
+    <string name="msg_couldnt_share">Couldn\'t share</string>
+    <string name="msg_could_not_share_recording">Could not share recording</string>
+    <string name="msg_recording_not_found">Recording file not found</string>
+    <string name="msg_no_pdf_viewer">No PDF viewer found</string>
+    <string name="msg_no_pdf_viewer_installed">No PDF viewer installed</string>
+    <string name="msg_app_not_installed">App not installed</string>
+    <string name="msg_notification_permission_required">Notification permission required to pin</string>
+    <string name="msg_notification_permission_denied">Notification permission denied</string>
+    <string name="msg_locked_note_no_widget">Locked notes can\'t be shown on the home screen</string>
+    <string name="msg_launcher_no_widget_pinning">Your launcher doesn\'t support widget pinning</string>
+    <string name="msg_delete_label_confirm">\"%1$s\" will be removed from all notes. The notes themselves stay.</string>
+    <string name="msg_label_deleted">Label \"%1$s\" deleted</string>
+    <string name="msg_import_audio_failed">Could not import audio: %1$s</string>
+    <string name="msg_recording_failed">Recording failed: %1$s</string>
+
+    <!-- Notifications -->
+    <string name="notif_pinned_note">Pinned Note</string>
+    <string name="notif_add_task">Add Task</string>
+    <string name="notif_toggle_all">Toggle All</string>
+    <string name="notif_toggle_pin">Toggle Pin</string>
+
+    <string name="notif_channel_pinned">Pinned Notes</string>
+    <string name="notif_add_item">Add Item</string>
+    <string name="notif_audio_recording">Audio recording</string>
+
+    <!-- Widgets -->
+    <string name="widget_tap_to_choose_note">Tap to choose a note</string>
+    <string name="widget_choose_a_note">Choose a note</string>
+    <string name="widget_image_unavailable">Image unavailable</string>
+    <string name="widget_tap_to_open_app_list">Tap to open the app list</string>
+    <string name="widget_locked_note">Locked notes can\'t be shown</string>
+    <string name="widget_type">Type</string>
+    <string name="widget_open_in_app">Open in app</string>
+    <string name="widget_preview">Preview</string>
+    <string name="widget_action">Action</string>
+    <string name="widget_toggle">Toggle</string>
+    <string name="widget_pick">Pick</string>
+    <string name="widget_empty">Empty</string>
+    <string name="widget_label_pinit">PinIt Widget</string>
+
+    <!-- Launcher-facing widget labels (Create-X shortcuts) -->
+    <string name="widget_create_text">Create Note</string>
+    <string name="widget_create_list">Create Checklist</string>
+    <string name="widget_create_qr">Create QR</string>
+    <string name="widget_create_link">Create Link</string>
+    <string name="widget_create_contact">Create Contact</string>
+    <string name="widget_create_location">Create Location</string>
+    <string name="widget_create_applist">Create App List</string>
+    <string name="widget_create_image">Create Image Note</string>
+    <string name="widget_create_pdf">Create PDF Note</string>
+    <string name="widget_create_audio">Create Audio Note</string>
+
+    <!-- Launcher-facing widget labels (Add-X bound tiles) -->
+    <string name="widget_add_text">Add Note to home</string>
+    <string name="widget_add_list">Add Checklist to home</string>
+    <string name="widget_add_qr">Add QR to home</string>
+    <string name="widget_add_link">Add Link to home</string>
+    <string name="widget_add_contact">Add Contact to home</string>
+    <string name="widget_add_location">Add Location to home</string>
+    <string name="widget_add_applist">Add App List to home</string>
+    <string name="widget_add_image">Add Image to home</string>
+    <string name="widget_add_pdf">Add PDF to home</string>
+    <string name="widget_add_audio">Add Audio to home</string>
+
+    <string name="widget_create">Create</string>
+    <string name="widget_new_note">New Note</string>
+    <string name="widget_new_list">New List</string>
+
+    <string name="widget_note_deleted">Note no longer exists</string>
+    <string name="widget_note_archived">Note is archived</string>
+
+    <!-- Add-X widget picker -->
+    <string name="picker_header_text">Choose a Note</string>
+    <string name="picker_header_list">Choose a Checklist</string>
+    <string name="picker_header_qr">Choose a QR code</string>
+    <string name="picker_header_link">Choose a Link</string>
+    <string name="picker_header_contact">Choose a Contact</string>
+    <string name="picker_header_location">Choose a Location</string>
+    <string name="picker_header_applist">Choose an App list</string>
+    <string name="picker_header_image">Choose an Image</string>
+    <string name="picker_header_pdf">Choose a PDF</string>
+    <string name="picker_header_audio">Choose an Audio note</string>
+    <string name="picker_header_default">Choose a note</string>
+    <string name="picker_sub_text">Pick a text note to display</string>
+    <string name="picker_sub_list">Pick a checklist to pin to home</string>
+    <string name="picker_sub_qr">Pick a QR code to display</string>
+    <string name="picker_sub_link">Pick a saved link</string>
+    <string name="picker_sub_contact">Pick a contact for one-tap dial</string>
+    <string name="picker_sub_location">Pick a location for quick navigation</string>
+    <string name="picker_sub_applist">Pick an app list</string>
+    <string name="picker_sub_image">Pick an image note</string>
+    <string name="picker_sub_pdf">Pick a PDF note</string>
+    <string name="picker_sub_audio">Pick a voice memo</string>
+    <string name="picker_sub_default">Pick a note to display</string>
+    <string name="picker_empty_text">No text notes yet.
+Create one in PinIt first.</string>
+    <string name="picker_empty_list">No checklists yet.
+Create one in PinIt first.</string>
+    <string name="picker_empty_qr">No QR codes yet.
+Create one in PinIt first.</string>
+    <string name="picker_empty_link">No link notes yet.
+Create one in PinIt first.</string>
+    <string name="picker_empty_contact">No contact notes yet.
+Create one in PinIt first.</string>
+    <string name="picker_empty_location">No location notes yet.
+Create one in PinIt first.</string>
+    <string name="picker_empty_applist">No app lists yet.
+Create one in PinIt first.</string>
+    <string name="picker_empty_image">No image notes yet.
+Create one in PinIt first.</string>
+    <string name="picker_empty_pdf">No PDF notes yet.
+Create one in PinIt first.</string>
+    <string name="picker_empty_audio">No audio notes yet.
+Create one in PinIt first.</string>
+    <string name="picker_empty_default">No notes yet.
+Create one in PinIt first.</string>
+    <string name="untitled">Untitled</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_backup">Backup</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system_default">System default</string>
+    <string name="language_system_default">System default</string>
+    <string name="privacy">Privacy</string>
+
+    <string name="report_an_issue">Report an issue</string>
+    <string name="msg_no_mail_app">No mail app installed</string>
+
+    <!-- Backup -->
+    <string name="backup_take_online">Take online backup</string>
+    <string name="backup_take_offline">Take offline backup</string>
+    <string name="backup_upload_to_drive">Upload to your Google Drive</string>
+    <string name="backup_save_to_download">Save a .pinit file to Download/PinIt/</string>
+    <string name="backup_restore_from_file">Restore from file</string>
+    <string name="backup_pick_pinit_file">Pick a .pinit file from your device</string>
+    <string name="backup_restore_from_drive">Restore from Drive</string>
+    <string name="backup_now">Back up now</string>
+    <string name="backup_backing_up">Backing up…</string>
+    <string name="backup_your_notes">Back up your notes</string>
+    <string name="backup_sign_in_first">Sign in with Google first</string>
+    <string name="backup_remind_me_later">Remind me later</string>
+    <string name="backup_dont_ask_again">Don\'t ask again</string>
+
+    <!-- Sign-in / onboarding -->
+    <string name="sign_in">Sign in</string>
+    <string name="sign_out">Sign out</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="signing_in">Signing in…</string>
+    <string name="continue_as_guest">Continue as guest</string>
+    <string name="maybe_later">Maybe later</string>
+    <string name="profile_photo">Profile photo</string>
+    <string name="onboarding_notification_permission">Notification permission</string>
+    <string name="onboarding_reminder_alarms">Reminder alarms</string>
+
+    <!-- Post-update banner -->
+    <string name="show_full_changelog">Show Full Changelog</string>
+
+    <!-- Onboarding, sign-in, backup status, misc -->
+    <string name="fab_new_note">New note</string>
+    <string name="fab_new_list">New list</string>
+    <string name="fab_new_location">New location</string>
+    <string name="fab_new_qr">New QR</string>
+    <string name="fab_new_app_list">New app list</string>
+    <string name="fab_new_link">New link</string>
+    <string name="fab_new_contact">New contact</string>
+    <string name="fab_new_image">New image</string>
+    <string name="fab_new_pdf">New PDF</string>
+    <string name="fab_record_audio">Record audio</string>
+    <string name="fab_import_ics">Import .ics</string>
+    <string name="onboarding_welcome_title">Welcome to PinIt</string>
+    <string name="onboarding_welcome_body">Pin everything that matters — notes, lists, links, contacts, locations, QR codes and more — straight to your notification shade and home screen.</string>
+    <string name="onboarding_types_title">Everything you need,\nin one app</string>
+    <string name="onboarding_types_body">Ten note types, each with its own dedicated UI.</string>
+    <string name="onboarding_sync_title">Sync across devices</string>
+    <string name="onboarding_sync_body">Sign in with Google to back up your notes to Drive. PinIt only sees the files it creates — your other Drive content stays private.</string>
+    <string name="onboarding_notif_body">PinIt\'s purpose is to pin reminders and notes to your notification shade. Without this permission you won\'t see pinned items.</string>
+    <string name="onboarding_alarm_body">PinIt schedules exact alarms so reminders fire at the right time. Tap below to allow this in system settings, then come back to PinIt.</string>
+    <string name="onboarding_open_settings">Open settings</string>
+    <string name="onboarding_feat_notes">Notes</string>
+    <string name="onboarding_feat_notes_sub">Rich-text with formatting</string>
+    <string name="onboarding_feat_lists">Checklists</string>
+    <string name="onboarding_feat_lists_sub">Tap-to-tick from the shade</string>
+    <string name="onboarding_feat_qr">QR codes</string>
+    <string name="onboarding_feat_qr_sub">Scan, save, regenerate</string>
+    <string name="onboarding_feat_links">Links</string>
+    <string name="onboarding_feat_links_sub">Auto-fetched preview cards</string>
+    <string name="onboarding_feat_contacts">Contacts</string>
+    <string name="onboarding_feat_contacts_sub">One-tap dial</string>
+    <string name="onboarding_feat_locations">Locations</string>
+    <string name="onboarding_feat_locations_sub">Map pin + navigate</string>
+    <string name="onboarding_feat_applists">App lists</string>
+    <string name="onboarding_feat_applists_sub">Curated app shortcuts</string>
+    <string name="onboarding_feat_images">Images</string>
+    <string name="onboarding_feat_images_sub">Pin a photo to home</string>
+    <string name="onboarding_feat_pdfs">PDFs</string>
+    <string name="onboarding_feat_pdfs_sub">First-page preview</string>
+    <string name="onboarding_feat_audio">Audio</string>
+    <string name="onboarding_feat_audio_sub">Voice memos with playback</string>
+    <string name="signin_granting_drive">Granting Drive access…</string>
+    <string name="signin_drive_not_granted">Drive access not granted. Tap \'Sign in with Google\' again and approve the Drive permission.</string>
+    <string name="signin_syncing">Signed in — syncing…</string>
+    <string name="signin_not_registered">Sign-in failed: app isn\'t registered with Google. The OAuth client ID for this package + SHA-1 hasn\'t been created in Google Cloud Console.</string>
+    <string name="signin_cancelled">Sign-in cancelled</string>
+    <string name="signin_network_error">Sign-in failed: network error</string>
+    <string name="signin_failed_code">Sign-in failed (code %1$d).</string>
+    <string name="signin_failed_reason">Sign-in failed: %1$s</string>
+    <string name="signin_not_registered_short">App isn\'t registered with Google yet. You can sign in later from Settings.</string>
+    <string name="signin_network_retry">Network error. Try again later.</string>
+    <string name="signin_pinit_user">PinIt user</string>
+    <string name="signin_drive_body">Sign in with Google to back up your notes, lists, labels and audio recordings to Drive. Backups land in My Drive › PinIt.</string>
+    <string name="signin_privacy_body">PinIt only requests access to files it creates in your Drive. It cannot read or modify any other Drive files.</string>
+    <string name="signin_last_sync">Last sync: %1$s</string>
+    <string name="backup_status_uploading">Backing up to Drive…</string>
+    <string name="backup_status_saving_offline">Saving offline backup…</string>
+    <string name="backup_status_restoring_file">Restoring from file…</string>
+    <string name="backup_status_checking">%1$s — checking Drive…</string>
+    <string name="backup_status_uploaded">Backed up %1$d KB to Drive</string>
+    <string name="backup_status_saved_to">Saved to %1$s</string>
+    <string name="backup_status_restored">Restored %1$d notes; %2$d total</string>
+    <string name="backup_status_up_to_date">Up to date — %1$d notes</string>
+    <string name="backup_err_failed">Backup failed</string>
+    <string name="backup_err_offline_failed">Offline backup failed</string>
+    <string name="backup_err_restore_failed">Restore from file failed</string>
+    <string name="backup_err_source_failed">%1$s failed</string>
+    <string name="backup_err_not_signed_in">Not signed in</string>
+    <string name="backup_source_signin">Sign-in</string>
+    <string name="backup_source_restore">Restore</string>
+    <string name="backup_reminders_title">Backup reminders</string>
+    <string name="backup_reminders_sub">Show a banner and reminders when you have unbacked-up changes</string>
+    <string name="backup_unbacked_title">You have unbacked-up changes</string>
+    <string name="backup_unbacked_sub">Take a backup before uninstalling, switching phones, or wiping data.</string>
+    <string name="banner_unbacked_title">Unbacked-up changes</string>
+    <string name="banner_unbacked_body">Your recent edits aren\'t backed up yet. Back up now to keep them safe before you uninstall, change phones, or wipe data.</string>
+    <string name="banner_unbacked_body_signin">Your recent edits aren\'t backed up. Sign in with Google to back them up to Drive — without this, uninstalling the app will lose your notes.</string>
+    <string name="banner_sign_in_to_back_up">Sign in to back up</string>
+    <string name="stale_body_intro">Your last backup was over 14 days ago. </string>
+    <string name="stale_body_risk">If you uninstall the app, change phones, or wipe data, your unsaved notes will be lost. </string>
+    <string name="stale_body_signin">Sign in with Google to back them up to Drive.</string>
+    <string name="stale_body_backup">Tap Back up now to push them to Drive.</string>
+    <string name="search_items">Search items</string>
+    <string name="archive_empty">Archive is empty</string>
+    <string name="labels_empty">No labels yet\nAdd labels from note or list editor</string>
+    <string name="no_notes_with_label">No notes with label \"%1$s\"</string>
+    <string name="create_label">Create \"%1$s\"</string>
+    <string name="get_my_location">Get My Location</string>
+    <string name="map_hint">Tap on the map or use the location button</string>
+    <string name="image_pick_hint">To save an image, select or pick one from your device.</string>
+    <string name="action_repick">Repick</string>
+    <string name="action_change">Change</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_fetch">Fetch</string>
+    <string name="pick_contact">Pick Contact</string>
+    <string name="add_app">Add App</string>
+    <string name="qr_save_dialog_body">Save a copy of this QR code as an image in your Pictures/PinIt folder.</string>
+    <string name="audio_tap_to_record">Tap to record</string>
+    <string name="audio_mic_permission">Microphone permission required</string>
+    <string name="audio_recording_progress">Recording…</string>
+    <string name="audio_recording_ready">Recording ready</string>
+    <string name="audio_playing">Playing</string>
+    <string name="audio_recording_label">Recording %1$s</string>
+    <string name="ics_read_failed">Could not read calendar file: %1$s</string>
+    <string name="report_issue_subject">PinIt — Issue / Feedback</string>
+    <string name="notif_reminder_channel">Reminder</string>
+    <string name="notif_reminder_title">Reminder: %1$s</string>
+    <string name="notif_checklist_hint">Open to view your checklist items</string>
+    <string name="post_update_title">PinIt updated to v%1$s (Build #%2$d)</string>
+    <string name="post_update_whats_new">What\'s new</string>
+
+    <string name="report_issue_body">Describe the issue or share feedback below.</string>
+    <string name="backup_err_create_download">Couldn\'t create file in Downloads</string>
+    <string name="backup_err_open_download">Couldn\'t open Downloads stream</string>
+    <string name="backup_err_read_file">Couldn\'t read file</string>
+    <string name="signin_failed_code_reason">Sign-in failed (code %1$d): %2$s</string>
+    <string name="unknown_error">unknown</string>
+    <string name="changelog_1">Português (Brasil) added — choose your language in Settings.</string>
+    <string name="changelog_2">Only one language for now; more coming in future releases.</string>
+    <string name="changelog_3">Every screen, notification and widget is now translatable.</string>
+    <string name="changelog_4">Set it to System default to follow your phone’s language.</string>
+    <string name="label_removed_from_notes">Label \"%1$s\" removed from %2$d notes</string>
+    <!-- Plurals -->
+    <plurals name="plural_pinned_items">
+        <item quantity="one">%d pinned item</item>
+        <item quantity="other">%d pinned items</item>
+    </plurals>
+    <plurals name="plural_archived">
+        <item quantity="one">Archived %d</item>
+        <item quantity="other">Archived %d</item>
+    </plurals>
+    <plurals name="plural_deleted">
+        <item quantity="one">Deleted %d</item>
+        <item quantity="other">Deleted %d</item>
+    </plurals>
+    <plurals name="plural_more_items">
+        <item quantity="one">+ %d more item</item>
+        <item quantity="other">+ %d more items</item>
+    </plurals>
+    <plurals name="plural_more">
+        <item quantity="one">+ %d more</item>
+        <item quantity="other">+ %d more</item>
+    </plurals>
+    <plurals name="plural_apps">
+        <item quantity="one">%d App</item>
+        <item quantity="other">%d Apps</item>
+    </plurals>
+    <plurals name="plural_pinned">
+        <item quantity="one">%d pinned</item>
+        <item quantity="other">%d pinned</item>
+    </plurals>
+    <plurals name="plural_import">
+        <item quantity="one">Import %d</item>
+        <item quantity="other">Import %d</item>
+    </plurals>
+    <plurals name="plural_matches">
+        <item quantity="one">%d match</item>
+        <item quantity="other">%d matches</item>
+    </plurals>
+    <plurals name="plural_events_found">
+        <item quantity="one">%d event found</item>
+        <item quantity="other">%d events found</item>
+    </plurals>
+    <plurals name="plural_events_imported">
+        <item quantity="one">Imported %d event</item>
+        <item quantity="other">Imported %d events</item>
+    </plurals>
+    <plurals name="plural_label_removed">
+        <item quantity="one">Label removed from %d note</item>
+        <item quantity="other">Label removed from %d notes</item>
+    </plurals>
 </resources>

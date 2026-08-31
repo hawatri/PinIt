@@ -7,7 +7,7 @@ import com.hawatri.pinit.data.NoteType
 
 /**
  * Single source of truth that ties a note type to its dedicated Add-X widget provider,
- * its launcher-facing label, and the icon used in the picker. The 10 thin Add-X
+ * its launcher-facing label resource, and the icon used in the picker. The 10 thin Add-X
  * provider classes register themselves here implicitly via [providerForType].
  */
 object WidgetTypeRegistry {
@@ -15,21 +15,21 @@ object WidgetTypeRegistry {
     data class Entry(
         val type: String,
         val providerClass: Class<out AddWidgetBase>,
-        val label: String,
+        val labelRes: Int,
         val iconRes: Int
     )
 
     val entries: List<Entry> = listOf(
-        Entry(NoteType.TEXT,     AddTextWidget::class.java,     "Note",        R.drawable.ic_widget_text),
-        Entry(NoteType.LIST,     AddListWidget::class.java,     "Checklist",   R.drawable.ic_check_box),
-        Entry(NoteType.QR,       AddQrWidget::class.java,       "QR code",     R.drawable.ic_widget_qr),
-        Entry(NoteType.LINK,     AddLinkWidget::class.java,     "Link",        R.drawable.ic_widget_link),
-        Entry(NoteType.CONTACT,  AddContactWidget::class.java,  "Contact",     R.drawable.ic_widget_phone),
-        Entry(NoteType.LOCATION, AddLocationWidget::class.java, "Location",    R.drawable.ic_widget_navigation),
-        Entry(NoteType.APPLIST,  AddAppListWidget::class.java,  "App list",    R.drawable.ic_widget_apps),
-        Entry(NoteType.IMAGE,    AddImageWidget::class.java,    "Image",       R.drawable.ic_widget_image),
-        Entry(NoteType.PDF,      AddPdfWidget::class.java,      "PDF",         R.drawable.ic_widget_pdf),
-        Entry(NoteType.AUDIO,    AddAudioWidget::class.java,    "Audio",       R.drawable.ic_widget_play),
+        Entry(NoteType.TEXT,     AddTextWidget::class.java,     R.string.type_note,        R.drawable.ic_widget_text),
+        Entry(NoteType.LIST,     AddListWidget::class.java,     R.string.type_list,   R.drawable.ic_check_box),
+        Entry(NoteType.QR,       AddQrWidget::class.java,       R.string.type_qr,     R.drawable.ic_widget_qr),
+        Entry(NoteType.LINK,     AddLinkWidget::class.java,     R.string.type_link,        R.drawable.ic_widget_link),
+        Entry(NoteType.CONTACT,  AddContactWidget::class.java,  R.string.type_contact,     R.drawable.ic_widget_phone),
+        Entry(NoteType.LOCATION, AddLocationWidget::class.java, R.string.type_location,    R.drawable.ic_widget_navigation),
+        Entry(NoteType.APPLIST,  AddAppListWidget::class.java,  R.string.type_applist,    R.drawable.ic_widget_apps),
+        Entry(NoteType.IMAGE,    AddImageWidget::class.java,    R.string.type_image,       R.drawable.ic_widget_image),
+        Entry(NoteType.PDF,      AddPdfWidget::class.java,      R.string.type_pdf,         R.drawable.ic_widget_pdf),
+        Entry(NoteType.AUDIO,    AddAudioWidget::class.java,    R.string.type_audio,       R.drawable.ic_widget_play),
     )
 
     fun entryForType(type: String): Entry? = entries.firstOrNull { it.type == type }

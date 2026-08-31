@@ -17,6 +17,8 @@ import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import kotlinx.coroutines.launch
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +46,7 @@ fun ArchiveScreen(
         if (granted) {
             action?.invoke()
         } else {
-            android.widget.Toast.makeText(context, "Notification permission required to pin", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(context, context.getString(R.string.msg_notification_permission_required), android.widget.Toast.LENGTH_SHORT).show()
         }
     }
     fun runWithNotifPermission(action: () -> Unit) {
@@ -65,9 +67,15 @@ fun ArchiveScreen(
             if (note.isPinned) notificationHelper.unpinNoteFromNotification(note.id)
             viewModel.deleteNote(note.id)
         }
-        val label = if (snapshot.size == 1) "Deleted" else "Deleted ${snapshot.size}"
+        val label = if (snapshot.size == 1) {
+            context.getString(R.string.msg_deleted)
+        } else {
+            context.resources.getQuantityString(
+                R.plurals.plural_deleted, snapshot.size, snapshot.size
+            )
+        }
         scope.launch {
-            val result = snackbarHostState.showSnackbar(label, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            val result = snackbarHostState.showSnackbar(label, actionLabel = context.getString(R.string.action_undo), duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) {
                 snapshot.forEach { viewModel.addNote(it) }
             }
@@ -78,16 +86,16 @@ fun ArchiveScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(if (isSelectionMode) selectedNoteIds.size.toString() else "Archive") },
+                title = { Text(if (isSelectionMode) selectedNoteIds.size.toString() else stringResource(R.string.action_archive)) },
                 navigationIcon = {
                     IconButton(onClick = {
                         if (isSelectionMode) selectedNoteIds = emptySet() else onNavigateBack()
-                    }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },
                 actions = {
                     if (isSelectionMode) {
                         TooltipIconButton(
-                            tooltip = "Unarchive",
+                            tooltip = stringResource(R.string.action_unarchive),
                             icon = Icons.Filled.Unarchive,
                             onClick = {
                                 selectedNoteIds.forEach { id ->
@@ -98,7 +106,7 @@ fun ArchiveScreen(
                         )
 
                         TooltipIconButton(
-                            tooltip = "Delete",
+                            tooltip = stringResource(R.string.action_delete),
                             icon = Icons.Filled.Delete,
                             onClick = {
                                 val ids = selectedNoteIds
@@ -140,8 +148,8 @@ fun ArchiveScreen(
                     },
                     onCopyClick = { text ->
                         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Copied Note", text))
-                        android.widget.Toast.makeText(context, "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(context.getString(R.string.home_copy_label), text))
+                        android.widget.Toast.makeText(context, context.getString(R.string.msg_copied_to_clipboard), android.widget.Toast.LENGTH_SHORT).show()
                     },
                     onToggleAllClick = { note ->
                         val items = try {
@@ -157,7 +165,7 @@ fun ArchiveScreen(
                     }
                 )
             } else {
-                EmptyStateView(icon = Icons.Filled.Archive, message = "Archive is empty")
+                EmptyStateView(icon = Icons.Filled.Archive, message = stringResource(R.string.archive_empty))
             }
         }
     }

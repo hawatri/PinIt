@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,9 +64,9 @@ fun LabelsEditorSheet(
                         modifier = Modifier.weight(1f).clickable { onDismiss() }.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Filled.Close, "Cancel", tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(Icons.Filled.Close, stringResource(R.string.action_cancel), tint = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                        Text(stringResource(R.string.action_cancel), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
                     }
                     Row(
                         modifier = Modifier.clickable {
@@ -78,10 +80,10 @@ fun LabelsEditorSheet(
                         }.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Filled.Check, "Save", tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(Icons.Filled.Check, stringResource(R.string.action_save), tint = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            "Save",
+                            stringResource(R.string.action_save),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -101,7 +103,7 @@ fun LabelsEditorSheet(
                     TextField(
                         value = inputText,
                         onValueChange = { inputText = it },
-                        placeholder = { Text("Label name", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                        placeholder = { Text(stringResource(R.string.label_name), fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
                             focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
@@ -128,7 +130,7 @@ fun LabelsEditorSheet(
                         Icon(Icons.Filled.Label, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(20.dp))
                         Text(
-                            text = "Create \"${inputText.trim()}\"",
+                            text = stringResource(R.string.create_label, inputText.trim()),
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium,

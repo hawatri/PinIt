@@ -37,6 +37,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hawatri.pinit.data.AppPreferences
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 /**
  * One-time banner shown after a fresh install or upgrade. Reads the current
@@ -53,12 +55,11 @@ import com.hawatri.pinit.data.AppPreferences
  */
 
 /** Bullet list shown inline so users can read what's new without leaving the app. */
-private val CHANGELOG_NOTES: List<String> = listOf(
-    "Fixed double-rendering animation when switching tabs.",
-    "Long-press any toolbar icon to see what it does.",
-    "Multiple alarm reminders per note.",
-    "Fixed format toolbar squeeze when writing long notes.",
-    "Share PDFs, images, and audio directly into PinIt."
+private val CHANGELOG_NOTES: List<Int> = listOf(
+    R.string.changelog_1,
+    R.string.changelog_2,
+    R.string.changelog_3,
+    R.string.changelog_4
 )
 
 /** Where "Show Changelog" goes when the user wants the full release page. */
@@ -106,21 +107,21 @@ fun PostUpdateBanner(
                 Row(verticalAlignment = Alignment.Top) {
                     Column(modifier = Modifier.weight(1f).padding(top = 4.dp)) {
                         Text(
-                            text = "PinIt updated to v$versionName (Build #$versionCode)",
+                            text = stringResource(R.string.post_update_title, versionName, versionCode),
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (CHANGELOG_NOTES.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "What's new",
+                                text = stringResource(R.string.post_update_whats_new),
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(4.dp))
-                            CHANGELOG_NOTES.forEach { line ->
+                            CHANGELOG_NOTES.forEach { lineRes ->
                                 Text(
-                                    text = "•  $line",
+                                    text = "\u2022  " + stringResource(lineRes),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(vertical = 1.dp)
@@ -134,7 +135,7 @@ fun PostUpdateBanner(
                             visible = false
                         }
                     ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Dismiss")
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_dismiss))
                     }
                 }
                 Row(
@@ -151,7 +152,7 @@ fun PostUpdateBanner(
                         AppPreferences.setLastSeenVersionCode(context, versionCode)
                         visible = false
                     }) {
-                        Text("Show Full Changelog")
+                        Text(stringResource(R.string.show_full_changelog))
                     }
                 }
             }

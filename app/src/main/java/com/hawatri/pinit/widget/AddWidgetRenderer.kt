@@ -11,6 +11,7 @@ import android.widget.RemoteViews
 import com.google.gson.Gson
 import com.hawatri.pinit.MainActivity
 import com.hawatri.pinit.R
+import com.hawatri.pinit.util.LocaleHelper
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.data.NoteDatabase
 import com.hawatri.pinit.data.NoteType
@@ -49,7 +50,7 @@ object AddWidgetRenderer {
         val manager = AppWidgetManager.getInstance(context) ?: return
         val noteId = AddWidgetPrefs.getNoteId(context, widgetId)
         if (noteId == null) {
-            manager.updateAppWidget(widgetId, emptyView(context, widgetId, "Tap to choose a note"))
+            manager.updateAppWidget(widgetId, emptyView(context, widgetId, LocaleHelper.getString(context, R.string.widget_tap_to_choose_note)))
             return
         }
 
@@ -60,13 +61,13 @@ object AddWidgetRenderer {
 
             val views = try {
                 when {
-                    note == null      -> emptyView(context, widgetId, "Note no longer exists")
-                    note.isLocked     -> emptyView(context, widgetId, "Locked notes can't be shown")
-                    note.isArchived   -> emptyView(context, widgetId, "Note is archived")
+                    note == null      -> emptyView(context, widgetId, LocaleHelper.getString(context, R.string.widget_note_deleted))
+                    note.isLocked     -> emptyView(context, widgetId, LocaleHelper.getString(context, R.string.widget_locked_note))
+                    note.isArchived   -> emptyView(context, widgetId, LocaleHelper.getString(context, R.string.widget_note_archived))
                     else              -> render(context, widgetId, note)
                 }
             } catch (e: Exception) {
-                emptyView(context, widgetId, "Tap to choose a note")
+                emptyView(context, widgetId, LocaleHelper.getString(context, R.string.widget_tap_to_choose_note))
             }
             try {
                 manager.updateAppWidget(widgetId, views)
@@ -74,14 +75,14 @@ object AddWidgetRenderer {
                     manager.notifyAppWidgetViewDataChanged(widgetId, R.id.add_widget_list)
                 }
             } catch (e: Exception) {
-                manager.updateAppWidget(widgetId, emptyView(context, widgetId, "Tap to choose a note"))
+                manager.updateAppWidget(widgetId, emptyView(context, widgetId, LocaleHelper.getString(context, R.string.widget_tap_to_choose_note)))
             }
         }
     }
 
     private fun emptyView(context: Context, widgetId: Int, msg: String): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.add_widget)
-        views.setTextViewText(R.id.add_widget_title, "PinIt")
+        views.setTextViewText(R.id.add_widget_title, LocaleHelper.getString(context, R.string.app_name))
         views.setViewVisibility(R.id.add_widget_list, android.view.View.GONE)
         views.setViewVisibility(R.id.add_widget_panel, android.view.View.GONE)
         views.setViewVisibility(R.id.add_widget_action_btn, android.view.View.GONE)
@@ -102,7 +103,7 @@ object AddWidgetRenderer {
 
     private fun render(context: Context, widgetId: Int, note: Note): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.add_widget)
-        views.setTextViewText(R.id.add_widget_title, note.title.ifBlank { typeLabel(note.noteType) })
+        views.setTextViewText(R.id.add_widget_title, note.title.ifBlank { typeLabel(context, note.noteType) })
         views.setImageViewResource(R.id.add_widget_type_icon, typeIcon(note.noteType))
         views.setViewVisibility(R.id.add_widget_empty, android.view.View.GONE)
 
@@ -188,13 +189,13 @@ object AddWidgetRenderer {
         views.setViewVisibility(R.id.add_widget_panel, android.view.View.VISIBLE)
         views.setViewVisibility(R.id.add_widget_panel_image, android.view.View.GONE)
         val durMs = data?.durationMs ?: 0L
-        val durLabel = if (durMs > 0) "%d:%02d".format(durMs / 60000, (durMs / 1000) % 60) else "Recording"
+        val durLabel = if (durMs > 0) "%d:%02d".format(durMs / 60000, (durMs / 1000) % 60) else LocaleHelper.getString(context, R.string.recording)
         views.setTextViewText(R.id.add_widget_panel_text, durLabel)
 
         val isPlaying = AudioPlayback.playingNoteId.value == note.id
         views.setViewVisibility(R.id.add_widget_action_btn, android.view.View.VISIBLE)
         views.setImageViewResource(R.id.add_widget_action_icon, if (isPlaying) R.drawable.ic_widget_stop else R.drawable.ic_widget_play)
-        views.setTextViewText(R.id.add_widget_action_label, if (isPlaying) "Stop" else "Play")
+        views.setTextViewText(R.id.add_widget_action_label, LocaleHelper.getString(context, if (isPlaying) R.string.action_stop else R.string.action_play))
 
         val toggle = Intent(context, AddWidgetActionReceiver::class.java).apply {
             action = ACTION_TOGGLE_AUDIO
@@ -217,7 +218,7 @@ object AddWidgetRenderer {
 
         views.setViewVisibility(R.id.add_widget_action_btn, android.view.View.VISIBLE)
         views.setImageViewResource(R.id.add_widget_action_icon, R.drawable.ic_widget_open)
-        views.setTextViewText(R.id.add_widget_action_label, "Browse")
+        views.setTextViewText(R.id.add_widget_action_label, LocaleHelper.getString(context, R.string.action_browse))
 
         val url = data?.url ?: note.text
         try {
@@ -241,7 +242,7 @@ object AddWidgetRenderer {
 
         views.setViewVisibility(R.id.add_widget_action_btn, android.view.View.VISIBLE)
         views.setImageViewResource(R.id.add_widget_action_icon, R.drawable.ic_widget_phone)
-        views.setTextViewText(R.id.add_widget_action_label, "Call")
+        views.setTextViewText(R.id.add_widget_action_label, LocaleHelper.getString(context, R.string.action_call))
 
         val phone = data?.phone ?: ""
         if (phone.isNotBlank()) {
@@ -261,11 +262,11 @@ object AddWidgetRenderer {
         views.setViewVisibility(R.id.add_widget_list, android.view.View.GONE)
         views.setViewVisibility(R.id.add_widget_panel, android.view.View.VISIBLE)
         views.setViewVisibility(R.id.add_widget_panel_image, android.view.View.GONE)
-        views.setTextViewText(R.id.add_widget_panel_text, data?.address?.ifBlank { data.name } ?: "Location")
+        views.setTextViewText(R.id.add_widget_panel_text, data?.address?.ifBlank { data.name } ?: LocaleHelper.getString(context, R.string.type_location))
 
         views.setViewVisibility(R.id.add_widget_action_btn, android.view.View.VISIBLE)
         views.setImageViewResource(R.id.add_widget_action_icon, R.drawable.ic_widget_navigation)
-        views.setTextViewText(R.id.add_widget_action_label, "Navigate")
+        views.setTextViewText(R.id.add_widget_action_label, LocaleHelper.getString(context, R.string.action_navigate))
 
         if (data?.lat != null && data.lng != null) {
             val geoUri = Uri.parse("geo:${data.lat},${data.lng}?q=${data.lat},${data.lng}(${Uri.encode(data.name.ifBlank { "Location" })})")
@@ -299,7 +300,7 @@ object AddWidgetRenderer {
         if (uri != null) {
             views.setViewVisibility(R.id.add_widget_action_btn, android.view.View.VISIBLE)
             views.setImageViewResource(R.id.add_widget_action_icon, R.drawable.ic_widget_open)
-            views.setTextViewText(R.id.add_widget_action_label, "Open")
+            views.setTextViewText(R.id.add_widget_action_label, LocaleHelper.getString(context, R.string.action_open))
             val open = Intent(Intent.ACTION_VIEW, uri).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
             val pi = PendingIntent.getActivity(
                 context, ("qr_${widgetId}").hashCode(), open,
@@ -321,11 +322,11 @@ object AddWidgetRenderer {
             views.setTextViewText(R.id.add_widget_panel_text, "")
         } else {
             views.setViewVisibility(R.id.add_widget_panel_image, android.view.View.GONE)
-            views.setTextViewText(R.id.add_widget_panel_text, "Image unavailable")
+            views.setTextViewText(R.id.add_widget_panel_text, LocaleHelper.getString(context, R.string.widget_image_unavailable))
         }
         views.setViewVisibility(R.id.add_widget_action_btn, android.view.View.VISIBLE)
         views.setImageViewResource(R.id.add_widget_action_icon, R.drawable.ic_widget_open)
-        views.setTextViewText(R.id.add_widget_action_label, "Open")
+        views.setTextViewText(R.id.add_widget_action_label, LocaleHelper.getString(context, R.string.action_open))
 
         try {
             val uri = Uri.parse(note.text)
@@ -355,11 +356,11 @@ object AddWidgetRenderer {
             views.setTextViewText(R.id.add_widget_panel_text, "")
         } else {
             views.setViewVisibility(R.id.add_widget_panel_image, android.view.View.GONE)
-            views.setTextViewText(R.id.add_widget_panel_text, "PDF Document")
+            views.setTextViewText(R.id.add_widget_panel_text, LocaleHelper.getString(context, R.string.pdf_document))
         }
         views.setViewVisibility(R.id.add_widget_action_btn, android.view.View.VISIBLE)
         views.setImageViewResource(R.id.add_widget_action_icon, R.drawable.ic_widget_open)
-        views.setTextViewText(R.id.add_widget_action_label, "Open")
+        views.setTextViewText(R.id.add_widget_action_label, LocaleHelper.getString(context, R.string.action_open))
 
         try {
             val uri = Uri.parse(note.text)
@@ -379,7 +380,7 @@ object AddWidgetRenderer {
         views.setViewVisibility(R.id.add_widget_list, android.view.View.GONE)
         views.setViewVisibility(R.id.add_widget_panel, android.view.View.VISIBLE)
         views.setViewVisibility(R.id.add_widget_panel_image, android.view.View.GONE)
-        views.setTextViewText(R.id.add_widget_panel_text, "Tap to open the app list")
+        views.setTextViewText(R.id.add_widget_panel_text, LocaleHelper.getString(context, R.string.widget_tap_to_open_app_list))
         views.setViewVisibility(R.id.add_widget_action_btn, android.view.View.GONE)
     }
 
@@ -397,16 +398,20 @@ object AddWidgetRenderer {
         else -> R.mipmap.ic_launcher
     }
 
-    private fun typeLabel(type: String): String = when (type) {
-        NoteType.LIST -> "Checklist"
-        NoteType.AUDIO -> "Recording"
-        NoteType.LINK -> "Link"
-        NoteType.CONTACT -> "Contact"
-        NoteType.LOCATION -> "Location"
-        NoteType.QR -> "QR"
-        NoteType.IMAGE -> "Image"
-        NoteType.PDF -> "PDF"
-        NoteType.APPLIST -> "Apps"
-        else -> "Note"
-    }
+    /** Fallback header label when a note has no title. Resolved via LocaleHelper. */
+    private fun typeLabel(context: Context, type: String): String = LocaleHelper.getString(
+        context,
+        when (type) {
+            NoteType.LIST -> R.string.type_list
+            NoteType.AUDIO -> R.string.recording
+            NoteType.LINK -> R.string.type_link
+            NoteType.CONTACT -> R.string.type_contact
+            NoteType.LOCATION -> R.string.type_location
+            NoteType.QR -> R.string.type_qr
+            NoteType.IMAGE -> R.string.type_image
+            NoteType.PDF -> R.string.type_pdf
+            NoteType.APPLIST -> R.string.apps
+            else -> R.string.type_note
+        }
+    )
 }

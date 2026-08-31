@@ -36,6 +36,8 @@ import com.hawatri.pinit.viewmodel.PinItViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 data class AppNoteItem(val packageName: String, val appName: String)
 data class AppInfo(val packageName: String, val name: String, val icon: Drawable)
@@ -102,7 +104,11 @@ fun NewAppListScreen(
 
     fun save(pinOverride: Boolean = isPinned, archiveOverride: Boolean? = null): String {
         val items = selectedApps.map { AppNoteItem(it.packageName, it.name) }
-        val title = if (items.isEmpty()) "App Shortcuts" else "${items.size} App${if (items.size > 1) "s" else ""}"
+        val title = if (items.isEmpty()) {
+            context.getString(R.string.app_shortcuts)
+        } else {
+            context.resources.getQuantityString(R.plurals.plural_apps, items.size, items.size)
+        }
         val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
@@ -126,13 +132,13 @@ fun NewAppListScreen(
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                 },
                 actions = {
                     if (selectedApps.isNotEmpty()) {
                         // Share - share app list as text
                         TooltipIconButton(
-                            tooltip = "Share",
+                            tooltip = stringResource(R.string.action_share),
                             icon = Icons.Filled.Share,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -141,13 +147,13 @@ fun NewAppListScreen(
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, shareText)
                                 }
-                                context.startActivity(Intent.createChooser(intent, "Share app list"))
+                                context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_app_list)))
                             }
                         )
 
                         // Archive
                         TooltipIconButton(
-                            tooltip = "Archive",
+                            tooltip = stringResource(R.string.action_archive),
                             icon = Icons.Filled.Archive,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -158,27 +164,33 @@ fun NewAppListScreen(
                         )
                     }
                     TooltipIconButton(
-                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        tooltip = if (isPinned) stringResource(R.string.unpin_from_notifications) else stringResource(R.string.pin_to_notifications),
                         icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                         tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = {
                             isPinned = !isPinned
                             val savedId = save(isPinned)
                             val items = selectedApps.map { AppNoteItem(it.packageName, it.name) }
-                            val titleText = if (items.isEmpty()) "App Shortcuts" else "${items.size} App${if (items.size > 1) "s" else ""}"
+                            val titleText = if (items.isEmpty()) {
+                                context.getString(R.string.app_shortcuts)
+                            } else {
+                                context.resources.getQuantityString(
+                                    R.plurals.plural_apps, items.size, items.size
+                                )
+                            }
                             if (isPinned) notificationHelper.pinNoteToNotification(savedId, titleText, gson.toJson(items), isList = false, noteType = NoteType.APPLIST)
                             else notificationHelper.unpinNoteFromNotification(savedId)
                         }
                     )
                     TooltipIconButton(
-                        tooltip = "Labels",
+                        tooltip = stringResource(R.string.labels),
                         icon = Icons.Filled.Label,
                         tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { showLabelsSheet = true }
                     )
                     if (selectedApps.isNotEmpty()) {
                         TooltipIconButton(
-                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            tooltip = if (isLocked) stringResource(R.string.unlock_note) else stringResource(R.string.lock_note),
                             icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                             tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { isLocked = !isLocked; save() }
@@ -189,7 +201,7 @@ fun NewAppListScreen(
                         )
                     }
                     TooltipIconButton(
-                        tooltip = "Save",
+                        tooltip = stringResource(R.string.action_save),
                         icon = Icons.Filled.Check,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { if (selectedApps.isNotEmpty()) { save(); onNavigateBack() } }
@@ -220,7 +232,7 @@ fun NewAppListScreen(
                             .clickable { showBottomSheet = true },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Filled.Add, "Add App", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.Add, stringResource(R.string.add_app), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -229,10 +241,10 @@ fun NewAppListScreen(
         if (showBottomSheet) {
             ModalBottomSheet(onDismissRequest = { showBottomSheet = false }, containerColor = MaterialTheme.colorScheme.surfaceVariant) {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                    Text("Pick App or Shortcut", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 16.dp))
+                    Text(stringResource(R.string.pick_app_or_shortcut), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 16.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Apps", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 16.dp))
+                    Text(stringResource(R.string.apps), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 16.dp))
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(4),
                         modifier = Modifier.fillMaxHeight(0.8f),

@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
+import com.hawatri.pinit.R
 
 const val EXTRA_NOTE_ID = "EXTRA_NOTE_ID"
 const val EXTRA_NOTE_TITLE = "EXTRA_NOTE_TITLE"
@@ -51,17 +52,17 @@ private fun buildAlarmIntent(context: Context, noteId: String, noteTitle: String
 /** Schedules an alarm at [timeMillis]. Multiple alarms per note are supported via unique request codes. */
 fun scheduleAlarmAt(context: Context, noteId: String, noteTitle: String, timeMillis: Long): Boolean {
     if (!hasNotificationPermission(context)) {
-        Toast.makeText(context, "Please allow notifications for reminders", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, LocaleHelper.getString(context, R.string.reminder_allow_notifications), Toast.LENGTH_LONG).show()
         return false
     }
     if (timeMillis <= System.currentTimeMillis()) {
-        Toast.makeText(context, "Cannot set reminder in the past", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, LocaleHelper.getString(context, R.string.reminder_past), Toast.LENGTH_SHORT).show()
         return false
     }
 
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-        Toast.makeText(context, "Exact alarm permission missing. Reminder may be delayed.", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, LocaleHelper.getString(context, R.string.reminder_exact_alarm_missing), Toast.LENGTH_LONG).show()
     }
 
     val intent = buildAlarmIntent(context, noteId, noteTitle, timeMillis)
@@ -133,13 +134,13 @@ fun scheduleCustomAlarm(
 ): Boolean {
     val millis = computeAlarmMillis(dateMillis, hour, minute) ?: return false
     val ok = scheduleAlarmAt(context, noteId, noteTitle, millis)
-    if (ok) Toast.makeText(context, "Reminder set!", Toast.LENGTH_SHORT).show()
+    if (ok) Toast.makeText(context, LocaleHelper.getString(context, R.string.reminder_set_bang), Toast.LENGTH_SHORT).show()
     return ok
 }
 
 fun setTomorrowAlarm(context: Context, noteId: String, noteTitle: String): Boolean {
     val ok = scheduleAlarmAt(context, noteId, noteTitle, tomorrowAt8AmMillis())
-    if (ok) Toast.makeText(context, "Reminder set for tomorrow at 8:00 AM", Toast.LENGTH_SHORT).show()
+    if (ok) Toast.makeText(context, LocaleHelper.getString(context, R.string.reminder_set_tomorrow_8am), Toast.LENGTH_SHORT).show()
     return ok
 }
 

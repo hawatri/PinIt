@@ -64,6 +64,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.viewmodel.PinItViewModel
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 data class ChecklistItemData(
     val id: String? = UUID.randomUUID().toString(), // NEW: Helps Compose track animations
@@ -179,7 +181,7 @@ fun NewListScreen(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (!isGranted) {
-            android.widget.Toast.makeText(context, "Reminders won't show without notification permission", android.widget.Toast.LENGTH_LONG).show()
+            android.widget.Toast.makeText(context, context.getString(R.string.reminder_needs_notifications), android.widget.Toast.LENGTH_LONG).show()
         }
     }
 
@@ -195,13 +197,13 @@ fun NewListScreen(
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 actions = {
                     // SHARE BUTTON
                     TooltipIconButton(
-                        tooltip = "Share",
+                        tooltip = stringResource(R.string.action_share),
                         icon = Icons.Filled.Share,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = {
@@ -219,13 +221,13 @@ fun NewListScreen(
                                 type = "text/plain"
                                 putExtra(android.content.Intent.EXTRA_TEXT, shareText)
                             }
-                            context.startActivity(android.content.Intent.createChooser(intent, "Share list"))
+                            context.startActivity(android.content.Intent.createChooser(intent, context.getString(R.string.share_list)))
                         }
                     })
 
                     // ARCHIVE BUTTON
                     TooltipIconButton(
-                        tooltip = "Archive",
+                        tooltip = stringResource(R.string.action_archive),
                         icon = Icons.Filled.Archive,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = {
@@ -241,7 +243,7 @@ fun NewListScreen(
 
                     // PIN TOGGLE BUTTON
                     TooltipIconButton(
-                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        tooltip = if (isPinned) stringResource(R.string.unpin_from_notifications) else stringResource(R.string.pin_to_notifications),
                         icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                         tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = {
@@ -266,7 +268,7 @@ fun NewListScreen(
 
                     Box {
                         TooltipIconButton(
-                            tooltip = "Set reminder",
+                            tooltip = stringResource(R.string.set_reminder),
                             icon = Icons.Filled.Notifications,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -280,7 +282,7 @@ fun NewListScreen(
                             onDismissRequest = { showReminderMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Tomorrow (8:00 AM)") },
+                                text = { Text(stringResource(R.string.reminder_tomorrow_8am)) },
                                 onClick = {
                                     showReminderMenu = false
                                     val time = com.hawatri.pinit.util.tomorrowAt8AmMillis()
@@ -288,12 +290,12 @@ fun NewListScreen(
                                     reminders = (reminders + time).sorted()
                                     val noteToPinId = saveList() ?: return@DropdownMenuItem
                                     val ok = com.hawatri.pinit.util.scheduleAlarmAt(context, noteToPinId, title, time)
-                                    if (ok) android.widget.Toast.makeText(context, "Reminder added", android.widget.Toast.LENGTH_SHORT).show()
+                                    if (ok) android.widget.Toast.makeText(context, context.getString(R.string.reminder_added), android.widget.Toast.LENGTH_SHORT).show()
                                     else { reminders = reminders - time; saveList() }
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(if (reminders.isEmpty()) "Pick date and time" else "Add another reminder") },
+                                text = { Text(if (reminders.isEmpty()) stringResource(R.string.reminder_pick_date_time) else stringResource(R.string.add_another_reminder)) },
                                 onClick = {
                                     showReminderMenu = false
                                     showDatePicker = true
@@ -302,20 +304,20 @@ fun NewListScreen(
                         }
                     }
                     TooltipIconButton(
-                        tooltip = "Labels",
+                        tooltip = stringResource(R.string.labels),
                         icon = Icons.Filled.Label,
                         tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { showLabelsSheet = true }
                     )
                     TooltipIconButton(
-                        tooltip = if (isLocked) "Unlock note" else "Lock note",
+                        tooltip = if (isLocked) stringResource(R.string.unlock_note) else stringResource(R.string.lock_note),
                         icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                         tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { isLocked = !isLocked; saveList() }
                     )
                     // SAVE BUTTON
                     TooltipIconButton(
-                        tooltip = "Save",
+                        tooltip = stringResource(R.string.action_save),
                         icon = Icons.Filled.Check,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { saveList(); onNavigateBack() }
@@ -361,7 +363,7 @@ fun NewListScreen(
                     // Header items (Mandatory text & Title)
                     item {
                         Text(
-                            text = "*Mandatory field",
+                            text = stringResource(R.string.field_mandatory_note),
                             color = Color(0xFFD32F2F),
                             fontSize = 12.sp,
                             modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
@@ -369,7 +371,7 @@ fun NewListScreen(
                         TextField(
                             value = title,
                             onValueChange = { title = it },
-                            placeholder = { Text("Title*", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                            placeholder = { Text(stringResource(R.string.field_title_required), fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
@@ -457,9 +459,9 @@ fun NewListScreen(
                                 .padding(vertical = 8.dp, horizontal = 4.dp), 
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Filled.Add, contentDescription = "Add", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_add), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Add item", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text(stringResource(R.string.field_add_item), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                         }
                     }
                 }
@@ -500,12 +502,12 @@ fun NewListScreen(
                         showTimePicker = true // Open TimePicker immediately after DatePicker
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.action_ok))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         ) {
@@ -517,7 +519,7 @@ fun NewListScreen(
     if (showTimePicker) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Select time") },
+            title = { Text(stringResource(R.string.reminder_select_time)) },
             text = {
                 TimePicker(state = timePickerState)
             },
@@ -533,7 +535,7 @@ fun NewListScreen(
                         ) ?: return@TextButton
 
                         if (time in reminders) {
-                            android.widget.Toast.makeText(context, "Reminder already set for that time", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, context.getString(R.string.reminder_duplicate), android.widget.Toast.LENGTH_SHORT).show()
                             return@TextButton
                         }
 
@@ -542,19 +544,19 @@ fun NewListScreen(
 
                         val ok = com.hawatri.pinit.util.scheduleAlarmAt(context, noteToPinId, title, time)
                         if (ok) {
-                            android.widget.Toast.makeText(context, "Reminder set", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, context.getString(R.string.reminder_set), android.widget.Toast.LENGTH_SHORT).show()
                         } else {
                             reminders = reminders - time
                             saveList()
                         }
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.action_ok))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -606,7 +608,7 @@ fun EditableChecklistItem(
     ) {
         Icon(
             imageVector = Icons.Filled.DragIndicator,
-            contentDescription = "Drag",
+            contentDescription = stringResource(R.string.drag),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .size(24.dp)
@@ -649,7 +651,7 @@ fun EditableChecklistItem(
         TextField(
             value = item.text,
             onValueChange = onTextChange,
-            placeholder = { Text("Item", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)) },
+            placeholder = { Text(stringResource(R.string.field_item), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)) },
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
@@ -660,7 +662,7 @@ fun EditableChecklistItem(
             singleLine = true
         )
         IconButton(onClick = onRemove) {
-            Icon(Icons.Filled.Close, contentDescription = "Remove", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_remove), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

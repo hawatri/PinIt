@@ -16,6 +16,8 @@ import com.hawatri.pinit.backup.BackupSyncManager
 import com.hawatri.pinit.backup.GoogleAuthManager
 import com.hawatri.pinit.data.AppPreferences
 import kotlinx.coroutines.launch
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 private const val STALE_THRESHOLD_MS = 14L * 24 * 60 * 60 * 1000   // 14 days
 private const val SNOOZE_AFTER_REMIND_LATER_MS = 3L * 24 * 60 * 60 * 1000   // 3 days
@@ -76,13 +78,13 @@ fun StaleBackupDialog(onNavigateToSignIn: () -> Unit) {
             AppPreferences.setStaleDialogDismissedNow(context)
             show = false
         },
-        title = { Text("Back up your notes") },
+        title = { Text(stringResource(R.string.backup_your_notes)) },
         text = {
             val message = buildString {
-                append("Your last backup was over 14 days ago. ")
-                append("If you uninstall the app, change phones, or wipe data, your unsaved notes will be lost. ")
-                if (!signedIn) append("Sign in with Google to back them up to Drive.")
-                else append("Tap Back up now to push them to Drive.")
+                append(stringResource(R.string.stale_body_intro))
+                append(stringResource(R.string.stale_body_risk))
+                if (!signedIn) append(stringResource(R.string.stale_body_signin))
+                else append(stringResource(R.string.stale_body_backup))
             }
             Text(message)
         },
@@ -99,7 +101,7 @@ fun StaleBackupDialog(onNavigateToSignIn: () -> Unit) {
                     }
                 }
             ) {
-                Text(if (!signedIn) "Sign in" else if (isWorking) "Backing up…" else "Back up now")
+                Text(if (!signedIn) stringResource(R.string.sign_in) else if (isWorking) stringResource(R.string.backup_backing_up) else stringResource(R.string.backup_now))
             }
         },
         dismissButton = {
@@ -110,7 +112,7 @@ fun StaleBackupDialog(onNavigateToSignIn: () -> Unit) {
                     show = false
                 }
             ) {
-                Text("Remind me later")
+                Text(stringResource(R.string.backup_remind_me_later))
             }
             TextButton(
                 enabled = !isWorking,
@@ -119,7 +121,7 @@ fun StaleBackupDialog(onNavigateToSignIn: () -> Unit) {
                     show = false
                 }
             ) {
-                Text("Don't ask again")
+                Text(stringResource(R.string.backup_dont_ask_again))
             }
         }
     )

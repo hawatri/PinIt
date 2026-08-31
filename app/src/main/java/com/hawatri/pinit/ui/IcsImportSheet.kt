@@ -29,6 +29,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 
 data class IcsEvent(
     val summary: String,
@@ -39,7 +42,11 @@ data class IcsEvent(
     val startLabel: String
 )
 
-fun parseIcsContent(content: String): List<IcsEvent> {
+/**
+ * Pure parser — takes [noDateLabel] rather than a Context so it stays free of
+ * Android dependencies and testable.
+ */
+fun parseIcsContent(content: String, noDateLabel: String): List<IcsEvent> {
     val events = mutableListOf<IcsEvent>()
     val lines = content
         .replace("\r\n", "\n")
@@ -73,7 +80,7 @@ fun parseIcsContent(content: String): List<IcsEvent> {
                         location = location,
                         startCalendar = start,
                         endCalendar = end,
-                        startLabel = if (start != null) formatAlarmText(start) else "No date"
+                        startLabel = if (start != null) formatAlarmText(start) else noDateLabel
                     ))
                 }
                 inEvent = false
@@ -132,6 +139,10 @@ fun IcsImportSheet(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    // Held once so the "has no date" test below compares against the same string
+    // the parser used, instead of a hardcoded English literal.
+    val noDateLabel = stringResource(R.string.no_date)
+
     var events by remember { mutableStateOf<List<IcsEvent>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -141,11 +152,11 @@ fun IcsImportSheet(
         isLoading = true
         try {
             val content = readIcsFromUri(context, uri)
-            events = parseIcsContent(content)
+            events = parseIcsContent(content, noDateLabel)
             // Auto-select all by default
             selectedIndices.addAll(events.indices)
         } catch (e: Exception) {
-            errorMsg = "Could not read calendar file: ${e.message}"
+            errorMsg = context.getString(R.string.ics_read_failed, e.message ?: "")
         }
         isLoading = false
     }
@@ -160,7 +171,7 @@ fun IcsImportSheet(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 16.dp)) {
                 Icon(Icons.Filled.CalendarMonth, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Import Calendar Events", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.import_calendar_events), style = MaterialTheme.typography.titleMedium)
             }
 
             when {
@@ -173,11 +184,11 @@ fun IcsImportSheet(
                     Text(errorMsg!!, color = MaterialTheme.colorScheme.error)
                 }
                 events.isEmpty() -> {
-                    Text("No events found in the calendar file.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.no_events_in_file), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 else -> {
                     Text(
-                        "${events.size} event${if (events.size > 1) "s" else ""} found",
+                        pluralStringResource(R.plurals.plural_events_found, events.size, events.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -217,7 +228,7 @@ fun IcsImportSheet(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = onDismiss) { Text("Cancel") }
+                        TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = {
@@ -234,7 +245,7 @@ fun IcsImportSheet(
                                             text = noteText,
                                             formatRanges = emptyList(),
                                             noteType = NoteType.TEXT,
-                                            reminderText = event.startLabel.takeIf { it != "No date" },
+                                            reminderText = event.startLabel.takeIf { it != noDateLabel },
                                             reminders = listOfNotNull(reminderTime)
                                         )
                                         viewModel.addNote(note)
@@ -250,7 +261,10 @@ fun IcsImportSheet(
                                     onDismiss()
                                     android.widget.Toast.makeText(
                                         context,
-                                        "Imported ${selectedIndices.size} event${if (selectedIndices.size > 1) "s" else ""}",
+                                        context.resources.getQuantityString(
+                                    R.plurals.plural_events_imported,
+                                    selectedIndices.size, selectedIndices.size
+                                ),
                                         android.widget.Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -259,7 +273,7 @@ fun IcsImportSheet(
                         ) {
                             Icon(Icons.Filled.EventAvailable, null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Import ${selectedIndices.size}")
+                            Text(pluralStringResource(R.plurals.plural_import, selectedIndices.size, selectedIndices.size))
                         }
                     }
                 }

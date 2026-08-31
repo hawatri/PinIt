@@ -19,7 +19,7 @@
             android:layout_width="22dp"
             android:layout_height="22dp"
             android:layout_gravity="center"
-            android:contentDescription="Type" />
+            android:contentDescription="@string/widget_type" />
     </FrameLayout>
 
     <LinearLayout
@@ -54,5 +54,5 @@
         android:layout_height="20dp"
         android:src="@drawable/ic_widget_open"
         android:alpha="0.55"
-        android:contentDescription="Pick" />
+        android:contentDescription="@string/widget_pick" />
 </LinearLayout>

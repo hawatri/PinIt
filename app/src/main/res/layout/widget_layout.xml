@@ -20,14 +20,14 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@mipmap/ic_launcher"
-            android:contentDescription="PinIt" />
+            android:contentDescription="@string/app_name" />
 
         <TextView
             android:id="@+id/widget_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="PinIt"
+            android:text="@string/app_name"
             android:textSize="16sp"
             android:textStyle="bold"
             android:paddingStart="8dp"
@@ -66,11 +66,11 @@
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:src="@drawable/ic_launcher_foreground"
-                android:contentDescription="New Note" />
+                android:contentDescription="@string/widget_new_note" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Note"
+                android:text="@string/type_note"
                 android:textSize="13sp"
                 android:paddingStart="6dp"
                 android:textColor="?android:attr/textColorPrimary" />
@@ -91,11 +91,11 @@
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:src="@drawable/ic_launcher_foreground"
-                android:contentDescription="New List" />
+                android:contentDescription="@string/widget_new_list" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="List"
+                android:text="@string/type_list"
                 android:textSize="13sp"
                 android:paddingStart="6dp"
                 android:textColor="?android:attr/textColorPrimary" />

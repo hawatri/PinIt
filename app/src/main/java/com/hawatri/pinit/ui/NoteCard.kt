@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun NoteCard(modifier: Modifier = Modifier) {
@@ -40,7 +42,7 @@ fun NoteCard(modifier: Modifier = Modifier) {
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Checklist,
-                        contentDescription = "List Type",
+                        contentDescription = stringResource(R.string.list_type),
                         modifier = Modifier.padding(4.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -83,7 +85,7 @@ fun NoteCard(modifier: Modifier = Modifier) {
                 )
                 Icon(
                     imageVector = Icons.Filled.DoneAll,
-                    contentDescription = "Check All",
+                    contentDescription = stringResource(R.string.action_check_all),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(16.dp)
                 )

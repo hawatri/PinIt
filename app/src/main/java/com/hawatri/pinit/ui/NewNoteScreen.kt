@@ -85,6 +85,8 @@ import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.util.cancelAlarmAt
 import com.hawatri.pinit.util.formatAlarmText
 import com.hawatri.pinit.viewmodel.PinItViewModel
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,7 +159,7 @@ fun NewNoteScreen(
         } else true
 
         if (!hasPermission) {
-            android.widget.Toast.makeText(context, "Notification permission required to pin", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(context, context.getString(R.string.msg_notification_permission_required), android.widget.Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -172,11 +174,11 @@ fun NewNoteScreen(
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) togglePin()
-        else android.widget.Toast.makeText(context, "Notification permission denied", android.widget.Toast.LENGTH_SHORT).show()
+        else android.widget.Toast.makeText(context, context.getString(R.string.msg_notification_permission_denied), android.widget.Toast.LENGTH_SHORT).show()
     }
 
     val reminderPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (!isGranted) android.widget.Toast.makeText(context, "Reminders won't show without notification permission", android.widget.Toast.LENGTH_LONG).show()
+        if (!isGranted) android.widget.Toast.makeText(context, context.getString(R.string.reminder_needs_notifications), android.widget.Toast.LENGTH_LONG).show()
     }
 
     fun checkNotificationPermission() {
@@ -261,13 +263,13 @@ fun NewNoteScreen(
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 actions = {
                     // Share button
                     TooltipIconButton(
-                        tooltip = "Share",
+                        tooltip = stringResource(R.string.action_share),
                         icon = Icons.Filled.Share,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = {
@@ -280,12 +282,12 @@ fun NewNoteScreen(
                                 type = "text/plain"
                                 putExtra(android.content.Intent.EXTRA_TEXT, shareText)
                             }
-                            context.startActivity(android.content.Intent.createChooser(intent, "Share note"))
+                            context.startActivity(android.content.Intent.createChooser(intent, context.getString(R.string.share_note)))
                         }
                     })
                     // Archive button
                     TooltipIconButton(
-                        tooltip = "Archive",
+                        tooltip = stringResource(R.string.action_archive),
                         icon = Icons.Filled.Archive,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = {
@@ -306,7 +308,7 @@ fun NewNoteScreen(
                     })
                     // Pin toggle button
                     TooltipIconButton(
-                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        tooltip = if (isPinned) stringResource(R.string.unpin_from_notifications) else stringResource(R.string.pin_to_notifications),
                         icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                         tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = {
@@ -320,7 +322,7 @@ fun NewNoteScreen(
                     )
                     Box {
                         TooltipIconButton(
-                            tooltip = "Set reminder",
+                            tooltip = stringResource(R.string.set_reminder),
                             icon = Icons.Filled.Notifications,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -334,7 +336,7 @@ fun NewNoteScreen(
                             onDismissRequest = { showReminderMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Tomorrow (8:00 AM)") },
+                                text = { Text(stringResource(R.string.reminder_tomorrow_8am)) },
                                 onClick = {
                                     showReminderMenu = false
                                     val time = com.hawatri.pinit.util.tomorrowAt8AmMillis()
@@ -342,12 +344,12 @@ fun NewNoteScreen(
                                     reminders = (reminders + time).sorted()
                                     val noteToPinId = saveOrUpdateNote() ?: return@DropdownMenuItem
                                     val ok = com.hawatri.pinit.util.scheduleAlarmAt(context, noteToPinId, title, time)
-                                    if (ok) android.widget.Toast.makeText(context, "Reminder added", android.widget.Toast.LENGTH_SHORT).show()
+                                    if (ok) android.widget.Toast.makeText(context, context.getString(R.string.reminder_added), android.widget.Toast.LENGTH_SHORT).show()
                                     else { reminders = reminders - time; saveOrUpdateNote() }
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(if (reminders.isEmpty()) "Pick date and time" else "Add another reminder") },
+                                text = { Text(if (reminders.isEmpty()) stringResource(R.string.reminder_pick_date_time) else stringResource(R.string.add_another_reminder)) },
                                 onClick = {
                                     showReminderMenu = false
                                     showDatePicker = true
@@ -356,13 +358,13 @@ fun NewNoteScreen(
                         }
                     }
                     TooltipIconButton(
-                        tooltip = "Labels",
+                        tooltip = stringResource(R.string.labels),
                         icon = Icons.Filled.Label,
                         tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { showLabelsSheet = true }
                     )
                     TooltipIconButton(
-                        tooltip = if (isLocked) "Unlock note" else "Lock note",
+                        tooltip = if (isLocked) stringResource(R.string.unlock_note) else stringResource(R.string.lock_note),
                         icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                         tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { isLocked = !isLocked; saveOrUpdateNote() }
@@ -373,7 +375,7 @@ fun NewNoteScreen(
                     )
 
                     TooltipIconButton(
-                        tooltip = "Save",
+                        tooltip = stringResource(R.string.action_save),
                         icon = Icons.Filled.Check,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { saveOrUpdateNote(); onNavigateBack() }
@@ -401,7 +403,7 @@ fun NewNoteScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
                     Text(
-                        text = "*Mandatory field",
+                        text = stringResource(R.string.field_mandatory_note),
                         color = Color(0xFFD32F2F),
                         fontSize = 12.sp,
                         modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
@@ -410,7 +412,7 @@ fun NewNoteScreen(
                     TextField(
                         value = title,
                         onValueChange = { title = it },
-                        placeholder = { Text("Title*", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                        placeholder = { Text(stringResource(R.string.field_title_required), fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
                             disabledContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent,
@@ -496,7 +498,7 @@ fun NewNoteScreen(
                             if (newValue.text != noteText.text) redoHistory.clear()
                             noteText = newValue
                         },
-                        placeholder = { Text("Text*", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                        placeholder = { Text(stringResource(R.string.field_text_required), fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
                             disabledContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent,
@@ -609,12 +611,12 @@ fun NewNoteScreen(
                         showTimePicker = true // Open TimePicker immediately after DatePicker
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.action_ok))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         ) {
@@ -626,7 +628,7 @@ fun NewNoteScreen(
     if (showTimePicker) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Select time") },
+            title = { Text(stringResource(R.string.reminder_select_time)) },
             text = {
                 TimePicker(state = timePickerState)
             },
@@ -642,7 +644,7 @@ fun NewNoteScreen(
                         ) ?: return@TextButton
 
                         if (time in reminders) {
-                            android.widget.Toast.makeText(context, "Reminder already set for that time", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, context.getString(R.string.reminder_duplicate), android.widget.Toast.LENGTH_SHORT).show()
                             return@TextButton
                         }
 
@@ -651,19 +653,19 @@ fun NewNoteScreen(
 
                         val ok = com.hawatri.pinit.util.scheduleAlarmAt(context, noteToPinId, title, time)
                         if (ok) {
-                            android.widget.Toast.makeText(context, "Reminder set", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, context.getString(R.string.reminder_set), android.widget.Toast.LENGTH_SHORT).show()
                         } else {
                             reminders = reminders - time
                             saveOrUpdateNote()
                         }
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.action_ok))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )

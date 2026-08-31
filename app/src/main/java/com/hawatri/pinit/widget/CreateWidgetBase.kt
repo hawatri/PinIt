@@ -9,6 +9,7 @@ import android.widget.RemoteViews
 import com.hawatri.pinit.MainActivity
 import com.hawatri.pinit.R
 import com.hawatri.pinit.data.NoteType
+import com.hawatri.pinit.util.LocaleHelper
 
 /**
  * Base for the 10 Create-X widget providers. Each subclass is a 1x1 shortcut tile
@@ -19,7 +20,7 @@ abstract class CreateWidgetBase : AppWidgetProvider() {
 
     abstract val noteType: String
     abstract val widgetAction: String
-    abstract val label: String
+    abstract val labelRes: Int
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         ids.forEach { id -> render(context, manager, id) }
@@ -29,7 +30,7 @@ abstract class CreateWidgetBase : AppWidgetProvider() {
         val views = RemoteViews(context.packageName, R.layout.create_widget)
         val iconRes = WidgetTypeRegistry.entryForType(noteType)?.iconRes ?: R.mipmap.ic_launcher
         views.setImageViewResource(R.id.create_widget_icon, iconRes)
-        views.setTextViewText(R.id.create_widget_label, label)
+        views.setTextViewText(R.id.create_widget_label, LocaleHelper.getString(context, labelRes))
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -50,50 +51,50 @@ abstract class CreateWidgetBase : AppWidgetProvider() {
 class CreateTextWidget : CreateWidgetBase() {
     override val noteType = NoteType.TEXT
     override val widgetAction = "new_note"
-    override val label = "Note"
+    override val labelRes = R.string.widget_create_text
 }
 class CreateListWidget : CreateWidgetBase() {
     override val noteType = NoteType.LIST
     override val widgetAction = "new_list"
-    override val label = "List"
+    override val labelRes = R.string.widget_create_list
 }
 class CreateQrWidget : CreateWidgetBase() {
     override val noteType = NoteType.QR
     override val widgetAction = "new_qr"
-    override val label = "QR"
+    override val labelRes = R.string.widget_create_qr
 }
 class CreateLinkWidget : CreateWidgetBase() {
     override val noteType = NoteType.LINK
     override val widgetAction = "new_link"
-    override val label = "Link"
+    override val labelRes = R.string.widget_create_link
 }
 class CreateContactWidget : CreateWidgetBase() {
     override val noteType = NoteType.CONTACT
     override val widgetAction = "new_contact"
-    override val label = "Contact"
+    override val labelRes = R.string.widget_create_contact
 }
 class CreateLocationWidget : CreateWidgetBase() {
     override val noteType = NoteType.LOCATION
     override val widgetAction = "new_location"
-    override val label = "Location"
+    override val labelRes = R.string.widget_create_location
 }
 class CreateAppListWidget : CreateWidgetBase() {
     override val noteType = NoteType.APPLIST
     override val widgetAction = "new_app_list"
-    override val label = "App list"
+    override val labelRes = R.string.widget_create_applist
 }
 class CreateImageWidget : CreateWidgetBase() {
     override val noteType = NoteType.IMAGE
     override val widgetAction = "new_image"
-    override val label = "Image"
+    override val labelRes = R.string.widget_create_image
 }
 class CreatePdfWidget : CreateWidgetBase() {
     override val noteType = NoteType.PDF
     override val widgetAction = "new_pdf"
-    override val label = "PDF"
+    override val labelRes = R.string.widget_create_pdf
 }
 class CreateAudioWidget : CreateWidgetBase() {
     override val noteType = NoteType.AUDIO
     override val widgetAction = "new_audio"
-    override val label = "Audio"
+    override val labelRes = R.string.widget_create_audio
 }

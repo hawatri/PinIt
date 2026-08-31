@@ -46,6 +46,8 @@ import com.hawatri.pinit.util.QrUtils
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import java.util.UUID
 import java.util.concurrent.Executors
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +61,7 @@ fun NewQRScreen(
     val notificationHelper = remember(context) { NotificationHelper(context) }
 
     var scannedValue by remember { mutableStateOf<String?>(null) }
-    var noteTitle by remember { mutableStateOf("QR Code") }
+    var noteTitle by remember { mutableStateOf(context.getString(R.string.qr_code)) }
     var isPinned by remember { mutableStateOf(false) }
     var isLocked by remember { mutableStateOf(false) }
     var colorHex by remember { mutableStateOf<String?>(null) }
@@ -115,15 +117,15 @@ fun NewQRScreen(
                                 scanningActive = false
                                 showSaveToGalleryDialog = true
                             } else {
-                                Toast.makeText(context, "No QR code found in image", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.qr_no_code_found), Toast.LENGTH_SHORT).show()
                             }
                         }
                         .addOnFailureListener {
-                            Toast.makeText(context, "Failed to read image", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.msg_failed_to_read_image), Toast.LENGTH_SHORT).show()
                         }
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "Could not open image", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.msg_could_not_open_image), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -157,7 +159,7 @@ fun NewQRScreen(
                 v.startsWith("http://", true) || v.startsWith("https://", true) -> Uri.parse(v)
                 v.contains("://") -> Uri.parse(v)
                 else -> {
-                    Toast.makeText(context, "Not a link — copied", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.qr_not_a_link_copied), Toast.LENGTH_SHORT).show()
                     val cb = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                     cb.setPrimaryClip(android.content.ClipData.newPlainText("QR", v))
                     return
@@ -166,7 +168,7 @@ fun NewQRScreen(
             val intent = Intent(Intent.ACTION_VIEW, uri).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
             context.startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(context, "Could not open", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.msg_could_not_open), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -176,13 +178,13 @@ fun NewQRScreen(
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = Color.White)
                     }
                 },
                 actions = {
                     if (scanningActive) {
                         TooltipIconButton(
-                            tooltip = "Pick from gallery",
+                            tooltip = stringResource(R.string.qr_pick_from_gallery),
                             icon = Icons.Filled.Image,
                             tint = Color.White,
                             onClick = { galleryLauncher.launch("image/*") }
@@ -191,7 +193,7 @@ fun NewQRScreen(
                     if (scannedValue != null && !scanningActive) {
                         // Share
                         TooltipIconButton(
-                            tooltip = "Share",
+                            tooltip = stringResource(R.string.action_share),
                             icon = Icons.Filled.Share,
                             tint = Color.White,
                             onClick = {
@@ -199,12 +201,12 @@ fun NewQRScreen(
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, scannedValue ?: "")
                                 }
-                                context.startActivity(Intent.createChooser(intent, "Share QR content"))
+                                context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_qr_content)))
                             }
                         )
                         // Archive
                         TooltipIconButton(
-                            tooltip = "Archive",
+                            tooltip = stringResource(R.string.action_archive),
                             icon = Icons.Filled.Archive,
                             tint = Color.White,
                             onClick = {
@@ -214,7 +216,7 @@ fun NewQRScreen(
                             }
                         )
                         TooltipIconButton(
-                            tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                            tooltip = if (isPinned) stringResource(R.string.unpin_from_notifications) else stringResource(R.string.pin_to_notifications),
                             icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                             tint = if (isPinned) MaterialTheme.colorScheme.primary else Color.White,
                             onClick = {
@@ -225,19 +227,19 @@ fun NewQRScreen(
                             }
                         )
                         TooltipIconButton(
-                            tooltip = "Rescan",
+                            tooltip = stringResource(R.string.action_rescan),
                             icon = Icons.Filled.QrCodeScanner,
                             tint = Color.White,
                             onClick = { scanningActive = true; scannedValue = null; savedToGalleryAsked = false }
                         )
                         TooltipIconButton(
-                            tooltip = "Labels",
+                            tooltip = stringResource(R.string.labels),
                             icon = Icons.Filled.Label,
                             tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.White,
                             onClick = { showLabelsSheet = true }
                         )
                         TooltipIconButton(
-                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            tooltip = if (isLocked) stringResource(R.string.unlock_note) else stringResource(R.string.lock_note),
                             icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                             tint = if (isLocked) MaterialTheme.colorScheme.primary else Color.White,
                             onClick = { isLocked = !isLocked; save() }
@@ -248,7 +250,7 @@ fun NewQRScreen(
                             iconTint = Color.White
                         )
                         TooltipIconButton(
-                            tooltip = "Save",
+                            tooltip = stringResource(R.string.action_save),
                             icon = Icons.Filled.Check,
                             tint = Color.White,
                             onClick = { save(); onNavigateBack() }
@@ -263,7 +265,7 @@ fun NewQRScreen(
                 ExtendedFloatingActionButton(
                     onClick = { openScannedValue() },
                     icon = { Icon(Icons.Filled.OpenInNew, null) },
-                    text = { Text("Open") },
+                    text = { Text(stringResource(R.string.action_open)) },
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             }
@@ -301,7 +303,7 @@ fun NewQRScreen(
                     Box(modifier = Modifier.fillMaxSize()) {
                         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)))
                         Box(modifier = Modifier.align(Alignment.Center).size(250.dp).border(4.dp, Color(0xFFC0C8D0), RoundedCornerShape(16.dp)))
-                        Text("Point camera at a QR code", color = Color.White, modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
+                        Text(stringResource(R.string.qr_point_camera), color = Color.White, modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
 
                         Surface(
                             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp).clickable { galleryLauncher.launch("image/*") },
@@ -314,7 +316,7 @@ fun NewQRScreen(
                             ) {
                                 Icon(Icons.Filled.Image, null, tint = MaterialTheme.colorScheme.onSurface)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Pick from gallery", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                                Text(stringResource(R.string.qr_pick_from_gallery), color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                             }
                         }
                     }
@@ -324,11 +326,11 @@ fun NewQRScreen(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Camera permission required to scan QR codes.", color = Color.White, textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.qr_camera_permission), color = Color.White, textAlign = TextAlign.Center)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) { Text("Grant permission") }
+                        Button(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) { Text(stringResource(R.string.action_grant_permission)) }
                         Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(onClick = { galleryLauncher.launch("image/*") }) { Text("Pick from gallery instead") }
+                        TextButton(onClick = { galleryLauncher.launch("image/*") }) { Text(stringResource(R.string.qr_pick_from_gallery_instead)) }
                     }
                 }
             } else {
@@ -345,7 +347,7 @@ fun NewQRScreen(
                         ) {
                             androidx.compose.foundation.Image(
                                 bitmap = qrBitmap.asImageBitmap(),
-                                contentDescription = "QR Code",
+                                contentDescription = stringResource(R.string.qr_code),
                                 modifier = Modifier.fillMaxSize().padding(8.dp)
                             )
                         }
@@ -366,18 +368,18 @@ fun NewQRScreen(
     if (showSaveToGalleryDialog && qrBitmap != null) {
         AlertDialog(
             onDismissRequest = { showSaveToGalleryDialog = false; savedToGalleryAsked = true },
-            title = { Text("Save to gallery?") },
-            text = { Text("Save a copy of this QR code as an image in your Pictures/PinIt folder.") },
+            title = { Text(stringResource(R.string.qr_save_to_gallery)) },
+            text = { Text(stringResource(R.string.qr_save_dialog_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     val uri = QrUtils.saveQrToGallery(context, qrBitmap)
-                    Toast.makeText(context, if (uri != null) "Saved to gallery" else "Failed to save", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (uri != null) context.getString(R.string.qr_saved_to_gallery) else context.getString(R.string.msg_failed_to_save), Toast.LENGTH_SHORT).show()
                     showSaveToGalleryDialog = false
                     savedToGalleryAsked = true
-                }) { Text("Save") }
+                }) { Text(stringResource(R.string.action_save)) }
             },
             dismissButton = {
-                TextButton(onClick = { showSaveToGalleryDialog = false; savedToGalleryAsked = true }) { Text("Skip") }
+                TextButton(onClick = { showSaveToGalleryDialog = false; savedToGalleryAsked = true }) { Text(stringResource(R.string.action_skip)) }
             }
         )
     }

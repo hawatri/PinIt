@@ -32,6 +32,8 @@ import com.hawatri.pinit.data.NoteType
 import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import java.util.UUID
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 @SuppressLint("Range")
 fun getFileName(context: Context, uri: Uri): String {
@@ -49,7 +51,7 @@ fun getFileName(context: Context, uri: Uri): String {
         val cut = result?.lastIndexOf('/') ?: -1
         if (cut != -1) result = result?.substring(cut + 1)
     }
-    return result ?: "Image"
+    return result ?: context.getString(R.string.type_image)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,7 +114,7 @@ fun NewImageScreen(
         val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
-            title = imageTitle.ifBlank { "Image" },
+            title = imageTitle.ifBlank { context.getString(R.string.type_image) },
             text = selectedImageUri?.toString() ?: "",
             formatRanges = emptyList(),
             isPinned = pinOverride,
@@ -132,13 +134,13 @@ fun NewImageScreen(
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                 },
                 actions = {
                     if (selectedImageUri != null) {
                         // Share image
                         TooltipIconButton(
-                            tooltip = "Share",
+                            tooltip = stringResource(R.string.action_share),
                             icon = Icons.Filled.Share,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -147,13 +149,13 @@ fun NewImageScreen(
                                     putExtra(Intent.EXTRA_STREAM, selectedImageUri)
                                     flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                                 }
-                                context.startActivity(Intent.createChooser(intent, "Share image"))
+                                context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_image)))
                             }
                         )
 
                         // Archive
                         TooltipIconButton(
-                            tooltip = "Archive",
+                            tooltip = stringResource(R.string.action_archive),
                             icon = Icons.Filled.Archive,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -164,24 +166,24 @@ fun NewImageScreen(
                         )
 
                         TooltipIconButton(
-                            tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                            tooltip = if (isPinned) stringResource(R.string.unpin_from_notifications) else stringResource(R.string.pin_to_notifications),
                             icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                             tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
                                 isPinned = !isPinned
                                 val savedId = save(isPinned)
-                                if (isPinned) notificationHelper.pinNoteToNotification(savedId, imageTitle.ifBlank { "Image" }, selectedImageUri?.toString() ?: "", isList = false, noteType = NoteType.IMAGE)
+                                if (isPinned) notificationHelper.pinNoteToNotification(savedId, imageTitle.ifBlank { context.getString(R.string.type_image) }, selectedImageUri?.toString() ?: "", isList = false, noteType = NoteType.IMAGE)
                                 else notificationHelper.unpinNoteFromNotification(savedId)
                             }
                         )
                         TooltipIconButton(
-                            tooltip = "Labels",
+                            tooltip = stringResource(R.string.labels),
                             icon = Icons.Filled.Label,
                             tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { showLabelsSheet = true }
                         )
                         TooltipIconButton(
-                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            tooltip = if (isLocked) stringResource(R.string.unlock_note) else stringResource(R.string.lock_note),
                             icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                             tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { isLocked = !isLocked; save() }
@@ -191,7 +193,7 @@ fun NewImageScreen(
                             onColorSelected = { colorHex = it.ifBlank { null }; save() }
                         )
                         TooltipIconButton(
-                            tooltip = "Save",
+                            tooltip = stringResource(R.string.action_save),
                             icon = Icons.Filled.Check,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { save(); onNavigateBack() }
@@ -216,13 +218,13 @@ fun NewImageScreen(
                 when (currentStep) {
                     0 -> Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "To save an image, select or pick one from your device.",
+                            stringResource(R.string.image_pick_hint),
                             color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 20.sp
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                             TextButton(onClick = { imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
-                                Text("Pick Image")
+                                Text(stringResource(R.string.pick_image))
                             }
                         }
                     }
@@ -230,29 +232,29 @@ fun NewImageScreen(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Select an image", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                        Text(stringResource(R.string.select_an_image), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                         Box(
                             modifier = Modifier.size(48.dp).clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
                                 .clickable { imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                             contentAlignment = Alignment.Center
-                        ) { Icon(Icons.Filled.Image, "Pick Image", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(24.dp)) }
+                        ) { Icon(Icons.Filled.Image, stringResource(R.string.pick_image), tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(24.dp)) }
                     }
                     2 -> Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AsyncImage(
-                            model = selectedImageUri, contentDescription = "Selected Image",
+                            model = selectedImageUri, contentDescription = stringResource(R.string.selected_image),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp))
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("*Mandatory field", color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 16.dp))
+                            Text(stringResource(R.string.field_mandatory_note), color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 16.dp))
                             TextField(
                                 value = imageTitle, onValueChange = { imageTitle = it },
-                                placeholder = { Text("Title*", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                                placeholder = { Text(stringResource(R.string.field_title_required), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                                 colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
                                 singleLine = true, modifier = Modifier.fillMaxWidth()
                             )
@@ -262,7 +264,7 @@ fun NewImageScreen(
                                 .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
                                 .clickable { imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                             contentAlignment = Alignment.Center
-                        ) { Icon(Icons.Filled.Image, "Repick", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(24.dp)) }
+                        ) { Icon(Icons.Filled.Image, stringResource(R.string.action_repick), tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(24.dp)) }
                     }
                 }
             }

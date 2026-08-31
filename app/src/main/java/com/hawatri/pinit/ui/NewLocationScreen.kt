@@ -47,6 +47,8 @@ import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import java.util.Locale
 import java.util.UUID
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 data class LocationNoteData(val name: String, val address: String, val lat: Double?, val lng: Double?)
 
@@ -103,7 +105,7 @@ fun NewLocationScreen(
         val marker = Marker(mapView).apply {
             position = point
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            title = locationName.ifBlank { "Selected Location" }
+            title = locationName.ifBlank { context.getString(R.string.selected_location) }
         }
         mapView.overlays.add(marker)
         mapView.controller.animateTo(point)
@@ -131,15 +133,16 @@ fun NewLocationScreen(
                         }
                         locationAddress = full.ifBlank { "$latVal, $lngVal" }
                         if (locationName.isBlank()) {
-                            locationName = addr.locality ?: addr.subAdminArea ?: addr.featureName ?: "Location"
+                            locationName = addr.locality ?: addr.subAdminArea ?: addr.featureName
+                                ?: context.getString(R.string.type_location)
                         }
                     } else {
                         locationAddress = "$latVal, $lngVal"
-                        if (locationName.isBlank()) locationName = "Location"
+                        if (locationName.isBlank()) locationName = context.getString(R.string.type_location)
                     }
                 } catch (e: Exception) {
                     locationAddress = "$latVal, $lngVal"
-                    if (locationName.isBlank()) locationName = "Location"
+                    if (locationName.isBlank()) locationName = context.getString(R.string.type_location)
                 }
             }
         }
@@ -254,7 +257,7 @@ fun NewLocationScreen(
         val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
-            title = locationName.ifBlank { "Location" },
+            title = locationName.ifBlank { context.getString(R.string.type_location) },
             text = gson.toJson(data),
             formatRanges = emptyList(),
             isPinned = pinOverride,
@@ -274,12 +277,12 @@ fun NewLocationScreen(
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = Color.White) }
+                    IconButton(onClick = onNavigateBack) { Icon(Icons.Filled.ArrowBack, stringResource(R.string.action_back), tint = Color.White) }
                 },
                 actions = {
                     // Share
                     TooltipIconButton(
-                        tooltip = "Share",
+                        tooltip = stringResource(R.string.action_share),
                         icon = Icons.Filled.Share,
                         tint = Color.White,
                         onClick = {
@@ -293,14 +296,14 @@ fun NewLocationScreen(
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, shareText)
                                 }
-                                context.startActivity(Intent.createChooser(intent, "Share location"))
+                                context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_location)))
                             }
                         }
                     )
 
                     // Archive
                     TooltipIconButton(
-                        tooltip = "Archive",
+                        tooltip = stringResource(R.string.action_archive),
                         icon = Icons.Filled.Archive,
                         tint = Color.White,
                         onClick = {
@@ -313,25 +316,25 @@ fun NewLocationScreen(
                     )
 
                     TooltipIconButton(
-                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        tooltip = if (isPinned) stringResource(R.string.unpin_from_notifications) else stringResource(R.string.pin_to_notifications),
                         icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                         tint = if (isPinned) MaterialTheme.colorScheme.primary else Color.White,
                         onClick = {
                             isPinned = !isPinned
                             val savedId = save(isPinned)
                             val text = gson.toJson(LocationNoteData(locationName, locationAddress, lat, lng))
-                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, locationName.ifBlank { "Location" }, text, isList = false, noteType = NoteType.LOCATION)
+                            if (isPinned) notificationHelper.pinNoteToNotification(savedId, locationName.ifBlank { context.getString(R.string.type_location) }, text, isList = false, noteType = NoteType.LOCATION)
                             else notificationHelper.unpinNoteFromNotification(savedId)
                         }
                     )
                     TooltipIconButton(
-                        tooltip = "Labels",
+                        tooltip = stringResource(R.string.labels),
                         icon = Icons.Filled.Label,
                         tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.White,
                         onClick = { showLabelsSheet = true }
                     )
                     TooltipIconButton(
-                        tooltip = if (isLocked) "Unlock note" else "Lock note",
+                        tooltip = if (isLocked) stringResource(R.string.unlock_note) else stringResource(R.string.lock_note),
                         icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                         tint = if (isLocked) MaterialTheme.colorScheme.primary else Color.White,
                         onClick = { if (locationName.isNotBlank() || lat != null) { isLocked = !isLocked; save() } }
@@ -342,7 +345,7 @@ fun NewLocationScreen(
                         iconTint = Color.White
                     )
                     TooltipIconButton(
-                        tooltip = "Save",
+                        tooltip = stringResource(R.string.action_save),
                         icon = Icons.Filled.Check,
                         tint = Color.White,
                         onClick = { if (locationName.isNotBlank() || lat != null) { save(); onNavigateBack() } }
@@ -376,7 +379,7 @@ fun NewLocationScreen(
                     TextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search a place", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
+                        placeholder = { Text(stringResource(R.string.search_a_place), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { runSearch() }),
@@ -392,7 +395,7 @@ fun NewLocationScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                     } else if (searchQuery.isNotBlank()) {
                         IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(28.dp)) {
-                            Icon(Icons.Filled.Close, "Clear", modifier = Modifier.size(18.dp))
+                            Icon(Icons.Filled.Close, stringResource(R.string.action_clear), modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -408,7 +411,7 @@ fun NewLocationScreen(
                 if (isLoadingLocation) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
-                    Icon(Icons.Filled.MyLocation, "Get My Location", tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Icon(Icons.Filled.MyLocation, stringResource(R.string.get_my_location), tint = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
 
@@ -426,7 +429,7 @@ fun NewLocationScreen(
                         TextField(
                             value = locationName,
                             onValueChange = { locationName = it },
-                            placeholder = { Text("Location name", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                            placeholder = { Text(stringResource(R.string.field_location_name), fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                             colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
                             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium),
                             singleLine = true,
@@ -443,7 +446,7 @@ fun NewLocationScreen(
                         )
                     } else {
                         Text(
-                            "Tap on the map or use the location button",
+                            stringResource(R.string.map_hint),
                             fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                             modifier = Modifier.padding(start = 30.dp, top = 2.dp, bottom = 8.dp)
                         )
@@ -467,7 +470,7 @@ fun NewLocationScreen(
                             ) {
                                 Icon(Icons.Filled.Navigation, null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Navigate", fontSize = 13.sp)
+                                Text(stringResource(R.string.action_navigate), fontSize = 13.sp)
                             }
                         }
                     }

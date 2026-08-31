@@ -23,6 +23,7 @@ object AppPreferences {
     private const val KEY_STALE_DIALOG_DISMISSED_AT = "stale_dialog_dismissed_at"
     private const val KEY_STALE_DIALOG_SUPPRESSED_FOREVER = "stale_dialog_suppressed_forever"
     private const val KEY_BACKUP_REMINDERS_ENABLED = "backup_reminders_enabled"
+    private const val KEY_LANGUAGE = "language_tag"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -156,5 +157,17 @@ object AppPreferences {
 
     fun setBackupRemindersEnabled(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean(KEY_BACKUP_REMINDERS_ENABLED, enabled).apply()
+    }
+
+    /**
+     * BCP-47 tag of the user's chosen in-app language, or "" to follow the system
+     * locale. Read through `LocaleHelper`/`AppLanguage` rather than directly so an
+     * unknown tag left behind by a downgrade degrades to the system default.
+     */
+    fun getLanguageTag(context: Context): String =
+        prefs(context).getString(KEY_LANGUAGE, "") ?: ""
+
+    fun setLanguageTag(context: Context, tag: String) {
+        prefs(context).edit().putString(KEY_LANGUAGE, tag).apply()
     }
 }

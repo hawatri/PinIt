@@ -1,5 +1,6 @@
 package com.hawatri.pinit
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -15,10 +16,21 @@ import com.hawatri.pinit.data.AppPreferences
 import com.hawatri.pinit.data.ThemeMode
 import com.hawatri.pinit.ui.PinItApp
 import com.hawatri.pinit.ui.theme.PinItTheme
+import com.hawatri.pinit.util.LocaleHelper
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : FragmentActivity() {
+
+    /**
+     * Applies the in-app language before any resource is resolved. Compose reads
+     * strings through `LocalContext.current`, which is this Activity, so wrapping
+     * here is what makes `stringResource` honour the picker.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -73,6 +85,10 @@ class MainActivity : FragmentActivity() {
                         onThemeChange = { mode ->
                             AppPreferences.setThemeMode(this@MainActivity, mode)
                             themeFlow.value = mode
+                        },
+                        onLanguageChange = { tag ->
+                            AppPreferences.setLanguageTag(this@MainActivity, tag)
+                            recreate()
                         }
                     )
                 }

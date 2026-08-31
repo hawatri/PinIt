@@ -26,6 +26,17 @@ import com.hawatri.pinit.ui.LinkNoteData
 import com.hawatri.pinit.ui.LocationNoteData
 
 class NotificationHelper(private val context: Context) {
+
+    /**
+     * Resolves a string in the user's chosen in-app language. Notifications are
+     * posted from receivers and services whose Context carries the system locale,
+     * so going through LocaleHelper is what keeps the shade consistent with the UI.
+     */
+    private fun s(resId: Int): String = LocaleHelper.getString(context, resId)
+
+    private fun quantity(pluralId: Int, count: Int): String =
+        LocaleHelper.wrap(context).resources.getQuantityString(pluralId, count, count)
+
     private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val channelId = "pinned_notes_channel"
 
@@ -52,13 +63,13 @@ class NotificationHelper(private val context: Context) {
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Pinned Notes", NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(channelId, s(R.string.notif_channel_pinned), NotificationManager.IMPORTANCE_LOW)
             manager.createNotificationChannel(channel)
         }
     }
 
     fun pinNoteToNotification(noteId: String, title: String, text: String, isList: Boolean = false, noteType: String? = null) {
-        val displayTitle = title.ifBlank { "Pinned Note" }
+        val displayTitle = title.ifBlank { s(R.string.notif_pinned_note) }
         val isAppList = noteType == com.hawatri.pinit.data.NoteType.APPLIST
 
         val removeIntent = Intent(context, NotificationReceiver::class.java).apply {
@@ -133,7 +144,7 @@ class NotificationHelper(private val context: Context) {
                 }
                 if (items.size > displayLimit) {
                     customView.setViewVisibility(R.id.notif_apps_more, android.view.View.VISIBLE)
-                    customView.setTextViewText(R.id.notif_apps_more, "+ ${items.size - displayLimit} more")
+                    customView.setTextViewText(R.id.notif_apps_more, quantity(R.plurals.plural_more, items.size - displayLimit))
                 } else {
                     customView.setViewVisibility(R.id.notif_apps_more, android.view.View.GONE)
                 }
@@ -141,7 +152,7 @@ class NotificationHelper(private val context: Context) {
 
             builder.setCustomContentView(customView)
             builder.setCustomBigContentView(customView)
-            builder.addAction(0, "Remove", removePendingIntent)
+            builder.addAction(0, s(R.string.action_remove), removePendingIntent)
         } else if (isList) {
             val customView = RemoteViews(context.packageName, R.layout.notif_custom_list)
             try {
@@ -172,13 +183,13 @@ class NotificationHelper(private val context: Context) {
 
                 if (items.size > displayLimit) {
                     customView.setViewVisibility(R.id.notif_more_text, android.view.View.VISIBLE)
-                    customView.setTextViewText(R.id.notif_more_text, "+ ${items.size - displayLimit} more")
+                    customView.setTextViewText(R.id.notif_more_text, quantity(R.plurals.plural_more, items.size - displayLimit))
                 } else {
                     customView.setViewVisibility(R.id.notif_more_text, android.view.View.GONE)
                 }
             } catch (e: Exception) { }
 
-            val remoteInput = RemoteInput.Builder(EXTRA_REPLY_TEXT).setLabel("Add Item").build()
+            val remoteInput = RemoteInput.Builder(EXTRA_REPLY_TEXT).setLabel(s(R.string.notif_add_item)).build()
             val replyIntent = Intent(context, NotificationReceiver::class.java).apply {
                 action = ACTION_ADD_TASK
                 putExtra(EXTRA_NOTE_ID, noteId)
@@ -187,7 +198,7 @@ class NotificationHelper(private val context: Context) {
                 context, (noteId + "reply").hashCode(), replyIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
             )
-            val replyAction = NotificationCompat.Action.Builder(0, "Add Task", replyPendingIntent)
+            val replyAction = NotificationCompat.Action.Builder(0, s(R.string.notif_add_task), replyPendingIntent)
                 .addRemoteInput(remoteInput).build()
 
             val checkAllIntent = Intent(context, NotificationReceiver::class.java).apply {
@@ -202,8 +213,8 @@ class NotificationHelper(private val context: Context) {
             builder.setCustomContentView(customView)
             builder.setCustomBigContentView(customView)
             builder.addAction(replyAction)
-            builder.addAction(0, "Check All", checkAllPendingIntent)
-            builder.addAction(0, "Remove", removePendingIntent)
+            builder.addAction(0, s(R.string.action_check_all), checkAllPendingIntent)
+            builder.addAction(0, s(R.string.action_remove), removePendingIntent)
         } else if (noteType == com.hawatri.pinit.data.NoteType.LOCATION) {
             val locData = try { Gson().fromJson(text, LocationNoteData::class.java) } catch (e: Exception) { null }
             val addressText = locData?.address ?: text
@@ -219,9 +230,9 @@ class NotificationHelper(private val context: Context) {
                     context, (noteId + "_nav").hashCode(), mapIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                builder.addAction(0, "Navigate", navPending)
+                builder.addAction(0, s(R.string.action_navigate), navPending)
             }
-            builder.addAction(0, "Remove", removePendingIntent)
+            builder.addAction(0, s(R.string.action_remove), removePendingIntent)
         } else if (noteType == com.hawatri.pinit.data.NoteType.CONTACT) {
             val contactData = try { Gson().fromJson(text, ContactNoteData::class.java) } catch (e: Exception) { null }
             val contactName = contactData?.name?.ifBlank { displayTitle } ?: displayTitle
@@ -238,18 +249,18 @@ class NotificationHelper(private val context: Context) {
                     context, (noteId + "_call").hashCode(), callIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                builder.addAction(0, "Call", callPending)
+                builder.addAction(0, s(R.string.action_call), callPending)
 
                 val copyIntent = Intent(context, NotificationReceiver::class.java).apply {
                     action = ACTION_COPY_TEXT
                     putExtra(EXTRA_NOTE_TEXT, phone)
                 }
-                builder.addAction(0, "Copy", PendingIntent.getBroadcast(
+                builder.addAction(0, s(R.string.action_copy), PendingIntent.getBroadcast(
                     context, (noteId + "_copy").hashCode(), copyIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 ))
             }
-            builder.addAction(0, "Remove", removePendingIntent)
+            builder.addAction(0, s(R.string.action_remove), removePendingIntent)
         } else if (noteType == com.hawatri.pinit.data.NoteType.LINK) {
             val linkData = try { Gson().fromJson(text, LinkNoteData::class.java) } catch (e: Exception) { null }
             val url = linkData?.url ?: text
@@ -272,23 +283,23 @@ class NotificationHelper(private val context: Context) {
                         context, (noteId + "_open").hashCode(), openIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
-                    builder.addAction(0, "Open", openPending)
+                    builder.addAction(0, s(R.string.action_open), openPending)
                 }
             }
             val copyIntent = Intent(context, NotificationReceiver::class.java).apply {
                 action = ACTION_COPY_TEXT
                 putExtra(EXTRA_NOTE_TEXT, url)
             }
-            builder.addAction(0, "Copy", PendingIntent.getBroadcast(
+            builder.addAction(0, s(R.string.action_copy), PendingIntent.getBroadcast(
                 context, (noteId + "_copy").hashCode(), copyIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             ))
-            builder.addAction(0, "Remove", removePendingIntent)
+            builder.addAction(0, s(R.string.action_remove), removePendingIntent)
         } else if (noteType == com.hawatri.pinit.data.NoteType.AUDIO) {
             val audioData = try { Gson().fromJson(text, AudioNoteData::class.java) } catch (e: Exception) { null }
             val durMs = audioData?.durationMs ?: 0L
             val path = audioData?.path ?: ""
-            val durationLabel = if (durMs > 0) "%d:%02d".format(durMs / 60000, (durMs / 1000) % 60) else "Audio recording"
+            val durationLabel = if (durMs > 0) "%d:%02d".format(durMs / 60000, (durMs / 1000) % 60) else s(R.string.notif_audio_recording)
             builder.setContentTitle(displayTitle)
             builder.setContentText(durationLabel)
             builder.setStyle(NotificationCompat.BigTextStyle().bigText(durationLabel))
@@ -304,9 +315,9 @@ class NotificationHelper(private val context: Context) {
                     context, (noteId + "_audio").hashCode(), toggleIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                builder.addAction(0, if (isPlaying) "Stop" else "Play", togglePending)
+                builder.addAction(0, s(if (isPlaying) R.string.action_stop else R.string.action_play), togglePending)
             }
-            builder.addAction(0, "Remove", removePendingIntent)
+            builder.addAction(0, s(R.string.action_remove), removePendingIntent)
         } else if (noteType == com.hawatri.pinit.data.NoteType.IMAGE) {
             builder.setContentTitle(displayTitle)
             val bitmap = if (text.isNotBlank()) ImageUriUtils.decodeBitmap(context, text, 1024) else null
@@ -318,7 +329,7 @@ class NotificationHelper(private val context: Context) {
                         .bigLargeIcon(null as Bitmap?)
                 )
             } else {
-                builder.setContentText("Image")
+                builder.setContentText(s(R.string.type_image))
             }
             if (text.isNotBlank()) {
                 try {
@@ -330,13 +341,13 @@ class NotificationHelper(private val context: Context) {
                         context, (noteId + "_open").hashCode(), viewIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
-                    builder.addAction(0, "Open", viewPending)
+                    builder.addAction(0, s(R.string.action_open), viewPending)
                 } catch (e: Exception) { /* ignore */ }
             }
-            builder.addAction(0, "Remove", removePendingIntent)
+            builder.addAction(0, s(R.string.action_remove), removePendingIntent)
         } else if (noteType == com.hawatri.pinit.data.NoteType.PDF) {
             builder.setContentTitle(displayTitle)
-            builder.setContentText("PDF Document")
+            builder.setContentText(s(R.string.pdf_document))
             val bitmap = if (text.isNotBlank()) {
                 try { PdfUtils.renderFirstPage(context, Uri.parse(text), 1024, 1024) } catch (e: Exception) { null }
             } else null
@@ -349,7 +360,7 @@ class NotificationHelper(private val context: Context) {
                         .setSummaryText(displayTitle)
                 )
             } else {
-                builder.setStyle(NotificationCompat.BigTextStyle().bigText("PDF Document"))
+                builder.setStyle(NotificationCompat.BigTextStyle().bigText(s(R.string.pdf_document)))
             }
             if (text.isNotBlank()) {
                 try {
@@ -361,10 +372,10 @@ class NotificationHelper(private val context: Context) {
                         context, (noteId + "_open").hashCode(), viewIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
-                    builder.addAction(0, "Open", viewPending)
+                    builder.addAction(0, s(R.string.action_open), viewPending)
                 } catch (e: Exception) { /* ignore */ }
             }
-            builder.addAction(0, "Remove", removePendingIntent)
+            builder.addAction(0, s(R.string.action_remove), removePendingIntent)
         } else if (noteType == com.hawatri.pinit.data.NoteType.QR) {
             builder.setContentTitle(displayTitle)
             builder.setContentText(text)
@@ -387,18 +398,18 @@ class NotificationHelper(private val context: Context) {
                     context, (noteId + "_open").hashCode(), viewIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                builder.addAction(0, "Open", openPending)
+                builder.addAction(0, s(R.string.action_open), openPending)
             } else {
                 val copyIntent = Intent(context, NotificationReceiver::class.java).apply {
                     action = ACTION_COPY_TEXT
                     putExtra(EXTRA_NOTE_TEXT, text)
                 }
-                builder.addAction(0, "Copy", PendingIntent.getBroadcast(
+                builder.addAction(0, s(R.string.action_copy), PendingIntent.getBroadcast(
                     context, (noteId + "_copy").hashCode(), copyIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 ))
             }
-            builder.addAction(0, "Remove", removePendingIntent)
+            builder.addAction(0, s(R.string.action_remove), removePendingIntent)
         } else {
             builder.setContentTitle(displayTitle)
             builder.setContentText(text)
@@ -407,11 +418,11 @@ class NotificationHelper(private val context: Context) {
                 action = ACTION_COPY_TEXT
                 putExtra(EXTRA_NOTE_TEXT, text)
             }
-            builder.addAction(0, "Copy", PendingIntent.getBroadcast(
+            builder.addAction(0, s(R.string.action_copy), PendingIntent.getBroadcast(
                 context, (noteId + "_copy").hashCode(), copyIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             ))
-            builder.addAction(0, "Remove", removePendingIntent)
+            builder.addAction(0, s(R.string.action_remove), removePendingIntent)
         }
 
         manager.notify(noteId.hashCode(), builder.build())
@@ -436,8 +447,8 @@ class NotificationHelper(private val context: Context) {
         val count = activePins.size
         val summaryNotification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("PinIt")
-            .setContentText("$count pinned item${if (count > 1) "s" else ""}")
+            .setContentTitle(s(R.string.app_name))
+            .setContentText(quantity(R.plurals.plural_pinned_items, count))
             .setGroup(GROUP_KEY)
             .setGroupSummary(true)
             .setOngoing(true)
@@ -475,8 +486,12 @@ class NotificationHelper(private val context: Context) {
     }
 
     fun showReminderNotification(noteId: String, title: String, text: String, isList: Boolean = false) {
-        val displayTitle = if (title.isBlank()) "Reminder" else "Reminder: $title"
-        val content = if (isList) "Open to view your checklist items" else text
+        val displayTitle = if (title.isBlank()) {
+            s(R.string.notif_reminder_channel)
+        } else {
+            LocaleHelper.getString(context, R.string.notif_reminder_title, title)
+        }
+        val content = if (isList) s(R.string.notif_checklist_hint) else text
 
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -489,8 +504,8 @@ class NotificationHelper(private val context: Context) {
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(displayTitle)
-            .setContentText(content.ifBlank { "It's time for your reminder" })
-            .setStyle(NotificationCompat.BigTextStyle().bigText(content.ifBlank { "It's time for your reminder" }))
+            .setContentText(content.ifBlank { s(R.string.reminder_default_body) })
+            .setStyle(NotificationCompat.BigTextStyle().bigText(content.ifBlank { s(R.string.reminder_default_body) }))
             .setAutoCancel(true)
             .setContentIntent(openAppPendingIntent)
             .build()

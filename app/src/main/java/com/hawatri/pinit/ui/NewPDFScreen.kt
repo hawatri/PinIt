@@ -31,6 +31,8 @@ import com.hawatri.pinit.util.NotificationHelper
 import com.hawatri.pinit.util.PdfUtils
 import com.hawatri.pinit.viewmodel.PinItViewModel
 import java.util.UUID
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +85,8 @@ fun NewPDFScreen(
             } catch (e: Exception) { }
             selectedPdfUri = uri
             if (pdfTitle.isBlank()) {
-                pdfTitle = uri.lastPathSegment?.substringAfterLast('/')?.substringBeforeLast('.') ?: "PDF Document"
+                pdfTitle = uri.lastPathSegment?.substringAfterLast('/')?.substringBeforeLast('.')
+                    ?: context.getString(R.string.pdf_document)
             }
         }
     }
@@ -92,7 +95,7 @@ fun NewPDFScreen(
         val existing = notesList.find { it.id == currentNoteId }
         val note = Note(
             id = currentNoteId,
-            title = pdfTitle.ifBlank { "PDF Document" },
+            title = pdfTitle.ifBlank { context.getString(R.string.pdf_document) },
             text = selectedPdfUri?.toString() ?: "",
             formatRanges = emptyList(),
             isPinned = pinOverride,
@@ -113,14 +116,14 @@ fun NewPDFScreen(
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.ArrowBack, stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 actions = {
                     if (selectedPdfUri != null) {
                         // Open PDF with system viewer
                         TooltipIconButton(
-                            tooltip = "Open PDF",
+                            tooltip = stringResource(R.string.home_open_pdf),
                             icon = Icons.Filled.OpenInBrowser,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -131,13 +134,13 @@ fun NewPDFScreen(
                                     }
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    android.widget.Toast.makeText(context, "No PDF viewer installed", android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(context, context.getString(R.string.msg_no_pdf_viewer_installed), android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
                         )
                         // Share PDF
                         TooltipIconButton(
-                            tooltip = "Share",
+                            tooltip = stringResource(R.string.action_share),
                             icon = Icons.Filled.Share,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -146,12 +149,12 @@ fun NewPDFScreen(
                                     putExtra(Intent.EXTRA_STREAM, selectedPdfUri)
                                     flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                                 }
-                                context.startActivity(Intent.createChooser(intent, "Share PDF"))
+                                context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_pdf)))
                             }
                         )
                         // Archive
                         TooltipIconButton(
-                            tooltip = "Archive",
+                            tooltip = stringResource(R.string.action_archive),
                             icon = Icons.Filled.Archive,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -161,7 +164,7 @@ fun NewPDFScreen(
                             }
                         )
                         TooltipIconButton(
-                            tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                            tooltip = if (isPinned) stringResource(R.string.unpin_from_notifications) else stringResource(R.string.pin_to_notifications),
                             icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                             tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -172,13 +175,13 @@ fun NewPDFScreen(
                             }
                         )
                         TooltipIconButton(
-                            tooltip = "Labels",
+                            tooltip = stringResource(R.string.labels),
                             icon = Icons.Filled.Label,
                             tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { showLabelsSheet = true }
                         )
                         TooltipIconButton(
-                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            tooltip = if (isLocked) stringResource(R.string.unlock_note) else stringResource(R.string.lock_note),
                             icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                             tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { isLocked = !isLocked; save() }
@@ -188,7 +191,7 @@ fun NewPDFScreen(
                             onColorSelected = { colorHex = it.ifBlank { null }; save() }
                         )
                         TooltipIconButton(
-                            tooltip = "Save",
+                            tooltip = stringResource(R.string.action_save),
                             icon = Icons.Filled.Check,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { save(); onNavigateBack() }
@@ -214,12 +217,12 @@ fun NewPDFScreen(
                     Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Filled.PictureAsPdf, "PDF", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("Select a PDF file to pin", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.select_pdf_to_pin), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) }) {
                             Icon(Icons.Filled.FolderOpen, null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Browse Files")
+                            Text(stringResource(R.string.action_browse_files))
                         }
                     }
                 } else {
@@ -235,7 +238,7 @@ fun NewPDFScreen(
                             ) {
                                 Image(
                                     bitmap = pdfBitmap.asImageBitmap(),
-                                    contentDescription = "PDF first page",
+                                    contentDescription = stringResource(R.string.pdf_first_page),
                                     contentScale = ContentScale.Fit,
                                     modifier = Modifier.fillMaxSize().padding(8.dp)
                                 )
@@ -245,11 +248,11 @@ fun NewPDFScreen(
                             Icon(Icons.Filled.PictureAsPdf, "PDF", modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.error)
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("*Mandatory field", color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+                                Text(stringResource(R.string.field_mandatory_note), color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
                                 TextField(
                                     value = pdfTitle,
                                     onValueChange = { pdfTitle = it },
-                                    placeholder = { Text("Title*", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                                    placeholder = { Text(stringResource(R.string.field_title_required), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                                     colors = TextFieldDefaults.colors(
                                         focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
                                         focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
@@ -265,7 +268,7 @@ fun NewPDFScreen(
                                     .clickable { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Filled.FolderOpen, "Change", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(20.dp))
+                                Icon(Icons.Filled.FolderOpen, stringResource(R.string.action_change), tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(20.dp))
                             }
                         }
                     }

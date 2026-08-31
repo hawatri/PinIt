@@ -5,9 +5,11 @@ import android.content.Context
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import com.hawatri.pinit.R
 import com.hawatri.pinit.data.AppPreferences
 import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.data.NoteDatabase
+import com.hawatri.pinit.util.LocaleHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,16 +56,16 @@ object BackupSyncManager {
      */
     suspend fun signInAndSync(context: Context) {
         if (AppPreferences.isInitialMergeDone(context)) return
-        runMerge(context, source = "Sign-in")
+        runMerge(context, sourceRes = R.string.backup_source_signin)
         AppPreferences.setInitialMergeDone(context, done = true)
     }
 
     /** Manual "Back up now" — uploads the current local state, no merge. */
     suspend fun backupNow(context: Context) {
-        _state.value = State.Working("Backing up to Drive…")
+        _state.value = State.Working(LocaleHelper.getString(context, R.string.backup_status_uploading))
         try {
             val account = GoogleAuthManager.currentAccount(context)
-                ?: throw IllegalStateException("Not signed in")
+                ?: throw IllegalStateException(LocaleHelper.getString(context, R.string.backup_err_not_signed_in))
             val drive = DriveBackupManager(context, GoogleAuthManager.credentialFor(context, account))
 
             val (folderId, json) = withContext(Dispatchers.IO) {
@@ -82,10 +84,14 @@ object BackupSyncManager {
             }
             AppPreferences.setLastSyncAt(context, System.currentTimeMillis())
             AppPreferences.setLastBackupNow(context)
-            _state.value = State.Success("Backed up ${json.length / 1024} KB to Drive")
+            _state.value = State.Success(
+                LocaleHelper.getString(context, R.string.backup_status_uploaded, json.length / 1024)
+            )
         } catch (e: Exception) {
             Log.e(TAG, "backupNow failed", e)
-            _state.value = State.Error(e.message ?: "Backup failed")
+            _state.value = State.Error(
+                e.message ?: LocaleHelper.getString(context, R.string.backup_err_failed)
+            )
         }
     }
 
@@ -96,7 +102,7 @@ object BackupSyncManager {
      * via Files / file managers / USB.
      */
     suspend fun backupOfflineNow(context: Context) {
-        _state.value = State.Working("Saving offline backup…")
+        _state.value = State.Working(LocaleHelper.getString(context, R.string.backup_status_saving_offline))
         try {
             val savedPath = withContext(Dispatchers.IO) {
                 val notes = snapshotNotes(context)
@@ -111,10 +117,14 @@ object BackupSyncManager {
                 writeToDownloads(context, json)
             }
             AppPreferences.setLastBackupNow(context)
-            _state.value = State.Success("Saved to $savedPath")
+            _state.value = State.Success(
+                LocaleHelper.getString(context, R.string.backup_status_saved_to, savedPath)
+            )
         } catch (e: Exception) {
             Log.e(TAG, "backupOfflineNow failed", e)
-            _state.value = State.Error(e.message ?: "Offline backup failed")
+            _state.value = State.Error(
+                e.message ?: LocaleHelper.getString(context, R.string.backup_err_offline_failed)
+            )
         }
     }
 
@@ -131,11 +141,11 @@ object BackupSyncManager {
             put(MediaStore.Downloads.IS_PENDING, 1)
         }
         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-            ?: throw IllegalStateException("Couldn't create file in Downloads")
+            ?: throw IllegalStateException(LocaleHelper.getString(context, R.string.backup_err_create_download))
 
         try {
             resolver.openOutputStream(uri)?.use { it.write(json.toByteArray(Charsets.UTF_8)) }
-                ?: throw IllegalStateException("Couldn't open Downloads stream")
+                ?: throw IllegalStateException(LocaleHelper.getString(context, R.string.backup_err_open_download))
             // Mark visible to the system after the write completes.
             val finalize = ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }
             resolver.update(uri, finalize, null, null)
@@ -149,7 +159,7 @@ object BackupSyncManager {
 
     /** Manual "Restore" — runs the same merge logic as auto-sync, surfaces UI feedback. */
     suspend fun restoreNow(context: Context) {
-        runMerge(context, source = "Restore")
+        runMerge(context, sourceRes = R.string.backup_source_restore)
     }
 
     /**
@@ -158,12 +168,12 @@ object BackupSyncManager {
      * can be combined with whatever's already on the device. No Drive round-trip.
      */
     suspend fun restoreFromUri(context: Context, uri: android.net.Uri) {
-        _state.value = State.Working("Restoring from file…")
+        _state.value = State.Working(LocaleHelper.getString(context, R.string.backup_status_restoring_file))
         try {
             val result = withContext(Dispatchers.IO) {
                 val json = context.contentResolver.openInputStream(uri)?.use { stream ->
                     stream.bufferedReader(Charsets.UTF_8).readText()
-                } ?: throw IllegalStateException("Couldn't read file")
+                } ?: throw IllegalStateException(LocaleHelper.getString(context, R.string.backup_err_read_file))
 
                 val archive = PinItBackup.fromJson(json)
                 val pathRemap = PinItBackup.writeAudioBlobs(context, archive.audioBlobs)
@@ -182,20 +192,33 @@ object BackupSyncManager {
             }
             AppPreferences.setLastBackupNow(context)
             _state.value = State.Success(
-                if (result.restored > 0) "Restored ${result.restored} notes; ${result.finalCount} total"
-                else "Up to date — ${result.finalCount} notes"
+                if (result.restored > 0) {
+                    LocaleHelper.getString(
+                        context, R.string.backup_status_restored,
+                        result.restored, result.finalCount
+                    )
+                } else {
+                    LocaleHelper.getString(
+                        context, R.string.backup_status_up_to_date, result.finalCount
+                    )
+                }
             )
         } catch (e: Exception) {
             Log.e(TAG, "restoreFromUri failed", e)
-            _state.value = State.Error(e.message ?: "Restore from file failed")
+            _state.value = State.Error(
+                e.message ?: LocaleHelper.getString(context, R.string.backup_err_restore_failed)
+            )
         }
     }
 
-    private suspend fun runMerge(context: Context, source: String) {
-        _state.value = State.Working("$source — checking Drive…")
+    private suspend fun runMerge(context: Context, sourceRes: Int) {
+        val source = LocaleHelper.getString(context, sourceRes)
+        _state.value = State.Working(
+            LocaleHelper.getString(context, R.string.backup_status_checking, source)
+        )
         try {
             val account = GoogleAuthManager.currentAccount(context)
-                ?: throw IllegalStateException("Not signed in")
+                ?: throw IllegalStateException(LocaleHelper.getString(context, R.string.backup_err_not_signed_in))
             val drive = DriveBackupManager(context, GoogleAuthManager.credentialFor(context, account))
 
             val result = withContext(Dispatchers.IO) {
@@ -248,12 +271,22 @@ object BackupSyncManager {
             AppPreferences.setLastSyncAt(context, System.currentTimeMillis())
             AppPreferences.setLastBackupNow(context)
             _state.value = State.Success(
-                if (result.restored > 0) "Restored ${result.restored} notes; ${result.finalCount} total"
-                else "Up to date — ${result.finalCount} notes"
+                if (result.restored > 0) {
+                    LocaleHelper.getString(
+                        context, R.string.backup_status_restored,
+                        result.restored, result.finalCount
+                    )
+                } else {
+                    LocaleHelper.getString(
+                        context, R.string.backup_status_up_to_date, result.finalCount
+                    )
+                }
             )
         } catch (e: Exception) {
             Log.e(TAG, "$source merge failed", e)
-            _state.value = State.Error(e.message ?: "$source failed")
+            _state.value = State.Error(
+                e.message ?: LocaleHelper.getString(context, R.string.backup_err_source_failed, source)
+            )
         }
     }
 

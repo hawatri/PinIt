@@ -30,6 +30,8 @@ import com.hawatri.pinit.data.AppPreferences
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,11 +63,11 @@ fun SignInScreen(
             if (!GoogleAuthManager.hasDriveScope(signed)) {
                 if (!scopeRetryAttempted) {
                     scopeRetryAttempted = true
-                    BackupSyncManager.setWorking("Granting Drive access…")
+                    BackupSyncManager.setWorking(context.getString(R.string.signin_granting_drive))
                     return@rememberLauncherForActivityResult
                 } else {
                     BackupSyncManager.setError(
-                        "Drive access not granted. Tap 'Sign in with Google' again and approve the Drive permission."
+                        context.getString(R.string.signin_drive_not_granted)
                     )
                     return@rememberLauncherForActivityResult
                 }
@@ -73,7 +75,7 @@ fun SignInScreen(
 
             scopeRetryAttempted = false
             account = signed
-            BackupSyncManager.setWorking("Signed in — syncing…")
+            BackupSyncManager.setWorking(context.getString(R.string.signin_syncing))
             scope.launch {
                 BackupSyncManager.signInAndSync(context)
                 lastSyncDisplay = formatLastSync(AppPreferences.getLastSyncAt(context))
@@ -83,14 +85,22 @@ fun SignInScreen(
             // Status code 10 = DEVELOPER_ERROR (OAuth client not configured for this package/SHA-1).
             // Status code 12501 = user-cancelled. Status code 7 = network failure.
             val msg = when (e.statusCode) {
-                10 -> "Sign-in failed: app isn't registered with Google. The OAuth client ID for this package + SHA-1 hasn't been created in Google Cloud Console."
-                12501 -> "Sign-in cancelled"
-                7 -> "Sign-in failed: network error"
-                else -> "Sign-in failed (code ${e.statusCode}): ${e.localizedMessage ?: "unknown"}"
+                10 -> context.getString(R.string.signin_not_registered)
+                12501 -> context.getString(R.string.signin_cancelled)
+                7 -> context.getString(R.string.signin_network_error)
+                else -> context.getString(
+                    R.string.signin_failed_code_reason, e.statusCode,
+                    e.localizedMessage ?: context.getString(R.string.unknown_error)
+                )
             }
             BackupSyncManager.setError(msg)
         } catch (e: Exception) {
-            BackupSyncManager.setError("Sign-in failed: ${e.localizedMessage ?: "unknown"}")
+            BackupSyncManager.setError(
+                context.getString(
+                    R.string.signin_failed_reason,
+                    e.localizedMessage ?: context.getString(R.string.unknown_error)
+                )
+            )
         }
     }
 
@@ -106,10 +116,10 @@ fun SignInScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (account != null) "Account" else "Sign in") },
+                title = { Text(if (account != null) stringResource(R.string.account) else stringResource(R.string.sign_in)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -139,7 +149,7 @@ fun SignInScreen(
                             .data(photoUrl)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Profile photo",
+                        contentDescription = stringResource(R.string.profile_photo),
                         modifier = Modifier
                             .size(96.dp)
                             .clip(CircleShape)
@@ -158,7 +168,7 @@ fun SignInScreen(
             if (account != null) {
                 val acc = account!!
                 Text(
-                    acc.displayName ?: "PinIt user",
+                    acc.displayName ?: stringResource(R.string.signin_pinit_user),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -186,7 +196,7 @@ fun SignInScreen(
                 ) {
                     Icon(Icons.Filled.CloudUpload, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Back up now")
+                    Text(stringResource(R.string.backup_now))
                 }
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
@@ -201,7 +211,7 @@ fun SignInScreen(
                 ) {
                     Icon(Icons.Filled.CloudDownload, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Restore from Drive")
+                    Text(stringResource(R.string.backup_restore_from_drive))
                 }
                 Spacer(Modifier.height(24.dp))
                 TextButton(
@@ -217,11 +227,11 @@ fun SignInScreen(
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Logout, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Sign out")
+                    Text(stringResource(R.string.sign_out))
                 }
             } else {
                 Text(
-                    "Sign in with Google to back up your notes, lists, labels and audio recordings to Drive. Backups land in My Drive › PinIt.",
+                    stringResource(R.string.signin_drive_body),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 24.dp)
@@ -232,7 +242,7 @@ fun SignInScreen(
                 ) {
                     Icon(Icons.Filled.AccountCircle, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Sign in with Google")
+                    Text(stringResource(R.string.sign_in_with_google))
                 }
                 Spacer(Modifier.height(16.dp))
                 Card(
@@ -245,11 +255,11 @@ fun SignInScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Filled.Lock, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Privacy", fontWeight = FontWeight.Medium)
+                            Text(stringResource(R.string.privacy), fontWeight = FontWeight.Medium)
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "PinIt only requests access to files it creates in your Drive. It cannot read or modify any other Drive files.",
+                            stringResource(R.string.signin_privacy_body),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -266,7 +276,7 @@ private fun SyncStatusCard(state: BackupSyncManager.State, lastSync: String) {
         is BackupSyncManager.State.Working -> Triple(Icons.Filled.Sync, state.message, MaterialTheme.colorScheme.primary)
         is BackupSyncManager.State.Success -> Triple(Icons.Filled.CheckCircle, state.message, MaterialTheme.colorScheme.primary)
         is BackupSyncManager.State.Error -> Triple(Icons.Filled.Error, state.message, MaterialTheme.colorScheme.error)
-        BackupSyncManager.State.Idle -> Triple(Icons.Filled.CloudDone, "Last sync: $lastSync", MaterialTheme.colorScheme.onSurfaceVariant)
+        BackupSyncManager.State.Idle -> Triple(Icons.Filled.CloudDone, stringResource(R.string.signin_last_sync, lastSync), MaterialTheme.colorScheme.onSurfaceVariant)
     }
     Card(
         shape = RoundedCornerShape(12.dp),

@@ -17,6 +17,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import com.hawatri.pinit.R
+import com.hawatri.pinit.util.LocaleHelper
 
 class NotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -59,8 +61,8 @@ class NotificationReceiver : BroadcastReceiver() {
             NotificationHelper.ACTION_COPY_TEXT -> {
                 val textToCopy = intent.getStringExtra(NotificationHelper.EXTRA_NOTE_TEXT) ?: return
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText("Pinned Note", textToCopy))
-                Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+                clipboard.setPrimaryClip(ClipData.newPlainText(LocaleHelper.getString(context, R.string.notif_pinned_note), textToCopy))
+                Toast.makeText(context, LocaleHelper.getString(context, R.string.msg_copied), Toast.LENGTH_SHORT).show()
             }
             NotificationHelper.ACTION_TOGGLE_AUDIO -> {
                 if (noteId == null) return

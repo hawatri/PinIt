@@ -18,6 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.hawatri.pinit.data.NoteColors
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun NoteColorPicker(
@@ -30,7 +32,7 @@ fun NoteColorPicker(
         IconButton(onClick = { expanded = !expanded }) {
             Icon(
                 imageVector = Icons.Filled.FormatColorFill,
-                contentDescription = "Note Color",
+                contentDescription = stringResource(R.string.note_color),
                 tint = if (selectedColor.isNullOrBlank()) MaterialTheme.colorScheme.onSurfaceVariant
                        else Color(android.graphics.Color.parseColor(selectedColor))
             )
@@ -94,7 +96,7 @@ fun ColorPickerMenuButton(
         IconButton(onClick = { expanded = true }) {
             Icon(
                 imageVector = Icons.Filled.FormatColorFill,
-                contentDescription = "Note Color",
+                contentDescription = stringResource(R.string.note_color),
                 tint = when {
                     !selectedColor.isNullOrBlank() -> Color(android.graphics.Color.parseColor(selectedColor))
                     iconTint != null -> iconTint

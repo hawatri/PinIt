@@ -43,6 +43,8 @@ import com.hawatri.pinit.backup.GoogleAuthManager
 import com.hawatri.pinit.data.AppPreferences
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 /**
  * Persistent yellow banner shown on Home when the user has local changes that
@@ -52,7 +54,7 @@ import kotlinx.coroutines.launch
  *
  * The banner re-evaluates every 30 seconds so it disappears within seconds of
  * a successful backup, without needing to wire SharedPreferences listeners.
- * Sync state is also observed so the button switches to "Backing up…" while
+ * Sync state is also observed so the button switches to stringResource(R.string.backup_backing_up) while
  * a backup is in flight.
  */
 @Composable
@@ -113,7 +115,7 @@ fun UnbackedChangesBanner(
                     )
                     Spacer(modifier = Modifier.padding(horizontal = 6.dp))
                     Text(
-                        text = "Unbacked-up changes",
+                        text = stringResource(R.string.banner_unbacked_title),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = warnContent
                     )
@@ -121,9 +123,9 @@ fun UnbackedChangesBanner(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = if (signedIn)
-                        "Your recent edits aren't backed up yet. Back up now to keep them safe before you uninstall, change phones, or wipe data."
+                        stringResource(R.string.banner_unbacked_body)
                     else
-                        "Your recent edits aren't backed up. Sign in with Google to back them up to Drive — without this, uninstalling the app will lose your notes.",
+                        stringResource(R.string.banner_unbacked_body_signin),
                     style = MaterialTheme.typography.bodySmall,
                     color = warnContent
                 )
@@ -149,9 +151,9 @@ fun UnbackedChangesBanner(
                     ) {
                         Text(
                             text = when {
-                                isBackingUp -> "Backing up…"
-                                !signedIn -> "Sign in to back up"
-                                else -> "Back up now"
+                                isBackingUp -> stringResource(R.string.backup_backing_up)
+                                !signedIn -> stringResource(R.string.banner_sign_in_to_back_up)
+                                else -> stringResource(R.string.backup_now)
                             }
                         )
                     }

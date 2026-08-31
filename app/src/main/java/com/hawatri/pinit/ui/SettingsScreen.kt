@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,7 +29,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.hawatri.pinit.backup.BackupSyncManager
 import com.hawatri.pinit.backup.GoogleAuthManager
 import com.hawatri.pinit.data.AppPreferences
+import com.hawatri.pinit.R
 import com.hawatri.pinit.data.ThemeMode
+import com.hawatri.pinit.util.AppLanguage
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,13 +40,15 @@ fun SettingsScreen(
     currentTheme: ThemeMode,
     onThemeChange: (ThemeMode) -> Unit,
     onNavigateBack: () -> Unit,
-    onNavigateToSignIn: () -> Unit = {}
+    onNavigateToSignIn: () -> Unit = {},
+    onLanguageChange: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val syncState by BackupSyncManager.state.collectAsState()
     val signedIn = remember { GoogleAuthManager.currentAccount(context) != null }
     var remindersEnabled by remember { mutableStateOf(AppPreferences.isBackupRemindersEnabled(context)) }
+    val currentLanguage = AppLanguage.fromTag(AppPreferences.getLanguageTag(context))
     // Recompute on each sync state change so a successful backup clears the warning.
     val hasUnbackedChanges by remember(syncState) {
         derivedStateOf {
@@ -66,10 +71,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -85,21 +90,21 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             // Appearance
-            SettingsSection(title = "Appearance") {
+            SettingsSection(title = stringResource(R.string.settings_appearance)) {
                 ThemeOption(
-                    label = "Light",
+                    label = stringResource(R.string.theme_light),
                     icon = Icons.Filled.LightMode,
                     selected = currentTheme == ThemeMode.LIGHT,
                     onClick = { onThemeChange(ThemeMode.LIGHT) }
                 )
                 ThemeOption(
-                    label = "Dark",
+                    label = stringResource(R.string.theme_dark),
                     icon = Icons.Filled.DarkMode,
                     selected = currentTheme == ThemeMode.DARK,
                     onClick = { onThemeChange(ThemeMode.DARK) }
                 )
                 ThemeOption(
-                    label = "System default",
+                    label = stringResource(R.string.theme_system_default),
                     icon = Icons.Filled.SettingsBrightness,
                     selected = currentTheme == ThemeMode.SYSTEM,
                     onClick = { onThemeChange(ThemeMode.SYSTEM) }
@@ -108,16 +113,36 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Language. Changing this recreates the Activity (see MainActivity) so
+            // every already-composed string re-resolves in the new locale.
+            SettingsSection(title = stringResource(R.string.settings_language)) {
+                AppLanguage.entries.forEach { language ->
+                    LanguageOption(
+                        label = if (language == AppLanguage.SYSTEM) {
+                            stringResource(R.string.language_system_default)
+                        } else {
+                            language.displayName
+                        },
+                        selected = language == currentLanguage,
+                        onClick = {
+                            if (language != currentLanguage) onLanguageChange(language.tag)
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // Backup
-            SettingsSection(title = "Backup") {
+            SettingsSection(title = stringResource(R.string.settings_backup)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     if (hasUnbackedChanges) {
                         UnbackedInlineWarning()
                         Spacer(modifier = Modifier.height(12.dp))
                     }
                     BackupActionButton(
-                        title = "Take online backup",
-                        subtitle = if (signedIn) "Upload to your Google Drive" else "Sign in with Google first",
+                        title = stringResource(R.string.backup_take_online),
+                        subtitle = if (signedIn) stringResource(R.string.backup_upload_to_drive) else stringResource(R.string.backup_sign_in_first),
                         icon = Icons.Filled.CloudUpload,
                         enabled = syncState !is BackupSyncManager.State.Working,
                         primary = true,
@@ -131,8 +156,8 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     BackupActionButton(
-                        title = "Take offline backup",
-                        subtitle = "Save a .pinit file to Download/PinIt/",
+                        title = stringResource(R.string.backup_take_offline),
+                        subtitle = stringResource(R.string.backup_save_to_download),
                         icon = Icons.Filled.SaveAlt,
                         enabled = syncState !is BackupSyncManager.State.Working,
                         primary = false,
@@ -142,8 +167,8 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     BackupActionButton(
-                        title = "Restore from file",
-                        subtitle = "Pick a .pinit file from your device",
+                        title = stringResource(R.string.backup_restore_from_file),
+                        subtitle = stringResource(R.string.backup_pick_pinit_file),
                         icon = Icons.Filled.FileOpen,
                         enabled = syncState !is BackupSyncManager.State.Working,
                         primary = false,
@@ -167,14 +192,14 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // About
-            SettingsSection(title = "About") {
+            SettingsSection(title = stringResource(R.string.settings_about)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Version", color = MaterialTheme.colorScheme.onSurface)
+                    Text(stringResource(R.string.settings_version), color = MaterialTheme.colorScheme.onSurface)
                     Text("1.0", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row(
@@ -183,10 +208,10 @@ fun SettingsScreen(
                         .clickable {
                             val intent = Intent(Intent.ACTION_SENDTO).apply {
                                 data = Uri.parse("mailto:kiahawatri@gmail.com")
-                                putExtra(Intent.EXTRA_SUBJECT, "PinIt — Issue / Feedback")
+                                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.report_issue_subject))
                                 putExtra(
                                     Intent.EXTRA_TEXT,
-                                    "Describe the issue or share feedback below.\n\n" +
+                                    context.getString(R.string.report_issue_body) + "\n\n" +
                                         "----\nApp version: 1.0\n"
                                 )
                             }
@@ -195,7 +220,7 @@ fun SettingsScreen(
                             } catch (e: Exception) {
                                 Toast.makeText(
                                     context,
-                                    "No mail app installed",
+                                    context.getString(R.string.msg_no_mail_app),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
@@ -212,7 +237,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Report an issue",
+                            stringResource(R.string.report_an_issue),
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -251,6 +276,24 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
         Column(content = content)
+    }
+}
+
+@Composable
+private fun LanguageOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+        RadioButton(selected = selected, onClick = onClick)
     }
 }
 
@@ -363,13 +406,13 @@ private fun BackupReminderToggle(
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "Backup reminders",
+                stringResource(R.string.backup_reminders_title),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                "Show a banner and reminders when you have unbacked-up changes",
+                stringResource(R.string.backup_reminders_sub),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -402,13 +445,13 @@ private fun UnbackedInlineWarning() {
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "You have unbacked-up changes",
+                    stringResource(R.string.backup_unbacked_title),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = warnContent
                 )
                 Text(
-                    "Take a backup before uninstalling, switching phones, or wiping data.",
+                    stringResource(R.string.backup_unbacked_sub),
                     fontSize = 11.sp,
                     color = warnContent
                 )

@@ -38,6 +38,8 @@ import com.hawatri.pinit.backup.BackupSyncManager
 import com.hawatri.pinit.backup.GoogleAuthManager
 import com.hawatri.pinit.data.AppPreferences
 import kotlinx.coroutines.launch
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 /**
  * First-launch onboarding pager. Shown once, then suppressed via
@@ -112,7 +114,7 @@ fun OnboardingScreen(
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
-                    TextButton(onClick = ::skipToFinish) { Text("Skip") }
+                    TextButton(onClick = ::skipToFinish) { Text(stringResource(R.string.action_skip)) }
                 }
             }
 
@@ -152,7 +154,7 @@ fun OnboardingScreen(
                         .height(52.dp),
                     shape = RoundedCornerShape(26.dp)
                 ) {
-                    Text("Continue", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.action_continue), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -209,7 +211,7 @@ private fun WelcomePage() {
         }
         Spacer(Modifier.height(40.dp))
         Text(
-            "Welcome to PinIt",
+            stringResource(R.string.onboarding_welcome_title),
             fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -217,7 +219,7 @@ private fun WelcomePage() {
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            "Pin everything that matters — notes, lists, links, contacts, locations, QR codes and more — straight to your notification shade and home screen.",
+            stringResource(R.string.onboarding_welcome_body),
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -231,16 +233,16 @@ private fun WelcomePage() {
 @Composable
 private fun FeatureShowcasePage() {
     val features = listOf(
-        Triple(Icons.Filled.Notes, "Notes", "Rich-text with formatting"),
-        Triple(Icons.Filled.CheckBox, "Checklists", "Tap-to-tick from the shade"),
-        Triple(Icons.Filled.QrCode2, "QR codes", "Scan, save, regenerate"),
-        Triple(Icons.Filled.Link, "Links", "Auto-fetched preview cards"),
-        Triple(Icons.Filled.Phone, "Contacts", "One-tap dial"),
-        Triple(Icons.Filled.LocationOn, "Locations", "Map pin + navigate"),
-        Triple(Icons.Filled.Apps, "App lists", "Curated app shortcuts"),
-        Triple(Icons.Filled.Image, "Images", "Pin a photo to home"),
-        Triple(Icons.Filled.PictureAsPdf, "PDFs", "First-page preview"),
-        Triple(Icons.Filled.Mic, "Audio", "Voice memos with playback"),
+        Triple(Icons.Filled.Notes, stringResource(R.string.onboarding_feat_notes), stringResource(R.string.onboarding_feat_notes_sub)),
+        Triple(Icons.Filled.CheckBox, stringResource(R.string.onboarding_feat_lists), stringResource(R.string.onboarding_feat_lists_sub)),
+        Triple(Icons.Filled.QrCode2, stringResource(R.string.onboarding_feat_qr), stringResource(R.string.onboarding_feat_qr_sub)),
+        Triple(Icons.Filled.Link, stringResource(R.string.onboarding_feat_links), stringResource(R.string.onboarding_feat_links_sub)),
+        Triple(Icons.Filled.Phone, stringResource(R.string.onboarding_feat_contacts), stringResource(R.string.onboarding_feat_contacts_sub)),
+        Triple(Icons.Filled.LocationOn, stringResource(R.string.onboarding_feat_locations), stringResource(R.string.onboarding_feat_locations_sub)),
+        Triple(Icons.Filled.Apps, stringResource(R.string.onboarding_feat_applists), stringResource(R.string.onboarding_feat_applists_sub)),
+        Triple(Icons.Filled.Image, stringResource(R.string.onboarding_feat_images), stringResource(R.string.onboarding_feat_images_sub)),
+        Triple(Icons.Filled.PictureAsPdf, stringResource(R.string.onboarding_feat_pdfs), stringResource(R.string.onboarding_feat_pdfs_sub)),
+        Triple(Icons.Filled.Mic, stringResource(R.string.onboarding_feat_audio), stringResource(R.string.onboarding_feat_audio_sub)),
     )
     Column(
         modifier = Modifier
@@ -250,7 +252,7 @@ private fun FeatureShowcasePage() {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            "Everything you need,\nin one app",
+            stringResource(R.string.onboarding_types_title),
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -259,7 +261,7 @@ private fun FeatureShowcasePage() {
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Ten note types, each with its own dedicated UI.",
+            stringResource(R.string.onboarding_types_body),
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -349,10 +351,10 @@ private fun SignInPage(onContinue: () -> Unit) {
             }
         } catch (e: ApiException) {
             errorMsg = when (e.statusCode) {
-                10 -> "App isn't registered with Google yet. You can sign in later from Settings."
+                10 -> context.getString(R.string.signin_not_registered_short)
                 12501 -> null // user-cancelled, silent
-                7 -> "Network error. Try again later."
-                else -> "Sign-in failed (code ${e.statusCode})."
+                7 -> context.getString(R.string.signin_network_retry)
+                else -> context.getString(R.string.signin_failed_code, e.statusCode)
             }
         }
     }
@@ -380,7 +382,7 @@ private fun SignInPage(onContinue: () -> Unit) {
         }
         Spacer(Modifier.height(32.dp))
         Text(
-            "Sync across devices",
+            stringResource(R.string.onboarding_sync_title),
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -388,7 +390,7 @@ private fun SignInPage(onContinue: () -> Unit) {
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            "Sign in with Google to back up your notes to Drive. PinIt only sees the files it creates — your other Drive content stays private.",
+            stringResource(R.string.onboarding_sync_body),
             fontSize = 15.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -423,16 +425,16 @@ private fun SignInPage(onContinue: () -> Unit) {
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(10.dp))
-                Text("Signing in…", fontSize = 16.sp)
+                Text(stringResource(R.string.signing_in), fontSize = 16.sp)
             } else {
                 Icon(Icons.Filled.AccountCircle, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("Sign in with Google", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.sign_in_with_google), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
         }
         Spacer(Modifier.height(8.dp))
         TextButton(onClick = onContinue, modifier = Modifier.fillMaxWidth()) {
-            Text("Continue as guest")
+            Text(stringResource(R.string.continue_as_guest))
         }
     }
 }
@@ -447,9 +449,9 @@ private fun NotificationPermissionPage(onContinue: () -> Unit) {
 
     PermissionPage(
         icon = Icons.Filled.Notifications,
-        title = "Notification permission",
-        description = "PinIt's purpose is to pin reminders and notes to your notification shade. Without this permission you won't see pinned items.",
-        primaryLabel = "Grant permission",
+        title = stringResource(R.string.onboarding_notification_permission),
+        description = stringResource(R.string.onboarding_notif_body),
+        primaryLabel = stringResource(R.string.action_grant_permission),
         onPrimary = {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -468,9 +470,9 @@ private fun ExactAlarmPage(onContinue: () -> Unit) {
     val context = LocalContext.current
     PermissionPage(
         icon = Icons.Filled.Alarm,
-        title = "Reminder alarms",
-        description = "PinIt schedules exact alarms so reminders fire at the right time. Tap below to allow this in system settings, then come back to PinIt.",
-        primaryLabel = "Open settings",
+        title = stringResource(R.string.onboarding_reminder_alarms),
+        description = stringResource(R.string.onboarding_alarm_body),
+        primaryLabel = stringResource(R.string.onboarding_open_settings),
         onPrimary = {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
@@ -537,7 +539,7 @@ private fun PermissionPage(
         }
         Spacer(Modifier.height(8.dp))
         TextButton(onClick = onSkip, modifier = Modifier.fillMaxWidth()) {
-            Text("Maybe later")
+            Text(stringResource(R.string.maybe_later))
         }
     }
 }

@@ -38,7 +38,8 @@ fun PinItApp(
     widgetAction: String? = null,
     widgetOpenNoteId: String? = null,
     currentTheme: ThemeMode = ThemeMode.SYSTEM,
-    onThemeChange: (ThemeMode) -> Unit = {}
+    onThemeChange: (ThemeMode) -> Unit = {},
+    onLanguageChange: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     var onboardingDone by remember { mutableStateOf(AppPreferences.isOnboardingDone(context)) }
@@ -373,6 +374,7 @@ fun PinItApp(
             SettingsScreen(
                 currentTheme = currentTheme,
                 onThemeChange = onThemeChange,
+                onLanguageChange = onLanguageChange,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToSignIn = { navController.navigate("sign_in") }
             )

@@ -17,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.hawatri.pinit.util.formatAlarmText
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 /**
  * Renders one chip per reminder. Each chip's trailing × cancels the alarm.
@@ -42,12 +44,12 @@ fun RemindersChipRow(
                 onClick = onEditClick,
                 label = { Text(formatAlarmText(time)) },
                 leadingIcon = {
-                    Icon(Icons.Filled.Notifications, "Alarm", modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Notifications, stringResource(R.string.alarm), modifier = Modifier.size(16.dp))
                 },
                 trailingIcon = {
                     Icon(
                         Icons.Filled.Close,
-                        contentDescription = "Remove reminder",
+                        contentDescription = stringResource(R.string.remove_reminder),
                         modifier = Modifier
                             .size(16.dp)
                             .clickable { onRemove(time) }

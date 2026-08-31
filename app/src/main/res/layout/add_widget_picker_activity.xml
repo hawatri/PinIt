@@ -25,7 +25,7 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:layout_gravity="center"
-                android:contentDescription="Type" />
+                android:contentDescription="@string/widget_type" />
         </FrameLayout>
 
         <LinearLayout
@@ -38,7 +38,7 @@
                 android:id="@+id/picker_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Choose a note"
+                android:text="@string/widget_choose_a_note"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/picker_text_primary"
@@ -75,7 +75,7 @@
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:layout_gravity="center"
-                android:contentDescription="Empty" />
+                android:contentDescription="@string/widget_empty" />
         </FrameLayout>
 
         <TextView

@@ -21,7 +21,7 @@ Pin notes, lists, links, contacts, locations, QR codes, audio, images, PDFs and 
   <img src="https://img.shields.io/badge/⬇%20Download%20PinIt-Latest%20APK-3DDC84?style=for-the-badge&logoColor=white&labelColor=1B5E20" alt="Download PinIt — latest APK" height="64" />
 </a>
 
-<sub>Android 10 or newer · ~80 MB · Free forever</sub>
+<sub>Android 10 or newer · ~32 MB · English & Português (Brasil) · Free forever</sub>
 
 </div>
 
@@ -167,6 +167,23 @@ Under the hood it uses **`AlarmManager.setExactAndAllowWhileIdle`**, which means
 - 🛡️ **Permission-aware** — on Android 12+, exact alarms need the `SCHEDULE_EXACT_ALARM` permission. PinIt asks for it during onboarding with a clear explanation; if you skip it, reminders downgrade gracefully to inexact (still fires, just within a ~10-minute window).
 
 Reminders show as a small bell on the note's card so you can see at a glance which ones are scheduled, and the reminder text is preserved across edits — change the note body without losing the alarm.
+
+### Multilingual — pick your language in Settings
+PinIt speaks **English** and **Português (Brasil)**, switchable from **Settings → Language** without touching your system settings. Leave it on *System default* and PinIt follows whatever your phone is set to (including Android 13+'s per-app language setting).
+
+The translation reaches every surface, not just the main screens — notification actions, home-screen widgets, the widget picker your launcher shows, reminder alerts, toasts, and error messages all switch with it. That took externalising **410 strings** out of hardcoded Kotlin; the app previously had exactly one translatable string.
+
+> **One language for now — more are coming.** pt-BR is the first, and the groundwork is done: adding another language is a new `values-<locale>/strings.xml` plus a single enum entry, with no UI changes needed. If you'd like to see your language in PinIt, [open an issue](../../issues/new) or send a translation PR — the English string file is the only thing you need.
+
+<div align="center">
+
+<!-- ============================================================== -->
+<!-- LANGUAGE PICKER — add screenshot(s) here                        -->
+<!-- Suggested: docs/images/feature_language.png                     -->
+<!-- ============================================================== -->
+<img src="docs/images/feature_language.png" alt="Language picker in Settings" width="30%" />
+
+</div>
 
 ### Smart extras
 - **Archive** — long-press to enter selection mode, archive in bulk with undo, or browse archive separately
@@ -456,16 +473,20 @@ If you fork PinIt and want online backup to work in your build, you'll need to r
 **MVVM with Room + Compose Navigation.** Single ViewModel, StateFlow-based state, Compose-driven UI.
 
 ```
-data/          → Room database (Note, NoteDao, NoteDatabase, Converters, NoteType)
+data/          → Room database (Note, NoteDao, NoteDatabase, Converters, NoteType, AppPreferences)
 viewmodel/     → PinItViewModel
 ui/            → Compose screens, FAB menu, NoteCard, LabelsEditor, IcsImportSheet, OnboardingScreen
 backup/        → GoogleAuthManager, DriveBackupManager, BackupSyncManager, PinItBackup
 receiver/      → NotificationReceiver, AlarmReceiver, BootReceiver
-util/          → NotificationHelper, ReminderHelper, QrUtils, PdfUtils, AudioPlayback
+util/          → NotificationHelper, ReminderHelper, QrUtils, PdfUtils, AudioPlayback, LocaleHelper
 widget/        → 20 widget providers + shared renderer / config / service
+res/values/    → strings.xml — the English source of truth
+res/values-pt-rBR/ → strings.xml — Brazilian Portuguese, kept at full parity
 ```
 
 Type-specific data (`LinkNoteData`, `LocationNoteData`, etc.) is stored as JSON inside `note.text`, parsed via Gson. Database migrations are data-preserving — no `fallbackToDestructiveMigration` anywhere.
+
+**Localization.** All user-facing text lives in `res/values/strings.xml`. `util/LocaleHelper.kt` holds the `AppLanguage` enum and applies the chosen locale — Activities wrap their base context, while notifications, widgets and receivers resolve through `LocaleHelper` because those contexts otherwise carry the *system* locale and would render English inside a translated app.
 
 ---
 
@@ -486,6 +507,8 @@ Type-specific data (`LinkNoteData`, `LocationNoteData`, etc.) is stored as JSON 
 | **Gson** | JSON serialisation for typed note bodies and `.pinit` backups |
 | **Google Sign-In** + **Drive REST v3** | Optional cloud backup (DRIVE_FILE scope only) |
 | **sh.calvin.reorderable** | Drag-to-reorder for the staggered grid |
+| **Android resource qualifiers** | Localization (`values-pt-rBR`), no third-party i18n library |
+| **R8** | Code shrinking and obfuscation — keeps the release APK around 32 MB |
 
 ---
 
@@ -524,6 +547,17 @@ PinIt's privacy story is short: **everything stays on your device, unless you ex
 ## Contributing
 
 Found a bug or have an idea? Just [open an issue](../../issues/new) — that's the easiest way to get in touch. You can also tap **Report an issue** in the app's Settings screen, which opens your mail app pre-addressed to <kiahawatri@gmail.com>.
+
+### Translating PinIt
+
+Translations are the easiest way to contribute, and the most wanted right now — pt-BR is the only language so far.
+
+1. Copy `app/src/main/res/values/strings.xml` to `app/src/main/res/values-<locale>/strings.xml` (e.g. `values-es` for Spanish, `values-fr-rFR` for French).
+2. Translate the values only — never the `name="..."` attributes.
+3. Add one entry to `AppLanguage` in `app/src/main/java/com/hawatri/pinit/util/LocaleHelper.kt` with the matching BCP-47 tag. The Settings picker builds itself from that enum, so there's no UI to touch.
+4. Keep `%1$s` / `%1$d` placeholders exactly as they appear, and keep every `<plurals>` entry your language needs (`gradlew.bat lintDebug` will tell you if one is missing).
+
+Don't have an Android setup? Open an issue with the translated strings and it can be wired up for you.
 
 ---
 

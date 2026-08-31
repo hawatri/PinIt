@@ -63,6 +63,9 @@ import com.hawatri.pinit.data.AppPreferences
 import com.hawatri.pinit.widget.AddWidgets
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyStaggeredGridState
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.animation.ExperimentalAnimationApi::class)
 @Composable
@@ -136,7 +139,7 @@ fun HomeScreen(
                     (context as? android.app.Activity)?.finish()
                 } else {
                     lastBackPressMs = now
-                    android.widget.Toast.makeText(context, "Press back again to exit", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, context.getString(R.string.home_press_back_again), android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -151,7 +154,7 @@ fun HomeScreen(
         if (granted) {
             action?.invoke()
         } else {
-            android.widget.Toast.makeText(context, "Notification permission required to pin", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(context, context.getString(R.string.msg_notification_permission_required), android.widget.Toast.LENGTH_SHORT).show()
         }
     }
     fun runWithNotifPermission(action: () -> Unit) {
@@ -183,8 +186,8 @@ fun HomeScreen(
     }
     val biometricPromptInfo = remember {
         BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock Note")
-            .setSubtitle("Authenticate to open this note")
+            .setTitle(context.getString(R.string.unlock_note_title))
+            .setSubtitle(context.getString(R.string.unlock_note_subtitle))
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
             .build()
     }
@@ -219,8 +222,8 @@ fun HomeScreen(
                     if (keyguard?.isDeviceSecure == true) {
                         @Suppress("DEPRECATION")
                         val intent = keyguard.createConfirmDeviceCredentialIntent(
-                            "Unlock Note",
-                            "Enter your PIN, pattern, or password to open this note"
+                            context.getString(R.string.unlock_note_title),
+                            context.getString(R.string.unlock_note_device_credential)
                         )
                         if (intent != null) {
                             pendingLockedNote.value = note
@@ -246,7 +249,7 @@ fun HomeScreen(
         if (note.isPinned) notificationHelper.unpinNoteFromNotification(note.id)
         viewModel.toggleArchive(note)
         scope.launch {
-            val result = snackbarHostState.showSnackbar("Archived", actionLabel = "Undo", duration = SnackbarDuration.Short)
+            val result = snackbarHostState.showSnackbar(context.getString(R.string.msg_archived), actionLabel = context.getString(R.string.action_undo), duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) {
                 viewModel.notes.value.find { it.id == note.id }?.let { viewModel.toggleArchive(it) }
             }
@@ -258,7 +261,7 @@ fun HomeScreen(
         if (note.isPinned) notificationHelper.unpinNoteFromNotification(note.id)
         viewModel.deleteNote(note.id)
         scope.launch {
-            val result = snackbarHostState.showSnackbar("Deleted", actionLabel = "Undo", duration = SnackbarDuration.Short)
+            val result = snackbarHostState.showSnackbar(context.getString(R.string.msg_deleted), actionLabel = context.getString(R.string.action_undo), duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) {
                 lastDeletedNote?.let { viewModel.addNote(it) }
             }
@@ -271,9 +274,15 @@ fun HomeScreen(
         if (idsToArchive.isEmpty()) return
         val snapshot = viewModel.notes.value.filter { it.id in idsToArchive }
         snapshot.forEach { viewModel.toggleArchive(it) }
-        val label = if (snapshot.size == 1) "Archived" else "Archived ${snapshot.size}"
+        val label = if (snapshot.size == 1) {
+            context.getString(R.string.msg_archived)
+        } else {
+            context.resources.getQuantityString(
+                R.plurals.plural_archived, snapshot.size, snapshot.size
+            )
+        }
         scope.launch {
-            val result = snackbarHostState.showSnackbar(label, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            val result = snackbarHostState.showSnackbar(label, actionLabel = context.getString(R.string.action_undo), duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) {
                 snapshot.forEach { original ->
                     viewModel.notes.value.find { it.id == original.id }?.let { viewModel.toggleArchive(it) }
@@ -290,9 +299,15 @@ fun HomeScreen(
             if (note.isPinned) notificationHelper.unpinNoteFromNotification(note.id)
             viewModel.deleteNote(note.id)
         }
-        val label = if (snapshot.size == 1) "Deleted" else "Deleted ${snapshot.size}"
+        val label = if (snapshot.size == 1) {
+            context.getString(R.string.msg_deleted)
+        } else {
+            context.resources.getQuantityString(
+                R.plurals.plural_deleted, snapshot.size, snapshot.size
+            )
+        }
         scope.launch {
-            val result = snackbarHostState.showSnackbar(label, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            val result = snackbarHostState.showSnackbar(label, actionLabel = context.getString(R.string.action_undo), duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) {
                 snapshot.forEach { viewModel.addNote(it) }
             }
@@ -307,9 +322,12 @@ fun HomeScreen(
         if (affected.isEmpty()) return
         viewModel.deleteLabel(name)
         scope.launch {
-            val msg = if (affected.size == 1) "Label \"$name\" deleted"
-                      else "Label \"$name\" removed from ${affected.size} notes"
-            val result = snackbarHostState.showSnackbar(msg, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            val msg = if (affected.size == 1) {
+                context.getString(R.string.msg_label_deleted, name)
+            } else {
+                context.getString(R.string.label_removed_from_notes, name, affected.size)
+            }
+            val result = snackbarHostState.showSnackbar(msg, actionLabel = context.getString(R.string.action_undo), duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) {
                 affected.forEach { viewModel.updateNote(it) }
             }
@@ -333,7 +351,7 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ) {
-                    Icon(imageVector = Icons.Filled.Add, contentDescription = "Add", modifier = Modifier.size(36.dp))
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = stringResource(R.string.action_add), modifier = Modifier.size(36.dp))
                 }
             }
         }
@@ -345,10 +363,10 @@ fun HomeScreen(
                 if (reorderMode) {
                     // Drag-to-reorder top bar — ✗ discards the draft, ✓ commits and exits.
                     TopAppBar(
-                        title = { Text("Drag to reorder") },
+                        title = { Text(stringResource(R.string.home_drag_to_reorder)) },
                         navigationIcon = {
                             TooltipIconButton(
-                                tooltip = "Discard order",
+                                tooltip = stringResource(R.string.home_discard_order),
                                 icon = Icons.Filled.Close,
                                 onClick = {
                                     reorderMode = false
@@ -359,7 +377,7 @@ fun HomeScreen(
                         },
                         actions = {
                             TooltipIconButton(
-                                tooltip = "Save order",
+                                tooltip = stringResource(R.string.home_save_order),
                                 icon = Icons.Filled.Check,
                                 onClick = {
                                     val ids = draftOrder.map { it.id }
@@ -376,13 +394,13 @@ fun HomeScreen(
                     TopAppBar(
                         title = { Text(selectedNoteIds.size.toString()) },
                         navigationIcon = {
-                            IconButton(onClick = { selectedNoteIds = emptySet() }) { Icon(Icons.Filled.Close, "Clear") }
+                            IconButton(onClick = { selectedNoteIds = emptySet() }) { Icon(Icons.Filled.Close, stringResource(R.string.action_clear)) }
                         },
                         actions = {
                             // Duplicate selected notes
                             if (selectedNoteIds.size == 1) {
                                 TooltipIconButton(
-                                    tooltip = "Duplicate",
+                                    tooltip = stringResource(R.string.action_duplicate),
                                     icon = Icons.Filled.ContentCopy,
                                     onClick = {
                                         selectedNoteIds.firstOrNull()?.let { id ->
@@ -402,13 +420,13 @@ fun HomeScreen(
 
                             // Apply labels to all selected notes
                             TooltipIconButton(
-                                tooltip = "Add label",
+                                tooltip = stringResource(R.string.add_label),
                                 icon = Icons.Filled.Label,
                                 onClick = { showBulkLabelsSheet = true }
                             )
 
                             TooltipIconButton(
-                                tooltip = "Archive",
+                                tooltip = stringResource(R.string.action_archive),
                                 icon = Icons.Filled.Archive,
                                 onClick = {
                                     val ids = selectedNoteIds
@@ -418,7 +436,7 @@ fun HomeScreen(
                             )
 
                             TooltipIconButton(
-                                tooltip = "Delete",
+                                tooltip = stringResource(R.string.action_delete),
                                 icon = Icons.Filled.Delete,
                                 onClick = {
                                     val ids = selectedNoteIds
@@ -443,7 +461,7 @@ fun HomeScreen(
                             SortOrder.entries.forEach { order ->
                                 val isSelected = sortOrder == order
                                 DropdownMenuItem(
-                                    text = { Text(order.label) },
+                                    text = { Text(stringResource(order.labelRes)) },
                                     onClick = {
                                         showSortMenu = false
                                         if (order == SortOrder.MANUAL) {
@@ -570,7 +588,7 @@ fun HomeScreen(
                     animTab == 2 && animLabel != null -> {
                         Column {
                         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { selectedLabel = null }) { Icon(Icons.Filled.ArrowBack, "Back") }
+                            IconButton(onClick = { selectedLabel = null }) { Icon(Icons.Filled.ArrowBack, stringResource(R.string.action_back)) }
                             Text(animLabel, style = MaterialTheme.typography.titleMedium)
                         }
                         if (panelNotes.isNotEmpty()) {
@@ -578,11 +596,11 @@ fun HomeScreen(
                                 onNoteClick = { id -> if (isSelectionMode) selectedNoteIds = if (id in selectedNoteIds) selectedNoteIds - id else selectedNoteIds + id else allNotes.find { it.id == id }?.let { handleNoteClick(it) } },
                                 onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
                                 onPinClick = { note -> runWithNotifPermission { viewModel.togglePin(note); if (!note.isPinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType) else notificationHelper.unpinNoteFromNotification(note.id) } },
-                                onCopyClick = { text -> val cb = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; cb.setPrimaryClip(android.content.ClipData.newPlainText("", text)); android.widget.Toast.makeText(context, "Copied", android.widget.Toast.LENGTH_SHORT).show() },
+                                onCopyClick = { text -> val cb = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; cb.setPrimaryClip(android.content.ClipData.newPlainText("", text)); android.widget.Toast.makeText(context, context.getString(R.string.msg_copied), android.widget.Toast.LENGTH_SHORT).show() },
                                 onToggleAllClick = { note -> val g = Gson(); val items = try { g.fromJson(note.text, Array<ChecklistItemData>::class.java).toList() } catch (e: Exception) { emptyList() }; val all = items.isNotEmpty() && items.all { it.isChecked }; val n = note.copy(text = g.toJson(items.map { it.copy(isChecked = !all) })); viewModel.updateNote(n); if (n.isPinned) notificationHelper.pinNoteToNotification(n.id, n.title, n.text, true) }
                             )
                         } else {
-                            EmptyStateView(icon = Icons.Filled.Label, message = "No notes with label \"$animLabel\"")
+                            EmptyStateView(icon = Icons.Filled.Label, message = stringResource(R.string.no_notes_with_label, animLabel))
                         }
                         }
                     }
@@ -616,8 +634,8 @@ fun HomeScreen(
                             },
                             onCopyClick = { text ->
                                 val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Copied Note", text))
-                                android.widget.Toast.makeText(context, "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+                                clipboard.setPrimaryClip(android.content.ClipData.newPlainText(context.getString(R.string.home_copy_label), text))
+                                android.widget.Toast.makeText(context, context.getString(R.string.msg_copied_to_clipboard), android.widget.Toast.LENGTH_SHORT).show()
                             },
                             onToggleAllClick = { note ->
                                 val gson = Gson()
@@ -637,7 +655,7 @@ fun HomeScreen(
                     }
                     else -> {
                         val icon = if (animTab == 1) Icons.Filled.PushPin else Icons.Filled.Article
-                        val msg = if (animTab == 1) "No pinned items" else "No items"
+                        val msg = stringResource(if (animTab == 1) R.string.home_empty_pinned else R.string.home_empty)
                         EmptyStateView(icon = icon, message = msg)
                     }
                 }
@@ -862,22 +880,22 @@ fun NoteCard(
         Box {
             DropdownMenu(expanded = showCardMenu, onDismissRequest = { showCardMenu = false }) {
                 DropdownMenuItem(
-                    text = { Text("Add to Home Screen") },
+                    text = { Text(stringResource(R.string.home_add_to_home_screen)) },
                     leadingIcon = { Icon(Icons.Filled.AddToHomeScreen, null) },
                     onClick = {
                         showCardMenu = false
                         if (note.isLocked) {
-                            android.widget.Toast.makeText(context, "Locked notes can't be shown on the home screen", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, context.getString(R.string.msg_locked_note_no_widget), android.widget.Toast.LENGTH_SHORT).show()
                         } else {
                             val ok = AddWidgets.requestPin(context, note.id, note.noteType)
                             if (!ok) {
-                                android.widget.Toast.makeText(context, "Your launcher doesn't support widget pinning", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, context.getString(R.string.msg_launcher_no_widget_pinning), android.widget.Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Select") },
+                    text = { Text(stringResource(R.string.action_select)) },
                     leadingIcon = { Icon(Icons.Filled.CheckCircle, null) },
                     onClick = {
                         showCardMenu = false
@@ -900,7 +918,7 @@ fun NoteCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     if (note.isLocked) {
-                        Icon(Icons.Filled.Lock, "Locked", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                        Icon(Icons.Filled.Lock, stringResource(R.string.locked), modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
                         Spacer(modifier = Modifier.height(2.dp))
                     }
                     if (note.title.isNotBlank()) {
@@ -920,7 +938,7 @@ fun NoteCard(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.PushPin,
-                        contentDescription = "Toggle Pin",
+                        contentDescription = stringResource(R.string.notif_toggle_pin),
                         tint = if (note.isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                         modifier = Modifier.size(20.dp)
                     )
@@ -932,7 +950,7 @@ fun NoteCard(
                 NoteType.LIST -> {
                     listItems.take(4).forEach { ChecklistItemPreview(it) }
                     if (listItems.size > 4) {
-                        Text("+ ${listItems.size - 4} more items", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.padding(top = 4.dp, start = 24.dp))
+                        Text(pluralStringResource(R.plurals.plural_more_items, listItems.size - 4, listItems.size - 4), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.padding(top = 4.dp, start = 24.dp))
                     }
                 }
                 NoteType.IMAGE -> {
@@ -953,7 +971,7 @@ fun NoteCard(
                                             .background(Color.Black.copy(alpha = 0.6f)),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(Icons.Filled.PlayArrow, "Play", tint = Color.White, modifier = Modifier.size(24.dp))
+                                        Icon(Icons.Filled.PlayArrow, stringResource(R.string.action_play), tint = Color.White, modifier = Modifier.size(24.dp))
                                     }
                                 }
                             }
@@ -978,8 +996,8 @@ fun NoteCard(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Browse", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-                                Icon(Icons.Outlined.OpenInNew, "Browse", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
+                                Text(stringResource(R.string.action_browse), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Outlined.OpenInNew, stringResource(R.string.action_browse), modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
                             }
                         }
                     } else if (note.text.isNotBlank()) {
@@ -1016,8 +1034,8 @@ fun NoteCard(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Navigate", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-                                Icon(Icons.Filled.Navigation, "Navigate", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
+                                Text(stringResource(R.string.action_navigate), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Filled.Navigation, stringResource(R.string.action_navigate), modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
                             }
                         }
                     } else if (note.text.isNotBlank()) {
@@ -1036,7 +1054,7 @@ fun NoteCard(
                         ) {
                             androidx.compose.foundation.Image(
                                 bitmap = qrBitmap.asImageBitmap(),
-                                contentDescription = "QR Code",
+                                contentDescription = stringResource(R.string.qr_code),
                                 modifier = Modifier.fillMaxSize().padding(6.dp)
                             )
                         }
@@ -1064,8 +1082,8 @@ fun NoteCard(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Open", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-                            Icon(Icons.Outlined.OpenInNew, "Open", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
+                            Text(stringResource(R.string.action_open), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                            Icon(Icons.Outlined.OpenInNew, stringResource(R.string.action_open), modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -1084,7 +1102,7 @@ fun NoteCard(
                         ) {
                             androidx.compose.foundation.Image(
                                 bitmap = pdfBitmap.asImageBitmap(),
-                                contentDescription = "PDF preview",
+                                contentDescription = stringResource(R.string.pdf_preview),
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier.fillMaxSize().padding(4.dp)
                             )
@@ -1095,7 +1113,7 @@ fun NoteCard(
                         Icon(Icons.Filled.PictureAsPdf, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = note.title.ifBlank { "PDF Document" },
+                            text = note.title.ifBlank { stringResource(R.string.pdf_document) },
                             fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1122,14 +1140,15 @@ fun NoteCard(
                         ) {
                             Icon(
                                 if (isPlayingThis) Icons.Filled.Stop else Icons.Filled.PlayArrow,
-                                if (isPlayingThis) "Stop" else "Play",
+                                stringResource(if (isPlayingThis) R.string.action_stop else R.string.action_play),
                                 modifier = Modifier.size(20.dp),
                                 tint = if (isPlayingThis) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            if (durMs > 0) "%d:%02d".format(durMs / 60000, (durMs / 1000) % 60) else "Recording",
+                            if (durMs > 0) "%d:%02d".format(durMs / 60000, (durMs / 1000) % 60)
+                            else stringResource(R.string.recording),
                             fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -1141,7 +1160,7 @@ fun NoteCard(
                     if (note.isList) {
                         listItems.take(4).forEach { ChecklistItemPreview(it) }
                         if (listItems.size > 4) {
-                            Text("+ ${listItems.size - 4} more items", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.padding(top = 4.dp, start = 24.dp))
+                            Text(pluralStringResource(R.plurals.plural_more_items, listItems.size - 4, listItems.size - 4), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.padding(top = 4.dp, start = 24.dp))
                         }
                     } else if (note.text.isNotBlank()) {
                         Text(text = buildFormattedString(note.text, note.formatRanges), fontSize = 14.sp, maxLines = 8, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1178,7 +1197,7 @@ fun NoteCard(
                     modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Filled.Notifications, "Alarm", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.Filled.Notifications, stringResource(R.string.alarm), modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(note.reminderText, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -1205,9 +1224,9 @@ fun NoteCard(
                         putExtra(Intent.EXTRA_STREAM, uri)
                         flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                     }
-                    context.startActivity(Intent.createChooser(send, "Share"))
+                    context.startActivity(Intent.createChooser(send, context.getString(R.string.action_share)))
                 } catch (e: Exception) {
-                    android.widget.Toast.makeText(context, "Couldn't share", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, context.getString(R.string.msg_couldnt_share), android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -1238,7 +1257,7 @@ fun NoteCard(
                                     }
                                     context.startActivity(pdfIntent)
                                 } catch (e: Exception) {
-                                    android.widget.Toast.makeText(context, "No PDF viewer found", android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(context, context.getString(R.string.msg_no_pdf_viewer), android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
                             isAudioType -> {
@@ -1255,9 +1274,9 @@ fun NoteCard(
                                             putExtra(Intent.EXTRA_STREAM, uri)
                                             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                                         }
-                                        context.startActivity(Intent.createChooser(shareIntent, "Share recording"))
+                                        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_recording)))
                                     } catch (e: Exception) {
-                                        android.widget.Toast.makeText(context, "Could not share recording", android.widget.Toast.LENGTH_SHORT).show()
+                                        android.widget.Toast.makeText(context, context.getString(R.string.msg_could_not_share_recording), android.widget.Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
@@ -1276,7 +1295,7 @@ fun NoteCard(
                                         launch.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                         context.startActivity(launch)
                                     } else {
-                                        android.widget.Toast.makeText(context, "App not installed", android.widget.Toast.LENGTH_SHORT).show()
+                                        android.widget.Toast.makeText(context, context.getString(R.string.msg_app_not_installed), android.widget.Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
@@ -1290,48 +1309,48 @@ fun NoteCard(
                 when {
                     isListType -> {
                         val allChecked = listItems.isNotEmpty() && listItems.all { it.isChecked }
-                        Text(text = if (allChecked) "Uncheck all" else "Check All", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Icon(imageVector = if (allChecked) Icons.Outlined.Close else Icons.Outlined.Checklist, contentDescription = "Toggle All", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        Text(text = if (allChecked) stringResource(R.string.action_uncheck_all) else stringResource(R.string.action_check_all), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(imageVector = if (allChecked) Icons.Outlined.Close else Icons.Outlined.Checklist, contentDescription = stringResource(R.string.notif_toggle_all), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                     isLinkType -> {
-                        Text("Open Link", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Icon(Icons.Outlined.OpenInNew, "Open", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        Text(stringResource(R.string.home_open_link), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.OpenInNew, stringResource(R.string.action_open), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                     isContactType -> {
-                        Text("Call", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Icon(Icons.Outlined.Phone, "Call", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        Text(stringResource(R.string.action_call), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.Phone, stringResource(R.string.action_call), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                     isPdfType -> {
-                        Text("Open PDF", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.home_open_pdf), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             // Secondary share action — own click handler so it doesn't
                             // bubble up and trigger the row's "open" path.
                             Icon(
-                                Icons.Filled.Share, "Share PDF",
+                                Icons.Filled.Share, stringResource(R.string.share_pdf),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier
                                     .size(20.dp)
                                     .clickable { shareUri("application/pdf") }
                             )
                             Spacer(modifier = Modifier.width(14.dp))
-                            Icon(Icons.Filled.PictureAsPdf, "Open", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Filled.PictureAsPdf, stringResource(R.string.action_open), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                         }
                     }
                     isAudioType -> {
-                        Text("Share", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        Text(stringResource(R.string.action_share), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.Share, stringResource(R.string.action_share), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                     isImageType -> {
-                        Text("Share", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Icon(Icons.Filled.Share, "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        Text(stringResource(R.string.action_share), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.Share, stringResource(R.string.action_share), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                     isAppListType -> {
-                        Text("Open app", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Icon(Icons.Outlined.OpenInNew, "Open", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        Text(stringResource(R.string.home_open_app), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.OpenInNew, stringResource(R.string.action_open), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                     else -> {
-                        Text("Copy", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Icon(Icons.Outlined.ContentCopy, "Copy", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        Text(stringResource(R.string.action_copy), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.ContentCopy, stringResource(R.string.action_copy), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                 }
             }
@@ -1350,12 +1369,12 @@ fun NoteCard(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            Icons.Filled.Lock, "Locked",
+                            Icons.Filled.Lock, stringResource(R.string.locked),
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                             modifier = Modifier.size(28.dp)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Tap to unlock", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f))
+                        Text(stringResource(R.string.home_tap_to_unlock), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f))
                     }
                 }
             }
@@ -1399,7 +1418,7 @@ fun AppListPreview(items: List<AppNoteItem>) {
                     .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text("+${items.size - maxIcons}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(pluralStringResource(R.plurals.plural_more, items.size - maxIcons, items.size - maxIcons), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -1450,7 +1469,7 @@ fun LabelBrowser(
     onDelete: (String) -> Unit = {}
 ) {
     if (labelCounts.isEmpty()) {
-        EmptyStateView(icon = Icons.Filled.Label, message = "No labels yet\nAdd labels from note or list editor")
+        EmptyStateView(icon = Icons.Filled.Label, message = stringResource(R.string.labels_empty))
         return
     }
 
@@ -1489,11 +1508,11 @@ fun LabelBrowser(
                         }
                         Box {
                             IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Filled.MoreVert, "More", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(Icons.Filled.MoreVert, stringResource(R.string.action_more), modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("Rename") },
+                                    text = { Text(stringResource(R.string.action_rename)) },
                                     leadingIcon = { Icon(Icons.Filled.Edit, null) },
                                     onClick = {
                                         menuExpanded = false
@@ -1502,7 +1521,7 @@ fun LabelBrowser(
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Delete") },
+                                    text = { Text(stringResource(R.string.action_delete)) },
                                     leadingIcon = { Icon(Icons.Filled.Delete, null) },
                                     onClick = {
                                         menuExpanded = false
@@ -1524,7 +1543,7 @@ fun LabelBrowser(
     if (renameTarget != null) {
         AlertDialog(
             onDismissRequest = { renameTarget = null },
-            title = { Text("Rename label") },
+            title = { Text(stringResource(R.string.rename_label)) },
             text = {
                 OutlinedTextField(
                     value = renameText,
@@ -1539,10 +1558,10 @@ fun LabelBrowser(
                     val nu = renameText.trim()
                     if (nu.isNotBlank() && nu != old) onRename(old, nu)
                     renameTarget = null
-                }) { Text("Rename") }
+                }) { Text(stringResource(R.string.action_rename)) }
             },
             dismissButton = {
-                TextButton(onClick = { renameTarget = null }) { Text("Cancel") }
+                TextButton(onClick = { renameTarget = null }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -1550,33 +1569,37 @@ fun LabelBrowser(
     if (deleteTarget != null) {
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete label?") },
+            title = { Text(stringResource(R.string.delete_label_title)) },
             text = { Text("\"${deleteTarget}\" will be removed from all notes. The notes themselves stay.") },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete(deleteTarget!!)
                     deleteTarget = null
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.action_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) { Text("Cancel") }
+                TextButton(onClick = { deleteTarget = null }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
 }
 
-enum class SortOrder(val label: String) {
-    NEWEST_FIRST("Newest first"),
-    OLDEST_FIRST("Oldest first"),
-    TITLE_AZ("Title A → Z"),
-    TITLE_ZA("Title Z → A"),
-    MANUAL("Manual order")
+enum class SortOrder(val labelRes: Int) {
+    NEWEST_FIRST(R.string.sort_newest_first),
+    OLDEST_FIRST(R.string.sort_oldest_first),
+    TITLE_AZ(R.string.sort_title_az),
+    TITLE_ZA(R.string.sort_title_za),
+    MANUAL(R.string.sort_manual)
 }
 
 @Composable
 fun PinItBottomNavigation(selectedItem: Int, onItemSelected: (Int) -> Unit, pinnedCount: Int = 0) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
-        listOf("Home", "Pinned", "Labels").forEachIndexed { index, item ->
+        listOf(
+            stringResource(R.string.tab_home),
+            stringResource(R.string.tab_pinned),
+            stringResource(R.string.tab_labels)
+        ).forEachIndexed { index, item ->
             NavigationBarItem(
                 icon = {
                     val iv = when(index){ 0->Icons.Filled.Home; 1->Icons.Filled.PushPin; else->Icons.Filled.Label }

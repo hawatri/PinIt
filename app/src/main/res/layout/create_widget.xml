@@ -18,7 +18,7 @@
             android:layout_height="32dp"
             android:layout_gravity="center"
             android:src="@mipmap/ic_launcher"
-            android:contentDescription="Type" />
+            android:contentDescription="@string/widget_type" />
 
         <ImageView
             android:layout_width="14dp"
@@ -27,7 +27,7 @@
             android:src="@drawable/ic_widget_plus"
             android:background="@drawable/widget_plus_badge"
             android:padding="1dp"
-            android:contentDescription="Create" />
+            android:contentDescription="@string/widget_create" />
     </FrameLayout>
 
     <TextView

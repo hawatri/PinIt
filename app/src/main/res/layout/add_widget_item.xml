@@ -16,7 +16,7 @@
         android:layout_width="18dp"
         android:layout_height="18dp"
         android:src="@drawable/ic_check_box_outline"
-        android:contentDescription="Toggle"
+        android:contentDescription="@string/widget_toggle"
         android:visibility="gone" />
 
     <TextView

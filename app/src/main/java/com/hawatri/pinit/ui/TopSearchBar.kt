@@ -31,6 +31,8 @@ import com.hawatri.pinit.backup.BackupSyncManager
 import com.hawatri.pinit.backup.GoogleAuthManager
 import com.hawatri.pinit.data.AppPreferences
 import kotlinx.coroutines.launch
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +67,7 @@ fun TopSearchBar(
     ) {
         Icon(
             imageVector = Icons.Filled.Search,
-            contentDescription = "Search",
+            contentDescription = stringResource(R.string.search),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 8.dp, end = 8.dp)
         )
@@ -75,7 +77,7 @@ fun TopSearchBar(
             onValueChange = onSearchQueryChange,
             placeholder = {
                 Text(
-                    text = "Search items",
+                    text = stringResource(R.string.search_items),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     fontSize = 16.sp
                 )
@@ -94,7 +96,7 @@ fun TopSearchBar(
         if (searchQuery.isNotEmpty()) {
             Icon(
                 imageVector = Icons.Filled.Close,
-                contentDescription = "Clear search",
+                contentDescription = stringResource(R.string.search_clear),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .padding(end = 8.dp)
@@ -105,7 +107,7 @@ fun TopSearchBar(
         if (onSortClick != null) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Sort,
-                contentDescription = "Sort",
+                contentDescription = stringResource(R.string.sort),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(end = 8.dp).clickable { onSortClick() }
             )
@@ -113,7 +115,7 @@ fun TopSearchBar(
 
         Icon(
             imageVector = Icons.Filled.Archive,
-            contentDescription = "Archived Notes",
+            contentDescription = stringResource(R.string.archived_notes),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .padding(end = 12.dp)
@@ -135,7 +137,7 @@ fun TopSearchBar(
                             .data(photoUrl)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Profile",
+                        contentDescription = stringResource(R.string.profile),
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
@@ -143,7 +145,7 @@ fun TopSearchBar(
                 } else {
                     Icon(
                         imageVector = Icons.Filled.Person,
-                        contentDescription = "Profile",
+                        contentDescription = stringResource(R.string.profile),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(24.dp)
                     )
@@ -157,7 +159,7 @@ fun TopSearchBar(
                     // Account header — name + email, not clickable
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                         Text(
-                            displayName ?: "PinIt user",
+                            displayName ?: stringResource(R.string.signin_pinit_user),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -172,12 +174,12 @@ fun TopSearchBar(
                     }
                     HorizontalDivider()
                     DropdownMenuItem(
-                        text = { Text("Account") },
+                        text = { Text(stringResource(R.string.account)) },
                         leadingIcon = { Icon(Icons.Filled.Person, null) },
                         onClick = { profileMenuExpanded = false; onSignInClick() }
                     )
                     DropdownMenuItem(
-                        text = { Text("Back up to Drive") },
+                        text = { Text(stringResource(R.string.back_up_to_drive)) },
                         leadingIcon = { Icon(Icons.Filled.CloudUpload, null) },
                         onClick = {
                             profileMenuExpanded = false
@@ -185,13 +187,13 @@ fun TopSearchBar(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Settings") },
+                        text = { Text(stringResource(R.string.settings)) },
                         leadingIcon = { Icon(Icons.Filled.Settings, null) },
                         onClick = { profileMenuExpanded = false; onSettingsClick() }
                     )
                     HorizontalDivider()
                     DropdownMenuItem(
-                        text = { Text("Sign out") },
+                        text = { Text(stringResource(R.string.sign_out)) },
                         leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
                         onClick = {
                             profileMenuExpanded = false
@@ -204,12 +206,12 @@ fun TopSearchBar(
                     )
                 } else {
                     DropdownMenuItem(
-                        text = { Text("Settings") },
+                        text = { Text(stringResource(R.string.settings)) },
                         leadingIcon = { Icon(Icons.Filled.Settings, null) },
                         onClick = { profileMenuExpanded = false; onSettingsClick() }
                     )
                     DropdownMenuItem(
-                        text = { Text("Sign in") },
+                        text = { Text(stringResource(R.string.sign_in)) },
                         leadingIcon = { Icon(Icons.AutoMirrored.Filled.Login, null) },
                         onClick = { profileMenuExpanded = false; onSignInClick() }
                     )

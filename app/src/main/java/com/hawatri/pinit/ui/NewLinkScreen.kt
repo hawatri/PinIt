@@ -33,6 +33,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import java.util.UUID
+import com.hawatri.pinit.R
+import androidx.compose.ui.res.stringResource
 
 data class LinkPreviewData(val title: String, val description: String, val imageUrl: String, val isVideo: Boolean = false)
 data class LinkNoteData(val url: String, val title: String, val description: String, val imageUrl: String, val isVideo: Boolean = false)
@@ -209,19 +211,19 @@ fun NewLinkScreen(
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 actions = {
                     if (previewData != null) {
                         TooltipIconButton(
-                            tooltip = "Refresh preview",
+                            tooltip = stringResource(R.string.refresh_preview),
                             icon = Icons.Filled.Refresh,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { resolvePreview(previewData!!.url) }
                         )
                         TooltipIconButton(
-                            tooltip = "Share",
+                            tooltip = stringResource(R.string.action_share),
                             icon = Icons.Filled.Share,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -234,11 +236,11 @@ fun NewLinkScreen(
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, shareText)
                                 }
-                                context.startActivity(Intent.createChooser(intent, "Share link"))
+                                context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_link)))
                             }
                         )
                         TooltipIconButton(
-                            tooltip = "Archive",
+                            tooltip = stringResource(R.string.action_archive),
                             icon = Icons.Filled.Archive,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = {
@@ -249,7 +251,7 @@ fun NewLinkScreen(
                         )
                     }
                     TooltipIconButton(
-                        tooltip = if (isPinned) "Unpin from notifications" else "Pin to notifications",
+                        tooltip = if (isPinned) stringResource(R.string.unpin_from_notifications) else stringResource(R.string.pin_to_notifications),
                         icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                         tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = {
@@ -264,14 +266,14 @@ fun NewLinkScreen(
                         }
                     )
                     TooltipIconButton(
-                        tooltip = "Labels",
+                        tooltip = stringResource(R.string.labels),
                         icon = Icons.Filled.Label,
                         tint = if (labels.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { showLabelsSheet = true }
                     )
                     if (previewData != null) {
                         TooltipIconButton(
-                            tooltip = if (isLocked) "Unlock note" else "Lock note",
+                            tooltip = if (isLocked) stringResource(R.string.unlock_note) else stringResource(R.string.lock_note),
                             icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                             tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { isLocked = !isLocked; save() }
@@ -282,7 +284,7 @@ fun NewLinkScreen(
                         )
                     }
                     TooltipIconButton(
-                        tooltip = "Save",
+                        tooltip = stringResource(R.string.action_save),
                         icon = Icons.Filled.Check,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { if (previewData != null || linkText.isNotBlank()) { save(); onNavigateBack() } }
@@ -296,7 +298,7 @@ fun NewLinkScreen(
                 ExtendedFloatingActionButton(
                     onClick = { openInBrowser() },
                     icon = { Icon(Icons.Filled.Public, null) },
-                    text = { Text("Browse") },
+                    text = { Text(stringResource(R.string.action_browse)) },
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             }
@@ -333,7 +335,7 @@ fun NewLinkScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            Icons.Filled.PlayArrow, "Play",
+                                            Icons.Filled.PlayArrow, stringResource(R.string.action_play),
                                             tint = Color.White,
                                             modifier = Modifier.size(40.dp)
                                         )
@@ -347,7 +349,7 @@ fun NewLinkScreen(
                                 onValueChange = { newTitle ->
                                     previewData = previewData!!.copy(title = newTitle)
                                 },
-                                placeholder = { Text("Title", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                                placeholder = { Text(stringResource(R.string.field_title), fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
@@ -386,7 +388,7 @@ fun NewLinkScreen(
                 ) {
                     Icon(Icons.Filled.Edit, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Edit link")
+                    Text(stringResource(R.string.edit_link))
                 }
             } else {
                 Card(
@@ -395,12 +397,12 @@ fun NewLinkScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("*Mandatory field", color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 16.dp, bottom = 4.dp))
+                        Text(stringResource(R.string.field_mandatory_note), color = Color(0xFFD32F2F), fontSize = 12.sp, modifier = Modifier.padding(start = 16.dp, bottom = 4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                             TextField(
                                 value = linkText,
                                 onValueChange = { linkText = it },
-                                placeholder = { Text("Link*", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                                placeholder = { Text(stringResource(R.string.field_link_required), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
@@ -416,7 +418,7 @@ fun NewLinkScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (isLoading) CircularProgressIndicator(color = MaterialTheme.colorScheme.surface, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                    else Icon(Icons.Filled.ArrowForward, "Fetch", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(20.dp))
+                                    else Icon(Icons.Filled.ArrowForward, stringResource(R.string.action_fetch), tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(20.dp))
                                 }
                             }
                         }
