@@ -13,6 +13,8 @@ Pin notes, lists, links, contacts, locations, QR codes, audio, images, PDFs and 
 [![Built with Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF.svg)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack-Compose-4285F4.svg)](https://developer.android.com/jetpack/compose)
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A5U7264DKS)
+
 ### No ads · No premium tier · No tracking · 100% open source
 
 <br />
