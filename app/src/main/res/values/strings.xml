@@ -468,10 +468,10 @@ Create one in PinIt first.</string>
     <string name="backup_err_read_file">Couldn\'t read file</string>
     <string name="signin_failed_code_reason">Sign-in failed (code %1$d): %2$s</string>
     <string name="unknown_error">unknown</string>
-    <string name="changelog_1">Português (Brasil) added — choose your language in Settings.</string>
-    <string name="changelog_2">Only one language for now; more coming in future releases.</string>
-    <string name="changelog_3">Every screen, notification and widget is now translatable.</string>
-    <string name="changelog_4">Set it to System default to follow your phone’s language.</string>
+    <string name="changelog_1">More languages in Settings — Spanish, French, German, Italian, Hindi, Arabic, Simplified Chinese, Japanese, Korean, Russian, Indonesian, and Brazilian Portuguese.</string>
+    <string name="changelog_2">Pick yours in Settings, or choose System default to follow your phone.</string>
+    <string name="changelog_3">Every screen, notification and widget follows the language you choose.</string>
+    <string name="changelog_4">English is still the fallback if a translation is missing.</string>
     <string name="label_removed_from_notes">Label \"%1$s\" removed from %2$d notes</string>
     <!-- Plurals -->
     <plurals name="plural_pinned_items">

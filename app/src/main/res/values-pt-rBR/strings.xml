@@ -468,10 +468,10 @@ Crie uma no PinIt primeiro.</string>
     <string name="backup_err_read_file">Não foi possível ler o arquivo</string>
     <string name="signin_failed_code_reason">Falha ao entrar (código %1$d): %2$s</string>
     <string name="unknown_error">desconhecido</string>
-    <string name="changelog_1">Português (Brasil) adicionado — escolha seu idioma nas Configurações.</string>
-    <string name="changelog_2">Por enquanto só um idioma; mais chegarão nas próximas versões.</string>
-    <string name="changelog_3">Todas as telas, notificações e widgets agora podem ser traduzidos.</string>
-    <string name="changelog_4">Escolha Padrão do sistema para seguir o idioma do seu telefone.</string>
+    <string name="changelog_1">Mais idiomas nas Configurações — espanhol, francês, alemão, italiano, hindi, árabe, chinês simplificado, japonês, coreano, russo, indonésio e português (Brasil).</string>
+    <string name="changelog_2">Escolha o seu nas Configurações, ou use Padrão do sistema para seguir o telefone.</string>
+    <string name="changelog_3">Todas as telas, notificações e widgets seguem o idioma escolhido.</string>
+    <string name="changelog_4">O inglês continua como fallback se faltar alguma tradução.</string>
     <string name="label_removed_from_notes">Marcador \"%1$s\" removido de %2$d notas</string>
     <!-- Plurals -->
     <plurals name="plural_pinned_items">

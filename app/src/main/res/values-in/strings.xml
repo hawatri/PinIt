@@ -1,0 +1,494 @@
+<resources>
+    <!-- Indonesian (id / values-in). Brand name "PinIt" is intentionally not translated. -->
+
+    <string name="action_save">Simpan</string>
+    <string name="action_cancel">Batal</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_ok">OK</string>
+    <string name="action_undo">Urungkan</string>
+    <string name="action_back">Kembali</string>
+    <string name="action_add">Tambah</string>
+    <string name="action_share">Bagikan</string>
+    <string name="action_copy">Salin</string>
+    <string name="action_open">Buka</string>
+    <string name="action_browse">Telusuri</string>
+    <string name="action_browse_files">Telusuri file</string>
+    <string name="action_call">Panggil</string>
+    <string name="action_navigate">Navigasi</string>
+    <string name="action_play">Putar</string>
+    <string name="action_stop">Berhenti</string>
+    <string name="action_record">Rekam</string>
+    <string name="action_remove">Hapus</string>
+    <string name="action_rename">Ganti nama</string>
+    <string name="action_select">Pilih</string>
+    <string name="action_skip">Lewati</string>
+    <string name="action_continue">Lanjutkan</string>
+    <string name="action_dismiss">Tutup</string>
+    <string name="action_archive">Arsipkan</string>
+    <string name="action_unarchive">Batalkan arsip</string>
+    <string name="action_duplicate">Duplikat</string>
+    <string name="action_rescan">Pindai ulang</string>
+    <string name="action_grant_permission">Berikan izin</string>
+    <string name="action_check_all">Centang semua</string>
+    <string name="action_uncheck_all">Hapus semua centang</string>
+    <string name="action_clear">Bersihkan</string>
+    <string name="action_more">Lainnya</string>
+
+    <string name="tab_home">Beranda</string>
+    <string name="tab_pinned">Disematkan</string>
+    <string name="tab_labels">Label</string>
+    <string name="home_empty">Tidak ada item</string>
+    <string name="home_empty_pinned">Tidak ada item yang disematkan</string>
+    <string name="home_drag_to_reorder">Seret untuk menyusun ulang</string>
+    <string name="home_save_order">Simpan urutan</string>
+    <string name="home_discard_order">Buang urutan</string>
+    <string name="home_add_to_home_screen">Tambahkan ke layar beranda</string>
+    <string name="home_press_back_again">Tekan kembali lagi untuk keluar</string>
+    <string name="home_tap_to_unlock">Ketuk untuk membuka kunci</string>
+    <string name="home_open_link">Buka tautan</string>
+    <string name="home_open_pdf">Buka PDF</string>
+    <string name="home_open_app">Buka aplikasi</string>
+    <string name="home_copy_label">Catatan disalin</string>
+
+    <string name="search">Cari</string>
+    <string name="search_clear">Hapus pencarian</string>
+    <string name="sort">Urutkan</string>
+    <string name="profile">Profil</string>
+    <string name="account">Akun</string>
+    <string name="archived_notes">Catatan yang diarsipkan</string>
+    <string name="back_up_to_drive">Cadangkan ke Drive</string>
+
+    <string name="sort_newest_first">Terbaru dulu</string>
+    <string name="sort_oldest_first">Terlama dulu</string>
+    <string name="sort_title_az">Judul A → Z</string>
+    <string name="sort_title_za">Judul Z → A</string>
+    <string name="sort_manual">Urutan manual</string>
+
+    <string name="type_note">Catatan</string>
+    <string name="type_list">Daftar periksa</string>
+    <string name="type_qr">Kode QR</string>
+    <string name="type_link">Tautan</string>
+    <string name="type_contact">Kontak</string>
+    <string name="type_location">Lokasi</string>
+    <string name="type_applist">Daftar aplikasi</string>
+    <string name="type_image">Gambar</string>
+    <string name="type_pdf">PDF</string>
+    <string name="type_audio">Audio</string>
+
+    <string name="field_title_required">Judul*</string>
+    <string name="field_text_required">Teks*</string>
+    <string name="field_link_required">Tautan*</string>
+    <string name="field_name_required">Nama*</string>
+    <string name="field_phone_required">Nomor telepon*</string>
+    <string name="field_title">Judul</string>
+    <string name="field_mandatory_note">*Wajib diisi</string>
+    <string name="field_location_name">Nama lokasi</string>
+    <string name="field_recording_title">Judul rekaman (opsional)</string>
+    <string name="field_item">Item</string>
+    <string name="field_add_item">Tambah item</string>
+    <string name="pin_to_notifications">Sematkan ke notifikasi</string>
+    <string name="unpin_from_notifications">Lepas dari notifikasi</string>
+    <string name="lock_note">Kunci catatan</string>
+    <string name="unlock_note">Buka kunci catatan</string>
+    <string name="note_color">Warna catatan</string>
+    <string name="labels">Label</string>
+    <string name="add_label">Tambah label</string>
+    <string name="label_name">Nama label</string>
+    <string name="rename_label">Ganti nama label</string>
+    <string name="delete_label_title">Hapus label?</string>
+    <string name="edit_link">Edit tautan</string>
+    <string name="refresh_preview">Segarkan pratinjau</string>
+    <string name="list_type">Jenis daftar</string>
+    <string name="drag">Seret</string>
+
+    <string name="share_note">Bagikan catatan</string>
+    <string name="share_list">Bagikan daftar</string>
+    <string name="share_link">Bagikan tautan</string>
+    <string name="share_contact">Bagikan kontak</string>
+    <string name="share_location">Bagikan lokasi</string>
+    <string name="share_image">Bagikan gambar</string>
+    <string name="share_pdf">Bagikan PDF</string>
+    <string name="share_app_list">Bagikan daftar aplikasi</string>
+    <string name="share_qr_content">Bagikan isi QR</string>
+    <string name="share_recording">Bagikan rekaman</string>
+
+    <string name="set_reminder">Atur pengingat</string>
+    <string name="add_another_reminder">Tambah pengingat lain</string>
+    <string name="remove_reminder">Hapus pengingat</string>
+    <string name="reminder_added">Pengingat ditambahkan</string>
+    <string name="reminder_set">Pengingat diatur</string>
+    <string name="reminder_set_bang">Pengingat diatur!</string>
+    <string name="reminder_duplicate">Pengingat sudah ada untuk waktu itu</string>
+    <string name="reminder_tomorrow_8am">Besok (08.00)</string>
+    <string name="reminder_set_tomorrow_8am">Pengingat besok pukul 08.00</string>
+    <string name="reminder_pick_date_time">Pilih tanggal dan waktu</string>
+    <string name="reminder_select_time">Pilih waktu</string>
+    <string name="reminder_past">Tidak dapat mengatur pengingat di masa lalu</string>
+    <string name="reminder_needs_notifications">Pengingat tidak muncul tanpa izin notifikasi</string>
+    <string name="reminder_allow_notifications">Izinkan notifikasi untuk pengingat</string>
+    <string name="reminder_exact_alarm_missing">Izin alarm tepat tidak ada. Pengingat mungkin tertunda.</string>
+    <string name="reminder_default_body">Saatnya pengingat Anda</string>
+    <string name="alarm">Alarm</string>
+
+    <string name="unlock_note_title">Buka kunci catatan</string>
+    <string name="unlock_note_subtitle">Autentikasi untuk membuka catatan ini</string>
+    <string name="unlock_note_device_credential">Masukkan PIN, pola, atau sandi untuk membuka catatan ini</string>
+    <string name="locked">Terkunci</string>
+
+    <string name="qr_code">Kode QR</string>
+    <string name="qr_point_camera">Arahkan kamera ke kode QR</string>
+    <string name="qr_camera_permission">Izin kamera diperlukan untuk memindai kode QR.</string>
+    <string name="qr_pick_from_gallery">Pilih dari galeri</string>
+    <string name="qr_pick_from_gallery_instead">Pilih dari galeri saja</string>
+    <string name="qr_save_to_gallery">Simpan ke galeri?</string>
+    <string name="qr_saved_to_gallery">Disimpan ke galeri</string>
+    <string name="qr_no_code_found">Tidak ada kode QR di gambar</string>
+    <string name="qr_not_a_link_copied">Bukan tautan — disalin</string>
+
+    <string name="pick_image">Pilih gambar</string>
+    <string name="select_an_image">Pilih sebuah gambar</string>
+    <string name="selected_image">Gambar dipilih</string>
+    <string name="select_pdf_to_pin">Pilih file PDF untuk disematkan</string>
+    <string name="pdf_document">Dokumen PDF</string>
+    <string name="pdf_first_page">Halaman pertama PDF</string>
+    <string name="pdf_preview">Pratinjau PDF</string>
+    <string name="recording">Rekaman</string>
+
+    <string name="app_shortcuts">Pintasan aplikasi</string>
+    <string name="apps">Aplikasi</string>
+    <string name="pick_app_or_shortcut">Pilih aplikasi atau pintasan</string>
+
+    <string name="search_a_place">Cari tempat</string>
+    <string name="selected_location">Lokasi dipilih</string>
+
+    <string name="import_calendar_events">Impor acara kalender</string>
+    <string name="no_events_in_file">Tidak ada acara di file kalender.</string>
+    <string name="no_date">Tanpa tanggal</string>
+
+    <string name="msg_copied">Disalin</string>
+    <string name="msg_copied_to_clipboard">Disalin ke papan klip</string>
+    <string name="msg_archived">Diarsipkan</string>
+    <string name="msg_deleted">Dihapus</string>
+    <string name="msg_could_not_open">Tidak dapat dibuka</string>
+    <string name="msg_could_not_open_image">Tidak dapat membuka gambar</string>
+    <string name="msg_failed_to_read_image">Gagal membaca gambar</string>
+    <string name="msg_failed_to_save">Gagal menyimpan</string>
+    <string name="msg_couldnt_share">Tidak dapat membagikan</string>
+    <string name="msg_could_not_share_recording">Tidak dapat membagikan rekaman</string>
+    <string name="msg_recording_not_found">File rekaman tidak ditemukan</string>
+    <string name="msg_no_pdf_viewer">Penampil PDF tidak ditemukan</string>
+    <string name="msg_no_pdf_viewer_installed">Penampil PDF tidak terpasang</string>
+    <string name="msg_app_not_installed">Aplikasi tidak terpasang</string>
+    <string name="msg_notification_permission_required">Izin notifikasi diperlukan untuk menyematkan</string>
+    <string name="msg_notification_permission_denied">Izin notifikasi ditolak</string>
+    <string name="msg_locked_note_no_widget">Catatan terkunci tidak dapat ditampilkan di layar beranda</string>
+    <string name="msg_launcher_no_widget_pinning">Peluncur Anda tidak mendukung penyematan widget</string>
+    <string name="msg_delete_label_confirm">\"%1$s\" akan dihapus dari semua catatan. Catatannya tetap ada.</string>
+    <string name="msg_label_deleted">Label \"%1$s\" dihapus</string>
+    <string name="msg_import_audio_failed">Tidak dapat mengimpor audio: %1$s</string>
+    <string name="msg_recording_failed">Rekaman gagal: %1$s</string>
+
+    <string name="notif_pinned_note">Catatan tersemat</string>
+    <string name="notif_add_task">Tambah tugas</string>
+    <string name="notif_toggle_all">Alihkan semua</string>
+    <string name="notif_toggle_pin">Alihkan sematan</string>
+    <string name="notif_channel_pinned">Catatan tersemat</string>
+    <string name="notif_add_item">Tambah item</string>
+    <string name="notif_audio_recording">Rekaman audio</string>
+
+    <string name="widget_tap_to_choose_note">Ketuk untuk memilih catatan</string>
+    <string name="widget_choose_a_note">Pilih catatan</string>
+    <string name="widget_image_unavailable">Gambar tidak tersedia</string>
+    <string name="widget_tap_to_open_app_list">Ketuk untuk membuka daftar aplikasi</string>
+    <string name="widget_locked_note">Catatan terkunci tidak dapat ditampilkan</string>
+    <string name="widget_type">Jenis</string>
+    <string name="widget_open_in_app">Buka di aplikasi</string>
+    <string name="widget_preview">Pratinjau</string>
+    <string name="widget_action">Tindakan</string>
+    <string name="widget_toggle">Alihkan</string>
+    <string name="widget_pick">Pilih</string>
+    <string name="widget_empty">Kosong</string>
+    <string name="widget_label_pinit">Widget PinIt</string>
+
+    <string name="widget_create_text">Buat catatan</string>
+    <string name="widget_create_list">Buat daftar periksa</string>
+    <string name="widget_create_qr">Buat QR</string>
+    <string name="widget_create_link">Buat tautan</string>
+    <string name="widget_create_contact">Buat kontak</string>
+    <string name="widget_create_location">Buat lokasi</string>
+    <string name="widget_create_applist">Buat daftar aplikasi</string>
+    <string name="widget_create_image">Buat catatan gambar</string>
+    <string name="widget_create_pdf">Buat catatan PDF</string>
+    <string name="widget_create_audio">Buat catatan audio</string>
+
+    <string name="widget_add_text">Tambah catatan ke beranda</string>
+    <string name="widget_add_list">Tambah daftar periksa ke beranda</string>
+    <string name="widget_add_qr">Tambah QR ke beranda</string>
+    <string name="widget_add_link">Tambah tautan ke beranda</string>
+    <string name="widget_add_contact">Tambah kontak ke beranda</string>
+    <string name="widget_add_location">Tambah lokasi ke beranda</string>
+    <string name="widget_add_applist">Tambah daftar aplikasi ke beranda</string>
+    <string name="widget_add_image">Tambah gambar ke beranda</string>
+    <string name="widget_add_pdf">Tambah PDF ke beranda</string>
+    <string name="widget_add_audio">Tambah audio ke beranda</string>
+
+    <string name="widget_create">Buat</string>
+    <string name="widget_new_note">Catatan baru</string>
+    <string name="widget_new_list">Daftar baru</string>
+    <string name="widget_note_deleted">Catatan tidak ada lagi</string>
+    <string name="widget_note_archived">Catatan diarsipkan</string>
+
+    <string name="picker_header_text">Pilih catatan</string>
+    <string name="picker_header_list">Pilih daftar periksa</string>
+    <string name="picker_header_qr">Pilih kode QR</string>
+    <string name="picker_header_link">Pilih tautan</string>
+    <string name="picker_header_contact">Pilih kontak</string>
+    <string name="picker_header_location">Pilih lokasi</string>
+    <string name="picker_header_applist">Pilih daftar aplikasi</string>
+    <string name="picker_header_image">Pilih gambar</string>
+    <string name="picker_header_pdf">Pilih PDF</string>
+    <string name="picker_header_audio">Pilih catatan audio</string>
+    <string name="picker_header_default">Pilih catatan</string>
+    <string name="picker_sub_text">Pilih catatan teks untuk ditampilkan</string>
+    <string name="picker_sub_list">Pilih daftar periksa untuk disematkan ke beranda</string>
+    <string name="picker_sub_qr">Pilih kode QR untuk ditampilkan</string>
+    <string name="picker_sub_link">Pilih tautan tersimpan</string>
+    <string name="picker_sub_contact">Pilih kontak untuk menelepon sekali ketuk</string>
+    <string name="picker_sub_location">Pilih lokasi untuk navigasi cepat</string>
+    <string name="picker_sub_applist">Pilih daftar aplikasi</string>
+    <string name="picker_sub_image">Pilih catatan gambar</string>
+    <string name="picker_sub_pdf">Pilih catatan PDF</string>
+    <string name="picker_sub_audio">Pilih memo suara</string>
+    <string name="picker_sub_default">Pilih catatan untuk ditampilkan</string>
+    <string name="picker_empty_text">Belum ada catatan teks.
+Buat dulu di PinIt.</string>
+    <string name="picker_empty_list">Belum ada daftar periksa.
+Buat dulu di PinIt.</string>
+    <string name="picker_empty_qr">Belum ada kode QR.
+Buat dulu di PinIt.</string>
+    <string name="picker_empty_link">Belum ada catatan tautan.
+Buat dulu di PinIt.</string>
+    <string name="picker_empty_contact">Belum ada catatan kontak.
+Buat dulu di PinIt.</string>
+    <string name="picker_empty_location">Belum ada catatan lokasi.
+Buat dulu di PinIt.</string>
+    <string name="picker_empty_applist">Belum ada daftar aplikasi.
+Buat dulu di PinIt.</string>
+    <string name="picker_empty_image">Belum ada catatan gambar.
+Buat dulu di PinIt.</string>
+    <string name="picker_empty_pdf">Belum ada catatan PDF.
+Buat dulu di PinIt.</string>
+    <string name="picker_empty_audio">Belum ada catatan audio.
+Buat dulu di PinIt.</string>
+    <string name="picker_empty_default">Belum ada catatan.
+Buat dulu di PinIt.</string>
+    <string name="untitled">Tanpa judul</string>
+
+    <string name="settings">Setelan</string>
+    <string name="settings_appearance">Tampilan</string>
+    <string name="settings_language">Bahasa</string>
+    <string name="settings_backup">Cadangan</string>
+    <string name="settings_about">Tentang</string>
+    <string name="settings_version">Versi</string>
+    <string name="theme_light">Terang</string>
+    <string name="theme_dark">Gelap</string>
+    <string name="theme_system_default">Default sistem</string>
+    <string name="language_system_default">Default sistem</string>
+    <string name="privacy">Privasi</string>
+    <string name="report_an_issue">Laporkan masalah</string>
+    <string name="msg_no_mail_app">Tidak ada aplikasi email terpasang</string>
+
+    <string name="backup_take_online">Cadangan daring</string>
+    <string name="backup_take_offline">Cadangan luring</string>
+    <string name="backup_upload_to_drive">Unggah ke Google Drive Anda</string>
+    <string name="backup_save_to_download">Simpan file .pinit ke Download/PinIt/</string>
+    <string name="backup_restore_from_file">Pulihkan dari file</string>
+    <string name="backup_pick_pinit_file">Pilih file .pinit dari perangkat</string>
+    <string name="backup_restore_from_drive">Pulihkan dari Drive</string>
+    <string name="backup_now">Cadangkan sekarang</string>
+    <string name="backup_backing_up">Mencadangkan…</string>
+    <string name="backup_your_notes">Cadangkan catatan Anda</string>
+    <string name="backup_sign_in_first">Masuk dengan Google dulu</string>
+    <string name="backup_remind_me_later">Ingatkan nanti</string>
+    <string name="backup_dont_ask_again">Jangan tanya lagi</string>
+
+    <string name="sign_in">Masuk</string>
+    <string name="sign_out">Keluar</string>
+    <string name="sign_in_with_google">Masuk dengan Google</string>
+    <string name="signing_in">Sedang masuk…</string>
+    <string name="continue_as_guest">Lanjutkan sebagai tamu</string>
+    <string name="maybe_later">Nanti saja</string>
+    <string name="profile_photo">Foto profil</string>
+    <string name="onboarding_notification_permission">Izin notifikasi</string>
+    <string name="onboarding_reminder_alarms">Alarm pengingat</string>
+    <string name="show_full_changelog">Tampilkan changelog lengkap</string>
+
+    <string name="fab_new_note">Catatan baru</string>
+    <string name="fab_new_list">Daftar baru</string>
+    <string name="fab_new_location">Lokasi baru</string>
+    <string name="fab_new_qr">QR baru</string>
+    <string name="fab_new_app_list">Daftar aplikasi baru</string>
+    <string name="fab_new_link">Tautan baru</string>
+    <string name="fab_new_contact">Kontak baru</string>
+    <string name="fab_new_image">Gambar baru</string>
+    <string name="fab_new_pdf">PDF baru</string>
+    <string name="fab_record_audio">Rekam audio</string>
+    <string name="fab_import_ics">Impor .ics</string>
+    <string name="onboarding_welcome_title">Selamat datang di PinIt</string>
+    <string name="onboarding_welcome_body">Sematkan semua yang penting — catatan, daftar, tautan, kontak, lokasi, kode QR, dan lainnya — langsung ke panel notifikasi dan layar beranda.</string>
+    <string name="onboarding_types_title">Semua yang Anda butuhkan,\ndalam satu aplikasi</string>
+    <string name="onboarding_types_body">Sepuluh jenis catatan, masing-masing dengan UI sendiri.</string>
+    <string name="onboarding_sync_title">Sinkronkan antar perangkat</string>
+    <string name="onboarding_sync_body">Masuk dengan Google untuk mencadangkan catatan ke Drive. PinIt hanya melihat file yang dibuatnya — konten Drive lain tetap pribadi.</string>
+    <string name="onboarding_notif_body">Tujuan PinIt adalah menyematkan pengingat dan catatan ke panel notifikasi. Tanpa izin ini, item tersemat tidak terlihat.</string>
+    <string name="onboarding_alarm_body">PinIt menjadwalkan alarm tepat agar pengingat berbunyi tepat waktu. Ketuk di bawah untuk mengizinkan di setelan sistem, lalu kembali ke PinIt.</string>
+    <string name="onboarding_open_settings">Buka setelan</string>
+    <string name="onboarding_feat_notes">Catatan</string>
+    <string name="onboarding_feat_notes_sub">Teks kaya dengan format</string>
+    <string name="onboarding_feat_lists">Daftar periksa</string>
+    <string name="onboarding_feat_lists_sub">Centang dari panel notifikasi</string>
+    <string name="onboarding_feat_qr">Kode QR</string>
+    <string name="onboarding_feat_qr_sub">Pindai, simpan, buat ulang</string>
+    <string name="onboarding_feat_links">Tautan</string>
+    <string name="onboarding_feat_links_sub">Kartu pratinjau otomatis</string>
+    <string name="onboarding_feat_contacts">Kontak</string>
+    <string name="onboarding_feat_contacts_sub">Panggil sekali ketuk</string>
+    <string name="onboarding_feat_locations">Lokasi</string>
+    <string name="onboarding_feat_locations_sub">Pin peta + navigasi</string>
+    <string name="onboarding_feat_applists">Daftar aplikasi</string>
+    <string name="onboarding_feat_applists_sub">Pintasan aplikasi</string>
+    <string name="onboarding_feat_images">Gambar</string>
+    <string name="onboarding_feat_images_sub">Sematkan foto ke beranda</string>
+    <string name="onboarding_feat_pdfs">PDF</string>
+    <string name="onboarding_feat_pdfs_sub">Pratinjau halaman pertama</string>
+    <string name="onboarding_feat_audio">Audio</string>
+    <string name="onboarding_feat_audio_sub">Memo suara dengan pemutaran</string>
+    <string name="signin_granting_drive">Memberikan akses Drive…</string>
+    <string name="signin_drive_not_granted">Akses Drive tidak diberikan. Ketuk \'Masuk dengan Google\' lagi dan setujui izin Drive.</string>
+    <string name="signin_syncing">Sudah masuk — menyinkronkan…</string>
+    <string name="signin_not_registered">Gagal masuk: aplikasi belum terdaftar di Google. ID klien OAuth untuk paket ini + SHA-1 belum dibuat di Google Cloud Console.</string>
+    <string name="signin_cancelled">Masuk dibatalkan</string>
+    <string name="signin_network_error">Gagal masuk: kesalahan jaringan</string>
+    <string name="signin_failed_code">Gagal masuk (kode %1$d).</string>
+    <string name="signin_failed_reason">Gagal masuk: %1$s</string>
+    <string name="signin_not_registered_short">Aplikasi belum terdaftar di Google. Anda dapat masuk nanti dari Setelan.</string>
+    <string name="signin_network_retry">Kesalahan jaringan. Coba lagi nanti.</string>
+    <string name="signin_pinit_user">Pengguna PinIt</string>
+    <string name="signin_drive_body">Masuk dengan Google untuk mencadangkan catatan, daftar, label, dan rekaman audio ke Drive. Cadangan masuk ke Drive Saya › PinIt.</string>
+    <string name="signin_privacy_body">PinIt hanya meminta akses ke file yang dibuatnya di Drive Anda. Ia tidak dapat membaca atau mengubah file Drive lain.</string>
+    <string name="signin_last_sync">Sinkron terakhir: %1$s</string>
+    <string name="backup_status_uploading">Mencadangkan ke Drive…</string>
+    <string name="backup_status_saving_offline">Menyimpan cadangan luring…</string>
+    <string name="backup_status_restoring_file">Memulihkan dari file…</string>
+    <string name="backup_status_checking">%1$s — memeriksa Drive…</string>
+    <string name="backup_status_uploaded">Dicadangkan %1$d KB ke Drive</string>
+    <string name="backup_status_saved_to">Disimpan ke %1$s</string>
+    <string name="backup_status_restored">Dipulihkan %1$d catatan; total %2$d</string>
+    <string name="backup_status_up_to_date">Sudah terbaru — %1$d catatan</string>
+    <string name="backup_err_failed">Cadangan gagal</string>
+    <string name="backup_err_offline_failed">Cadangan luring gagal</string>
+    <string name="backup_err_restore_failed">Pemulihan dari file gagal</string>
+    <string name="backup_err_source_failed">%1$s gagal</string>
+    <string name="backup_err_not_signed_in">Belum masuk</string>
+    <string name="backup_source_signin">Masuk</string>
+    <string name="backup_source_restore">Pulihkan</string>
+    <string name="backup_reminders_title">Pengingat cadangan</string>
+    <string name="backup_reminders_sub">Tampilkan spanduk dan pengingat saat ada perubahan yang belum dicadangkan</string>
+    <string name="backup_unbacked_title">Anda punya perubahan yang belum dicadangkan</string>
+    <string name="backup_unbacked_sub">Cadangkan sebelum meng-uninstal, ganti ponsel, atau hapus data.</string>
+    <string name="banner_unbacked_title">Perubahan yang belum dicadangkan</string>
+    <string name="banner_unbacked_body">Edit terbaru belum dicadangkan. Cadangkan sekarang agar aman sebelum meng-uninstal, ganti ponsel, atau hapus data.</string>
+    <string name="banner_unbacked_body_signin">Edit terbaru belum dicadangkan. Masuk dengan Google untuk mencadangkannya ke Drive — tanpa ini, meng-uninstal aplikasi akan menghilangkan catatan.</string>
+    <string name="banner_sign_in_to_back_up">Masuk untuk mencadangkan</string>
+    <string name="stale_body_intro">Cadangan terakhir lebih dari 14 hari lalu. </string>
+    <string name="stale_body_risk">Jika Anda meng-uninstal aplikasi, ganti ponsel, atau hapus data, catatan yang belum disimpan akan hilang. </string>
+    <string name="stale_body_signin">Masuk dengan Google untuk mencadangkannya ke Drive.</string>
+    <string name="stale_body_backup">Ketuk Cadangkan sekarang untuk mengirimnya ke Drive.</string>
+    <string name="search_items">Cari item</string>
+    <string name="archive_empty">Arsip kosong</string>
+    <string name="labels_empty">Belum ada label\nTambahkan dari editor catatan atau daftar</string>
+    <string name="no_notes_with_label">Tidak ada catatan dengan label \"%1$s\"</string>
+    <string name="create_label">Buat \"%1$s\"</string>
+    <string name="get_my_location">Ambil lokasi saya</string>
+    <string name="map_hint">Ketuk peta atau gunakan tombol lokasi</string>
+    <string name="image_pick_hint">Untuk menyimpan gambar, pilih satu dari perangkat.</string>
+    <string name="action_repick">Pilih ulang</string>
+    <string name="action_change">Ubah</string>
+    <string name="action_discard">Buang</string>
+    <string name="action_fetch">Ambil</string>
+    <string name="pick_contact">Pilih kontak</string>
+    <string name="add_app">Tambah aplikasi</string>
+    <string name="qr_save_dialog_body">Simpan salinan kode QR ini sebagai gambar di folder Pictures/PinIt.</string>
+    <string name="audio_tap_to_record">Ketuk untuk merekam</string>
+    <string name="audio_mic_permission">Izin mikrofon diperlukan</string>
+    <string name="audio_recording_progress">Merekam…</string>
+    <string name="audio_recording_ready">Rekaman siap</string>
+    <string name="audio_playing">Memutar</string>
+    <string name="audio_recording_label">Rekaman %1$s</string>
+    <string name="ics_read_failed">Tidak dapat membaca file kalender: %1$s</string>
+    <string name="report_issue_subject">PinIt — Masalah / Masukan</string>
+    <string name="notif_reminder_channel">Pengingat</string>
+    <string name="notif_reminder_title">Pengingat: %1$s</string>
+    <string name="notif_checklist_hint">Buka untuk melihat item daftar</string>
+    <string name="post_update_title">PinIt diperbarui ke v%1$s (Build #%2$d)</string>
+    <string name="post_update_whats_new">Yang baru</string>
+    <string name="report_issue_body">Jelaskan masalah atau bagikan masukan di bawah.</string>
+    <string name="backup_err_create_download">Tidak dapat membuat file di Unduhan</string>
+    <string name="backup_err_open_download">Tidak dapat membuka aliran Unduhan</string>
+    <string name="backup_err_read_file">Tidak dapat membaca file</string>
+    <string name="signin_failed_code_reason">Gagal masuk (kode %1$d): %2$s</string>
+    <string name="unknown_error">tidak diketahui</string>
+    <string name="changelog_1">Lebih banyak bahasa di Setelan — Spanyol, Prancis, Jerman, Italia, Hindi, Arab, Tionghoa Sederhana, Jepang, Korea, Rusia, Indonesia, dan Portugis (Brasil).</string>
+    <string name="changelog_2">Pilih bahasa di Setelan, atau Default sistem agar mengikuti ponsel.</string>
+    <string name="changelog_3">Setiap layar, notifikasi, dan widget mengikuti bahasa yang Anda pilih.</string>
+    <string name="changelog_4">Inggris tetap cadangan jika terjemahan hilang.</string>
+    <string name="label_removed_from_notes">Label \"%1$s\" dihapus dari %2$d catatan</string>
+    <plurals name="plural_pinned_items">
+        <item quantity="one">%d item disematkan</item>
+        <item quantity="other">%d item disematkan</item>
+    </plurals>
+    <plurals name="plural_archived">
+        <item quantity="one">Diarsipkan %d</item>
+        <item quantity="other">Diarsipkan %d</item>
+    </plurals>
+    <plurals name="plural_deleted">
+        <item quantity="one">Dihapus %d</item>
+        <item quantity="other">Dihapus %d</item>
+    </plurals>
+    <plurals name="plural_more_items">
+        <item quantity="one">+ %d item lagi</item>
+        <item quantity="other">+ %d item lagi</item>
+    </plurals>
+    <plurals name="plural_more">
+        <item quantity="one">+ %d lagi</item>
+        <item quantity="other">+ %d lagi</item>
+    </plurals>
+    <plurals name="plural_apps">
+        <item quantity="one">%d Aplikasi</item>
+        <item quantity="other">%d Aplikasi</item>
+    </plurals>
+    <plurals name="plural_pinned">
+        <item quantity="one">%d disematkan</item>
+        <item quantity="other">%d disematkan</item>
+    </plurals>
+    <plurals name="plural_import">
+        <item quantity="one">Impor %d</item>
+        <item quantity="other">Impor %d</item>
+    </plurals>
+    <plurals name="plural_matches">
+        <item quantity="one">%d hasil</item>
+        <item quantity="other">%d hasil</item>
+    </plurals>
+    <plurals name="plural_events_found">
+        <item quantity="one">%d acara ditemukan</item>
+        <item quantity="other">%d acara ditemukan</item>
+    </plurals>
+    <plurals name="plural_events_imported">
+        <item quantity="one">Diimpor %d acara</item>
+        <item quantity="other">Diimpor %d acara</item>
+    </plurals>
+    <plurals name="plural_label_removed">
+        <item quantity="one">Label dihapus dari %d catatan</item>
+        <item quantity="other">Label dihapus dari %d catatan</item>
+    </plurals>
+</resources>

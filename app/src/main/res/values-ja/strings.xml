@@ -1,0 +1,494 @@
+<resources>
+    <!-- Japanese (ja). Brand name "PinIt" is intentionally not translated. -->
+
+    <string name="action_save">保存</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_delete">削除</string>
+    <string name="action_ok">OK</string>
+    <string name="action_undo">元に戻す</string>
+    <string name="action_back">戻る</string>
+    <string name="action_add">追加</string>
+    <string name="action_share">共有</string>
+    <string name="action_copy">コピー</string>
+    <string name="action_open">開く</string>
+    <string name="action_browse">参照</string>
+    <string name="action_browse_files">ファイルを参照</string>
+    <string name="action_call">発信</string>
+    <string name="action_navigate">ナビ</string>
+    <string name="action_play">再生</string>
+    <string name="action_stop">停止</string>
+    <string name="action_record">録音</string>
+    <string name="action_remove">削除</string>
+    <string name="action_rename">名前を変更</string>
+    <string name="action_select">選択</string>
+    <string name="action_skip">スキップ</string>
+    <string name="action_continue">続ける</string>
+    <string name="action_dismiss">閉じる</string>
+    <string name="action_archive">アーカイブ</string>
+    <string name="action_unarchive">アーカイブ解除</string>
+    <string name="action_duplicate">複製</string>
+    <string name="action_rescan">再スキャン</string>
+    <string name="action_grant_permission">許可する</string>
+    <string name="action_check_all">すべて選択</string>
+    <string name="action_uncheck_all">すべて解除</string>
+    <string name="action_clear">クリア</string>
+    <string name="action_more">その他</string>
+
+    <string name="tab_home">ホーム</string>
+    <string name="tab_pinned">ピン留め</string>
+    <string name="tab_labels">ラベル</string>
+    <string name="home_empty">項目はありません</string>
+    <string name="home_empty_pinned">ピン留めはありません</string>
+    <string name="home_drag_to_reorder">ドラッグして並べ替え</string>
+    <string name="home_save_order">順序を保存</string>
+    <string name="home_discard_order">順序を破棄</string>
+    <string name="home_add_to_home_screen">ホーム画面に追加</string>
+    <string name="home_press_back_again">もう一度戻るで終了</string>
+    <string name="home_tap_to_unlock">タップしてロック解除</string>
+    <string name="home_open_link">リンクを開く</string>
+    <string name="home_open_pdf">PDF を開く</string>
+    <string name="home_open_app">アプリを開く</string>
+    <string name="home_copy_label">メモをコピーしました</string>
+
+    <string name="search">検索</string>
+    <string name="search_clear">検索をクリア</string>
+    <string name="sort">並べ替え</string>
+    <string name="profile">プロフィール</string>
+    <string name="account">アカウント</string>
+    <string name="archived_notes">アーカイブしたメモ</string>
+    <string name="back_up_to_drive">Drive にバックアップ</string>
+
+    <string name="sort_newest_first">新しい順</string>
+    <string name="sort_oldest_first">古い順</string>
+    <string name="sort_title_az">タイトル A → Z</string>
+    <string name="sort_title_za">タイトル Z → A</string>
+    <string name="sort_manual">手動の順序</string>
+
+    <string name="type_note">メモ</string>
+    <string name="type_list">チェックリスト</string>
+    <string name="type_qr">QR コード</string>
+    <string name="type_link">リンク</string>
+    <string name="type_contact">連絡先</string>
+    <string name="type_location">場所</string>
+    <string name="type_applist">アプリリスト</string>
+    <string name="type_image">画像</string>
+    <string name="type_pdf">PDF</string>
+    <string name="type_audio">音声</string>
+
+    <string name="field_title_required">タイトル*</string>
+    <string name="field_text_required">本文*</string>
+    <string name="field_link_required">リンク*</string>
+    <string name="field_name_required">名前*</string>
+    <string name="field_phone_required">電話番号*</string>
+    <string name="field_title">タイトル</string>
+    <string name="field_mandatory_note">*必須項目</string>
+    <string name="field_location_name">場所の名前</string>
+    <string name="field_recording_title">録音タイトル（任意）</string>
+    <string name="field_item">項目</string>
+    <string name="field_add_item">項目を追加</string>
+    <string name="pin_to_notifications">通知にピン留め</string>
+    <string name="unpin_from_notifications">通知から外す</string>
+    <string name="lock_note">メモをロック</string>
+    <string name="unlock_note">メモのロック解除</string>
+    <string name="note_color">メモの色</string>
+    <string name="labels">ラベル</string>
+    <string name="add_label">ラベルを追加</string>
+    <string name="label_name">ラベル名</string>
+    <string name="rename_label">ラベル名を変更</string>
+    <string name="delete_label_title">ラベルを削除しますか？</string>
+    <string name="edit_link">リンクを編集</string>
+    <string name="refresh_preview">プレビューを更新</string>
+    <string name="list_type">リストの種類</string>
+    <string name="drag">ドラッグ</string>
+
+    <string name="share_note">メモを共有</string>
+    <string name="share_list">リストを共有</string>
+    <string name="share_link">リンクを共有</string>
+    <string name="share_contact">連絡先を共有</string>
+    <string name="share_location">場所を共有</string>
+    <string name="share_image">画像を共有</string>
+    <string name="share_pdf">PDF を共有</string>
+    <string name="share_app_list">アプリリストを共有</string>
+    <string name="share_qr_content">QR の内容を共有</string>
+    <string name="share_recording">録音を共有</string>
+
+    <string name="set_reminder">リマインダーを設定</string>
+    <string name="add_another_reminder">別のリマインダーを追加</string>
+    <string name="remove_reminder">リマインダーを削除</string>
+    <string name="reminder_added">リマインダーを追加しました</string>
+    <string name="reminder_set">リマインダーを設定しました</string>
+    <string name="reminder_set_bang">リマインダーを設定しました！</string>
+    <string name="reminder_duplicate">その時刻のリマインダーは既にあります</string>
+    <string name="reminder_tomorrow_8am">明日（午前 8:00）</string>
+    <string name="reminder_set_tomorrow_8am">明日の午前 8:00 にリマインダーを設定</string>
+    <string name="reminder_pick_date_time">日時を選択</string>
+    <string name="reminder_select_time">時刻を選択</string>
+    <string name="reminder_past">過去の時刻には設定できません</string>
+    <string name="reminder_needs_notifications">通知の許可がないとリマインダーは表示されません</string>
+    <string name="reminder_allow_notifications">リマインダーのために通知を許可してください</string>
+    <string name="reminder_exact_alarm_missing">正確なアラームの許可がありません。遅れる場合があります。</string>
+    <string name="reminder_default_body">リマインダーの時間です</string>
+    <string name="alarm">アラーム</string>
+
+    <string name="unlock_note_title">メモのロック解除</string>
+    <string name="unlock_note_subtitle">このメモを開くには認証してください</string>
+    <string name="unlock_note_device_credential">PIN、パターン、またはパスワードを入力</string>
+    <string name="locked">ロック中</string>
+
+    <string name="qr_code">QR コード</string>
+    <string name="qr_point_camera">カメラを QR コードに向けてください</string>
+    <string name="qr_camera_permission">QR のスキャンにはカメラの許可が必要です。</string>
+    <string name="qr_pick_from_gallery">ギャラリーから選択</string>
+    <string name="qr_pick_from_gallery_instead">代わりにギャラリーから選択</string>
+    <string name="qr_save_to_gallery">ギャラリーに保存しますか？</string>
+    <string name="qr_saved_to_gallery">ギャラリーに保存しました</string>
+    <string name="qr_no_code_found">画像に QR コードが見つかりません</string>
+    <string name="qr_not_a_link_copied">リンクではありません — コピーしました</string>
+
+    <string name="pick_image">画像を選択</string>
+    <string name="select_an_image">画像を選ぶ</string>
+    <string name="selected_image">選択した画像</string>
+    <string name="select_pdf_to_pin">ピン留めする PDF を選択</string>
+    <string name="pdf_document">PDF ドキュメント</string>
+    <string name="pdf_first_page">PDF の最初のページ</string>
+    <string name="pdf_preview">PDF プレビュー</string>
+    <string name="recording">録音</string>
+
+    <string name="app_shortcuts">アプリのショートカット</string>
+    <string name="apps">アプリ</string>
+    <string name="pick_app_or_shortcut">アプリまたはショートカットを選択</string>
+
+    <string name="search_a_place">場所を検索</string>
+    <string name="selected_location">選択した場所</string>
+
+    <string name="import_calendar_events">カレンダー予定をインポート</string>
+    <string name="no_events_in_file">カレンダーファイルに予定が見つかりません。</string>
+    <string name="no_date">日付なし</string>
+
+    <string name="msg_copied">コピーしました</string>
+    <string name="msg_copied_to_clipboard">クリップボードにコピーしました</string>
+    <string name="msg_archived">アーカイブしました</string>
+    <string name="msg_deleted">削除しました</string>
+    <string name="msg_could_not_open">開けませんでした</string>
+    <string name="msg_could_not_open_image">画像を開けませんでした</string>
+    <string name="msg_failed_to_read_image">画像の読み取りに失敗しました</string>
+    <string name="msg_failed_to_save">保存に失敗しました</string>
+    <string name="msg_couldnt_share">共有できませんでした</string>
+    <string name="msg_could_not_share_recording">録音を共有できませんでした</string>
+    <string name="msg_recording_not_found">録音ファイルが見つかりません</string>
+    <string name="msg_no_pdf_viewer">PDF ビューアが見つかりません</string>
+    <string name="msg_no_pdf_viewer_installed">PDF ビューアがインストールされていません</string>
+    <string name="msg_app_not_installed">アプリがインストールされていません</string>
+    <string name="msg_notification_permission_required">ピン留めには通知の許可が必要です</string>
+    <string name="msg_notification_permission_denied">通知の許可が拒否されました</string>
+    <string name="msg_locked_note_no_widget">ロックされたメモはホーム画面に表示できません</string>
+    <string name="msg_launcher_no_widget_pinning">ランチャーはウィジェットのピン留めに対応していません</string>
+    <string name="msg_delete_label_confirm">\"%1$s\" はすべてのメモから削除されます。メモ自体は残ります。</string>
+    <string name="msg_label_deleted">ラベル \"%1$s\" を削除しました</string>
+    <string name="msg_import_audio_failed">音声をインポートできませんでした: %1$s</string>
+    <string name="msg_recording_failed">録音に失敗しました: %1$s</string>
+
+    <string name="notif_pinned_note">ピン留めしたメモ</string>
+    <string name="notif_add_task">タスクを追加</string>
+    <string name="notif_toggle_all">すべて切り替え</string>
+    <string name="notif_toggle_pin">ピンを切り替え</string>
+    <string name="notif_channel_pinned">ピン留めメモ</string>
+    <string name="notif_add_item">項目を追加</string>
+    <string name="notif_audio_recording">音声録音</string>
+
+    <string name="widget_tap_to_choose_note">タップしてメモを選択</string>
+    <string name="widget_choose_a_note">メモを選択</string>
+    <string name="widget_image_unavailable">画像を利用できません</string>
+    <string name="widget_tap_to_open_app_list">タップしてアプリリストを開く</string>
+    <string name="widget_locked_note">ロックされたメモは表示できません</string>
+    <string name="widget_type">種類</string>
+    <string name="widget_open_in_app">アプリで開く</string>
+    <string name="widget_preview">プレビュー</string>
+    <string name="widget_action">操作</string>
+    <string name="widget_toggle">切り替え</string>
+    <string name="widget_pick">選択</string>
+    <string name="widget_empty">空</string>
+    <string name="widget_label_pinit">PinIt ウィジェット</string>
+
+    <string name="widget_create_text">メモを作成</string>
+    <string name="widget_create_list">チェックリストを作成</string>
+    <string name="widget_create_qr">QR を作成</string>
+    <string name="widget_create_link">リンクを作成</string>
+    <string name="widget_create_contact">連絡先を作成</string>
+    <string name="widget_create_location">場所を作成</string>
+    <string name="widget_create_applist">アプリリストを作成</string>
+    <string name="widget_create_image">画像メモを作成</string>
+    <string name="widget_create_pdf">PDF メモを作成</string>
+    <string name="widget_create_audio">音声メモを作成</string>
+
+    <string name="widget_add_text">メモをホームに追加</string>
+    <string name="widget_add_list">チェックリストをホームに追加</string>
+    <string name="widget_add_qr">QR をホームに追加</string>
+    <string name="widget_add_link">リンクをホームに追加</string>
+    <string name="widget_add_contact">連絡先をホームに追加</string>
+    <string name="widget_add_location">場所をホームに追加</string>
+    <string name="widget_add_applist">アプリリストをホームに追加</string>
+    <string name="widget_add_image">画像をホームに追加</string>
+    <string name="widget_add_pdf">PDF をホームに追加</string>
+    <string name="widget_add_audio">音声をホームに追加</string>
+
+    <string name="widget_create">作成</string>
+    <string name="widget_new_note">新しいメモ</string>
+    <string name="widget_new_list">新しいリスト</string>
+    <string name="widget_note_deleted">メモはもう存在しません</string>
+    <string name="widget_note_archived">メモはアーカイブされています</string>
+
+    <string name="picker_header_text">メモを選択</string>
+    <string name="picker_header_list">チェックリストを選択</string>
+    <string name="picker_header_qr">QR コードを選択</string>
+    <string name="picker_header_link">リンクを選択</string>
+    <string name="picker_header_contact">連絡先を選択</string>
+    <string name="picker_header_location">場所を選択</string>
+    <string name="picker_header_applist">アプリリストを選択</string>
+    <string name="picker_header_image">画像を選択</string>
+    <string name="picker_header_pdf">PDF を選択</string>
+    <string name="picker_header_audio">音声メモを選択</string>
+    <string name="picker_header_default">メモを選択</string>
+    <string name="picker_sub_text">表示するテキストメモを選ぶ</string>
+    <string name="picker_sub_list">ホームにピン留めするチェックリストを選ぶ</string>
+    <string name="picker_sub_qr">表示する QR コードを選ぶ</string>
+    <string name="picker_sub_link">保存済みのリンクを選ぶ</string>
+    <string name="picker_sub_contact">ワンタップ発信する連絡先を選ぶ</string>
+    <string name="picker_sub_location">すばやくナビする場所を選ぶ</string>
+    <string name="picker_sub_applist">アプリリストを選ぶ</string>
+    <string name="picker_sub_image">画像メモを選ぶ</string>
+    <string name="picker_sub_pdf">PDF メモを選ぶ</string>
+    <string name="picker_sub_audio">ボイスメモを選ぶ</string>
+    <string name="picker_sub_default">表示するメモを選ぶ</string>
+    <string name="picker_empty_text">テキストメモはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="picker_empty_list">チェックリストはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="picker_empty_qr">QR コードはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="picker_empty_link">リンクメモはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="picker_empty_contact">連絡先メモはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="picker_empty_location">場所メモはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="picker_empty_applist">アプリリストはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="picker_empty_image">画像メモはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="picker_empty_pdf">PDF メモはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="picker_empty_audio">音声メモはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="picker_empty_default">メモはまだありません。
+先に PinIt で作成してください。</string>
+    <string name="untitled">無題</string>
+
+    <string name="settings">設定</string>
+    <string name="settings_appearance">外観</string>
+    <string name="settings_language">言語</string>
+    <string name="settings_backup">バックアップ</string>
+    <string name="settings_about">情報</string>
+    <string name="settings_version">バージョン</string>
+    <string name="theme_light">ライト</string>
+    <string name="theme_dark">ダーク</string>
+    <string name="theme_system_default">システムのデフォルト</string>
+    <string name="language_system_default">システムのデフォルト</string>
+    <string name="privacy">プライバシー</string>
+    <string name="report_an_issue">問題を報告</string>
+    <string name="msg_no_mail_app">メールアプリがインストールされていません</string>
+
+    <string name="backup_take_online">オンラインバックアップ</string>
+    <string name="backup_take_offline">オフラインバックアップ</string>
+    <string name="backup_upload_to_drive">Google Drive にアップロード</string>
+    <string name="backup_save_to_download">.pinit ファイルを Download/PinIt/ に保存</string>
+    <string name="backup_restore_from_file">ファイルから復元</string>
+    <string name="backup_pick_pinit_file">端末から .pinit ファイルを選択</string>
+    <string name="backup_restore_from_drive">Drive から復元</string>
+    <string name="backup_now">今すぐバックアップ</string>
+    <string name="backup_backing_up">バックアップ中…</string>
+    <string name="backup_your_notes">メモをバックアップ</string>
+    <string name="backup_sign_in_first">先に Google でサインイン</string>
+    <string name="backup_remind_me_later">後で通知</string>
+    <string name="backup_dont_ask_again">今後表示しない</string>
+
+    <string name="sign_in">サインイン</string>
+    <string name="sign_out">サインアウト</string>
+    <string name="sign_in_with_google">Google でサインイン</string>
+    <string name="signing_in">サインイン中…</string>
+    <string name="continue_as_guest">ゲストとして続ける</string>
+    <string name="maybe_later">後で</string>
+    <string name="profile_photo">プロフィール写真</string>
+    <string name="onboarding_notification_permission">通知の許可</string>
+    <string name="onboarding_reminder_alarms">リマインダーアラーム</string>
+    <string name="show_full_changelog">変更履歴をすべて表示</string>
+
+    <string name="fab_new_note">新しいメモ</string>
+    <string name="fab_new_list">新しいリスト</string>
+    <string name="fab_new_location">新しい場所</string>
+    <string name="fab_new_qr">新しい QR</string>
+    <string name="fab_new_app_list">新しいアプリリスト</string>
+    <string name="fab_new_link">新しいリンク</string>
+    <string name="fab_new_contact">新しい連絡先</string>
+    <string name="fab_new_image">新しい画像</string>
+    <string name="fab_new_pdf">新しい PDF</string>
+    <string name="fab_record_audio">音声を録音</string>
+    <string name="fab_import_ics">.ics をインポート</string>
+    <string name="onboarding_welcome_title">PinIt へようこそ</string>
+    <string name="onboarding_welcome_body">大切なものをピン留め — メモ、リスト、リンク、連絡先、場所、QR コードなど — 通知シェードとホーム画面へ直接。</string>
+    <string name="onboarding_types_title">必要なものはすべて、\n1 つのアプリに</string>
+    <string name="onboarding_types_body">10 種類のメモ。それぞれ専用の UI。</string>
+    <string name="onboarding_sync_title">端末間で同期</string>
+    <string name="onboarding_sync_body">Google でサインインして Drive にバックアップ。PinIt が見るのは作成したファイルだけ — 他の Drive は非公開のままです。</string>
+    <string name="onboarding_notif_body">PinIt はリマインダーとメモを通知シェードにピン留めします。この許可がないとピン留めは表示されません。</string>
+    <string name="onboarding_alarm_body">正確なアラームでリマインダーを定時に鳴らします。下をタップしてシステム設定で許可し、PinIt に戻ってください。</string>
+    <string name="onboarding_open_settings">設定を開く</string>
+    <string name="onboarding_feat_notes">メモ</string>
+    <string name="onboarding_feat_notes_sub">書式付きリッチテキスト</string>
+    <string name="onboarding_feat_lists">チェックリスト</string>
+    <string name="onboarding_feat_lists_sub">シェードからチェック</string>
+    <string name="onboarding_feat_qr">QR コード</string>
+    <string name="onboarding_feat_qr_sub">スキャン、保存、再生成</string>
+    <string name="onboarding_feat_links">リンク</string>
+    <string name="onboarding_feat_links_sub">自動プレビューカード</string>
+    <string name="onboarding_feat_contacts">連絡先</string>
+    <string name="onboarding_feat_contacts_sub">ワンタップ発信</string>
+    <string name="onboarding_feat_locations">場所</string>
+    <string name="onboarding_feat_locations_sub">地図ピン + ナビ</string>
+    <string name="onboarding_feat_applists">アプリリスト</string>
+    <string name="onboarding_feat_applists_sub">アプリのショートカット</string>
+    <string name="onboarding_feat_images">画像</string>
+    <string name="onboarding_feat_images_sub">写真をホームにピン</string>
+    <string name="onboarding_feat_pdfs">PDF</string>
+    <string name="onboarding_feat_pdfs_sub">最初のページのプレビュー</string>
+    <string name="onboarding_feat_audio">音声</string>
+    <string name="onboarding_feat_audio_sub">再生できるボイスメモ</string>
+    <string name="signin_granting_drive">Drive へのアクセスを許可中…</string>
+    <string name="signin_drive_not_granted">Drive へのアクセスが許可されていません。もう一度「Google でサインイン」をタップして Drive を許可してください。</string>
+    <string name="signin_syncing">サインイン済み — 同期中…</string>
+    <string name="signin_not_registered">サインイン失敗: アプリが Google に登録されていません。このパッケージ + SHA-1 の OAuth クライアント ID が Google Cloud Console にありません。</string>
+    <string name="signin_cancelled">サインインをキャンセルしました</string>
+    <string name="signin_network_error">サインイン失敗: ネットワークエラー</string>
+    <string name="signin_failed_code">サインイン失敗（コード %1$d）。</string>
+    <string name="signin_failed_reason">サインイン失敗: %1$s</string>
+    <string name="signin_not_registered_short">アプリはまだ Google に登録されていません。後で設定からサインインできます。</string>
+    <string name="signin_network_retry">ネットワークエラー。後でもう一度お試しください。</string>
+    <string name="signin_pinit_user">PinIt ユーザー</string>
+    <string name="signin_drive_body">Google でサインインして、メモ、リスト、ラベル、録音を Drive にバックアップ。保存先はマイドライブ › PinIt です。</string>
+    <string name="signin_privacy_body">PinIt が求めるのは、Drive 上で作成したファイルへのアクセスのみです。他のファイルは読み取り・変更できません。</string>
+    <string name="signin_last_sync">前回の同期: %1$s</string>
+    <string name="backup_status_uploading">Drive にバックアップ中…</string>
+    <string name="backup_status_saving_offline">オフラインバックアップを保存中…</string>
+    <string name="backup_status_restoring_file">ファイルから復元中…</string>
+    <string name="backup_status_checking">%1$s — Drive を確認中…</string>
+    <string name="backup_status_uploaded">%1$d KB を Drive にバックアップしました</string>
+    <string name="backup_status_saved_to">%1$s に保存しました</string>
+    <string name="backup_status_restored">%1$d 件を復元、合計 %2$d 件</string>
+    <string name="backup_status_up_to_date">最新です — %1$d 件</string>
+    <string name="backup_err_failed">バックアップに失敗しました</string>
+    <string name="backup_err_offline_failed">オフラインバックアップに失敗しました</string>
+    <string name="backup_err_restore_failed">ファイルからの復元に失敗しました</string>
+    <string name="backup_err_source_failed">%1$s に失敗しました</string>
+    <string name="backup_err_not_signed_in">サインインしていません</string>
+    <string name="backup_source_signin">サインイン</string>
+    <string name="backup_source_restore">復元</string>
+    <string name="backup_reminders_title">バックアップのリマインダー</string>
+    <string name="backup_reminders_sub">未バックアップの変更があるときにバナーと通知を表示</string>
+    <string name="backup_unbacked_title">未バックアップの変更があります</string>
+    <string name="backup_unbacked_sub">アンインストール、機種変更、データ消去の前にバックアップしてください。</string>
+    <string name="banner_unbacked_title">未バックアップの変更</string>
+    <string name="banner_unbacked_body">最近の編集はまだバックアップされていません。アンインストールや機種変更の前に今すぐバックアップしてください。</string>
+    <string name="banner_unbacked_body_signin">最近の編集はバックアップされていません。Google でサインインして Drive に保存してください。しないとアプリ削除でメモが失われます。</string>
+    <string name="banner_sign_in_to_back_up">バックアップするためにサインイン</string>
+    <string name="stale_body_intro">前回のバックアップから 14 日以上経過しています。 </string>
+    <string name="stale_body_risk">アプリを削除したり端末を替えたりデータを消したりすると、未保存のメモは失われます。 </string>
+    <string name="stale_body_signin">Google でサインインして Drive にバックアップしてください。</string>
+    <string name="stale_body_backup">今すぐバックアップをタップして Drive に送信。</string>
+    <string name="search_items">項目を検索</string>
+    <string name="archive_empty">アーカイブは空です</string>
+    <string name="labels_empty">ラベルはまだありません\nメモまたはリストの編集画面から追加</string>
+    <string name="no_notes_with_label">ラベル \"%1$s\" のメモはありません</string>
+    <string name="create_label">\"%1$s\" を作成</string>
+    <string name="get_my_location">現在地を取得</string>
+    <string name="map_hint">地図をタップするか位置ボタンを使用</string>
+    <string name="image_pick_hint">画像を保存するには端末から選択してください。</string>
+    <string name="action_repick">選び直す</string>
+    <string name="action_change">変更</string>
+    <string name="action_discard">破棄</string>
+    <string name="action_fetch">取得</string>
+    <string name="pick_contact">連絡先を選択</string>
+    <string name="add_app">アプリを追加</string>
+    <string name="qr_save_dialog_body">この QR コードのコピーを Pictures/PinIt フォルダに画像として保存します。</string>
+    <string name="audio_tap_to_record">タップして録音</string>
+    <string name="audio_mic_permission">マイクの許可が必要です</string>
+    <string name="audio_recording_progress">録音中…</string>
+    <string name="audio_recording_ready">録音の準備完了</string>
+    <string name="audio_playing">再生中</string>
+    <string name="audio_recording_label">録音 %1$s</string>
+    <string name="ics_read_failed">カレンダーファイルを読めませんでした: %1$s</string>
+    <string name="report_issue_subject">PinIt — 問題 / フィードバック</string>
+    <string name="notif_reminder_channel">リマインダー</string>
+    <string name="notif_reminder_title">リマインダー: %1$s</string>
+    <string name="notif_checklist_hint">開いてリスト項目を表示</string>
+    <string name="post_update_title">PinIt を v%1$s に更新（ビルド #%2$d）</string>
+    <string name="post_update_whats_new">新着情報</string>
+    <string name="report_issue_body">問題の説明やフィードバックを下に記入してください。</string>
+    <string name="backup_err_create_download">ダウンロードにファイルを作成できませんでした</string>
+    <string name="backup_err_open_download">ダウンロードストリームを開けませんでした</string>
+    <string name="backup_err_read_file">ファイルを読めませんでした</string>
+    <string name="signin_failed_code_reason">サインイン失敗（コード %1$d）: %2$s</string>
+    <string name="unknown_error">不明</string>
+    <string name="changelog_1">設定に言語を追加 — スペイン語、フランス語、ドイツ語、イタリア語、ヒンディー語、アラビア語、簡体字中国語、日本語、韓国語、ロシア語、インドネシア語、ポルトガル語（ブラジル）。</string>
+    <string name="changelog_2">設定で言語を選ぶか、システムのデフォルトで端末に合わせます。</string>
+    <string name="changelog_3">画面、通知、ウィジェットはすべて選択した言語に従います。</string>
+    <string name="changelog_4">翻訳がない場合は英語がフォールバックです。</string>
+    <string name="label_removed_from_notes">ラベル \"%1$s\" を %2$d 件のメモから削除しました</string>
+    <plurals name="plural_pinned_items">
+        <item quantity="one">ピン留め %d 件</item>
+        <item quantity="other">ピン留め %d 件</item>
+    </plurals>
+    <plurals name="plural_archived">
+        <item quantity="one">アーカイブ %d</item>
+        <item quantity="other">アーカイブ %d</item>
+    </plurals>
+    <plurals name="plural_deleted">
+        <item quantity="one">削除 %d</item>
+        <item quantity="other">削除 %d</item>
+    </plurals>
+    <plurals name="plural_more_items">
+        <item quantity="one">+ 他 %d 件</item>
+        <item quantity="other">+ 他 %d 件</item>
+    </plurals>
+    <plurals name="plural_more">
+        <item quantity="one">+ 他 %d</item>
+        <item quantity="other">+ 他 %d</item>
+    </plurals>
+    <plurals name="plural_apps">
+        <item quantity="one">アプリ %d</item>
+        <item quantity="other">アプリ %d</item>
+    </plurals>
+    <plurals name="plural_pinned">
+        <item quantity="one">ピン %d</item>
+        <item quantity="other">ピン %d</item>
+    </plurals>
+    <plurals name="plural_import">
+        <item quantity="one">%d 件をインポート</item>
+        <item quantity="other">%d 件をインポート</item>
+    </plurals>
+    <plurals name="plural_matches">
+        <item quantity="one">%d 件一致</item>
+        <item quantity="other">%d 件一致</item>
+    </plurals>
+    <plurals name="plural_events_found">
+        <item quantity="one">予定 %d 件見つかりました</item>
+        <item quantity="other">予定 %d 件見つかりました</item>
+    </plurals>
+    <plurals name="plural_events_imported">
+        <item quantity="one">予定 %d 件をインポートしました</item>
+        <item quantity="other">予定 %d 件をインポートしました</item>
+    </plurals>
+    <plurals name="plural_label_removed">
+        <item quantity="one">%d 件のメモからラベルを削除</item>
+        <item quantity="other">%d 件のメモからラベルを削除</item>
+    </plurals>
+</resources>

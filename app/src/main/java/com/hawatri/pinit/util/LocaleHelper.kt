@@ -17,7 +17,18 @@ import java.util.Locale
 enum class AppLanguage(val tag: String, val displayName: String) {
     SYSTEM("", "System default"),
     ENGLISH("en", "English"),
-    PORTUGUESE_BR("pt-BR", "Português (Brasil)");
+    PORTUGUESE_BR("pt-BR", "Português (Brasil)"),
+    SPANISH("es", "Español"),
+    FRENCH("fr", "Français"),
+    GERMAN("de", "Deutsch"),
+    ITALIAN("it", "Italiano"),
+    HINDI("hi", "हिन्दी"),
+    ARABIC("ar", "العربية"),
+    CHINESE_SIMPLIFIED("zh-CN", "简体中文"),
+    JAPANESE("ja", "日本語"),
+    KOREAN("ko", "한국어"),
+    RUSSIAN("ru", "Русский"),
+    INDONESIAN("id", "Bahasa Indonesia");
 
     companion object {
         fun fromTag(tag: String?): AppLanguage =
