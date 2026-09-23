@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="action_save">Сохранить</string>
     <string name="action_cancel">Отмена</string>
     <string name="action_delete">Удалить</string>
@@ -412,10 +412,10 @@
     <string name="backup_err_read_file">Не удалось прочитать файл</string>
     <string name="signin_failed_code_reason">Ошибка входа (код %1$d): %2$s</string>
     <string name="unknown_error">неизвестно</string>
-    <string name="changelog_1">В настройках больше языков — испанский, французский, немецкий, итальянский, хинди, арабский, упрощённый китайский, японский, корейский, русский, индонезийский и бразильский португальский.</string>
-    <string name="changelog_2">Выберите свой в настройках или «Как в системе», чтобы следовать телефону.</string>
-    <string name="changelog_3">Все экраны, уведомления и виджеты следуют выбранному языку.</string>
-    <string name="changelog_4">Английский остаётся запасным вариантом, если перевода нет.</string>
+    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
+    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
+    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
+    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
     <string name="label_removed_from_notes">Метка «%1$s» удалена с %2$d заметок</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d закреплённый элемент</item>

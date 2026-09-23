@@ -17,6 +17,7 @@ import androidx.core.app.NotificationCompat
 import com.google.gson.Gson
 import com.hawatri.pinit.MainActivity
 import com.hawatri.pinit.R
+import com.hawatri.pinit.data.AppPreferences
 import com.hawatri.pinit.receiver.NotificationReceiver
 import com.hawatri.pinit.ui.AppNoteItem
 import com.hawatri.pinit.ui.AudioNoteData
@@ -39,6 +40,7 @@ class NotificationHelper(private val context: Context) {
 
     private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val channelId = "pinned_notes_channel"
+    private val reminderChannelId = "reminder_notes_channel"
 
     companion object {
         const val ACTION_REMOVE_PIN = "ACTION_REMOVE_PIN"
@@ -57,15 +59,47 @@ class NotificationHelper(private val context: Context) {
 
         private const val GROUP_KEY = "com.hawatri.pinit.PINNED"
         private const val SUMMARY_ID = -9999
+        private const val QUICK_ADD_ID = -9998
     }
 
     init { createChannel() }
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, s(R.string.notif_channel_pinned), NotificationManager.IMPORTANCE_LOW)
-            manager.createNotificationChannel(channel)
+            val pinned = NotificationChannel(channelId, s(R.string.notif_channel_pinned), NotificationManager.IMPORTANCE_LOW)
+            manager.createNotificationChannel(pinned)
+            val reminders = NotificationChannel(
+                reminderChannelId,
+                s(R.string.notif_channel_reminders),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = s(R.string.notif_channel_reminders_desc)
+                enableVibration(true)
+            }
+            manager.createNotificationChannel(reminders)
         }
+    }
+
+    private fun buildEditPendingIntent(noteId: String): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("WIDGET_OPEN_NOTE_ID", noteId)
+        }
+        return PendingIntent.getActivity(
+            context, ("edit_$noteId").hashCode(), intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun buildQuickActionPending(action: String): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("WIDGET_ACTION", action)
+        }
+        return PendingIntent.getActivity(
+            context, ("quick_$action").hashCode(), intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     fun pinNoteToNotification(noteId: String, title: String, text: String, isList: Boolean = false, noteType: String? = null) {
@@ -81,13 +115,7 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val openAppIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val openAppPendingIntent = PendingIntent.getActivity(
-            context, noteId.hashCode(), openAppIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val openAppPendingIntent = buildEditPendingIntent(noteId)
 
         // Delete intent — fires if the user dismisses the notification (long-press
         // dismiss on Android 14+, or system clears). We re-pin it so the note stays
@@ -109,6 +137,7 @@ class NotificationHelper(private val context: Context) {
             .setContentIntent(openAppPendingIntent)
             .setDeleteIntent(repinPendingIntent)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setGroup(GROUP_KEY)
 
         if (isAppList) {
@@ -453,9 +482,33 @@ class NotificationHelper(private val context: Context) {
             .setGroupSummary(true)
             .setOngoing(true)
             .setAutoCancel(false)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .addAction(0, s(R.string.action_new_note), buildQuickActionPending("new_note"))
+            .addAction(0, s(R.string.action_new_list), buildQuickActionPending("new_list"))
             .build()
 
         manager.notify(SUMMARY_ID, summaryNotification)
+        refreshQuickAdd()
+    }
+
+    /** Shows or hides the persistent "quick add a pinned note" shade shortcut. */
+    fun refreshQuickAdd() {
+        if (!AppPreferences.isQuickAddNotificationEnabled(context)) {
+            manager.cancel(QUICK_ADD_ID)
+            return
+        }
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(s(R.string.notif_quick_add_title))
+            .setContentText(s(R.string.notif_quick_add_body))
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(buildQuickActionPending("new_note"))
+            .addAction(0, s(R.string.action_new_note), buildQuickActionPending("new_note"))
+            .addAction(0, s(R.string.action_new_list), buildQuickActionPending("new_list"))
+            .build()
+        manager.notify(QUICK_ADD_ID, notification)
     }
 
     private fun drawableToBitmap(drawable: Drawable): Bitmap {
@@ -485,31 +538,64 @@ class NotificationHelper(private val context: Context) {
         } catch (e: Exception) { null }
     }
 
-    fun showReminderNotification(noteId: String, title: String, text: String, isList: Boolean = false) {
+    fun showReminderNotification(
+        noteId: String,
+        title: String,
+        text: String,
+        isList: Boolean = false,
+        noteType: String? = null
+    ) {
         val displayTitle = if (title.isBlank()) {
             s(R.string.notif_reminder_channel)
         } else {
             LocaleHelper.getString(context, R.string.notif_reminder_title, title)
         }
-        val content = if (isList) s(R.string.notif_checklist_hint) else text
+        val content = reminderBody(text, isList, noteType)
 
-        val openAppIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val openAppPendingIntent = PendingIntent.getActivity(
-            context, (noteId + "_reminder_open").hashCode(), openAppIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notification = NotificationCompat.Builder(context, channelId)
+        val notification = NotificationCompat.Builder(context, reminderChannelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(displayTitle)
-            .setContentText(content.ifBlank { s(R.string.reminder_default_body) })
-            .setStyle(NotificationCompat.BigTextStyle().bigText(content.ifBlank { s(R.string.reminder_default_body) }))
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
             .setAutoCancel(true)
-            .setContentIntent(openAppPendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(buildEditPendingIntent(noteId))
+            .addAction(0, s(R.string.action_edit), buildEditPendingIntent(noteId))
             .build()
 
         manager.notify((noteId + "_reminder").hashCode(), notification)
+    }
+
+    private fun reminderBody(text: String, isList: Boolean, noteType: String?): String {
+        if (isList || noteType == com.hawatri.pinit.data.NoteType.LIST) {
+            return s(R.string.notif_checklist_hint)
+        }
+        return when (noteType) {
+            com.hawatri.pinit.data.NoteType.LINK -> {
+                val data = try { Gson().fromJson(text, LinkNoteData::class.java) } catch (_: Exception) { null }
+                data?.title?.ifBlank { data.url } ?: s(R.string.reminder_default_body)
+            }
+            com.hawatri.pinit.data.NoteType.CONTACT -> {
+                val data = try { Gson().fromJson(text, ContactNoteData::class.java) } catch (_: Exception) { null }
+                listOfNotNull(data?.name?.takeIf { it.isNotBlank() }, data?.phone?.takeIf { it.isNotBlank() })
+                    .joinToString(" · ")
+                    .ifBlank { s(R.string.reminder_default_body) }
+            }
+            com.hawatri.pinit.data.NoteType.LOCATION -> {
+                val data = try { Gson().fromJson(text, LocationNoteData::class.java) } catch (_: Exception) { null }
+                data?.address?.ifBlank { data.name } ?: s(R.string.reminder_default_body)
+            }
+            com.hawatri.pinit.data.NoteType.QR -> text.ifBlank { s(R.string.reminder_default_body) }
+            com.hawatri.pinit.data.NoteType.IMAGE -> s(R.string.type_image)
+            com.hawatri.pinit.data.NoteType.PDF -> s(R.string.pdf_document)
+            com.hawatri.pinit.data.NoteType.AUDIO -> s(R.string.notif_audio_recording)
+            com.hawatri.pinit.data.NoteType.APPLIST -> s(R.string.type_applist)
+            else -> if (text.startsWith("{") || text.startsWith("[")) {
+                s(R.string.reminder_default_body)
+            } else {
+                text.ifBlank { s(R.string.reminder_default_body) }
+            }
+        }
     }
 }

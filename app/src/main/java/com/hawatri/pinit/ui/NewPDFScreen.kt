@@ -55,6 +55,7 @@ fun NewPDFScreen(
     var isLocked by remember { mutableStateOf(false) }
     var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
+    var folder by remember { mutableStateOf("") }
     var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
@@ -71,6 +72,7 @@ fun NewPDFScreen(
                 isLocked = existing.isLocked
                 colorHex = existing.colorHex
                 labels = existing.labels
+                folder = existing.folder
                 isInitialized = true
             }
         }
@@ -104,7 +106,8 @@ fun NewPDFScreen(
             noteType = NoteType.PDF,
             colorHex = colorHex,
             isLocked = isLocked,
-            labels = labels
+            labels = labels,
+            folder = folder
         )
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
@@ -283,7 +286,10 @@ fun NewPDFScreen(
             currentLabels = labels,
             allExistingLabels = allLabels,
             onLabelsChange = { labels = it; if (selectedPdfUri != null) save() },
-            onDismiss = { showLabelsSheet = false }
+            onDismiss = { showLabelsSheet = false },
+            currentFolder = folder,
+            allExistingFolders = remember(notesList) { notesList.map { it.folder }.filter { it.isNotBlank() }.distinct() },
+            onFolderChange = { folder = it; if (selectedPdfUri != null) save() }
         )
     }
 }

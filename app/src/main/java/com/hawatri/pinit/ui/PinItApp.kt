@@ -37,6 +37,7 @@ fun PinItApp(
     sharedIcsUri: String? = null,
     widgetAction: String? = null,
     widgetOpenNoteId: String? = null,
+    launchGeneration: Long = 0L,
     currentTheme: ThemeMode = ThemeMode.SYSTEM,
     onThemeChange: (ThemeMode) -> Unit = {},
     onLanguageChange: (String) -> Unit = {}
@@ -63,8 +64,8 @@ fun PinItApp(
         com.hawatri.pinit.widget.AddWidgets.requestUpdateAll(context)
     }
 
-    // Handle widget quick-action intents
-    LaunchedEffect(widgetAction) {
+    // Handle widget / notification quick-action intents
+    LaunchedEffect(widgetAction, launchGeneration) {
         when (widgetAction) {
             "new_note" -> navController.navigate("new_note")
             "new_list" -> navController.navigate("new_list")
@@ -79,7 +80,7 @@ fun PinItApp(
         }
     }
 
-    LaunchedEffect(widgetOpenNoteId, notes) {
+    LaunchedEffect(widgetOpenNoteId, notes, launchGeneration) {
         if (widgetOpenNoteId != null) {
             val note = notes.find { it.id == widgetOpenNoteId } ?: return@LaunchedEffect
             val route = when {

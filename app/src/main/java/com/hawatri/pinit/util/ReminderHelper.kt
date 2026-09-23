@@ -5,15 +5,19 @@ import android.app.PendingIntent
 import android.content.pm.PackageManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import com.hawatri.pinit.data.NoteDatabase
 import com.hawatri.pinit.receiver.AlarmReceiver
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
 import com.hawatri.pinit.R
+import kotlinx.coroutines.flow.firstOrNull
 
 const val EXTRA_NOTE_ID = "EXTRA_NOTE_ID"
 const val EXTRA_NOTE_TITLE = "EXTRA_NOTE_TITLE"
@@ -49,20 +53,60 @@ private fun buildAlarmIntent(context: Context, noteId: String, noteTitle: String
         putExtra(EXTRA_REMINDER_TIME, timeMillis)
     }
 
-/** Schedules an alarm at [timeMillis]. Multiple alarms per note are supported via unique request codes. */
-fun scheduleAlarmAt(context: Context, noteId: String, noteTitle: String, timeMillis: Long): Boolean {
+/** Opens the system screen where the user can grant exact-alarm permission. */
+fun openExactAlarmSettings(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+    runCatching {
+        context.startActivity(
+            Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                data = Uri.parse("package:${context.packageName}")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
+    }
+}
+
+/** Opens app settings so the user can exempt PinIt from battery optimization. */
+fun openAppNotificationSettings(context: Context) {
+    runCatching {
+        context.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:${context.packageName}")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
+    }
+}
+
+/**
+ * Schedules an alarm at [timeMillis]. Multiple alarms per note are supported via unique request codes.
+ * Pass [notifyUser] = false when rescheduling in the background (boot / process start).
+ */
+fun scheduleAlarmAt(
+    context: Context,
+    noteId: String,
+    noteTitle: String,
+    timeMillis: Long,
+    notifyUser: Boolean = true
+): Boolean {
     if (!hasNotificationPermission(context)) {
-        Toast.makeText(context, LocaleHelper.getString(context, R.string.reminder_allow_notifications), Toast.LENGTH_LONG).show()
+        if (notifyUser) {
+            Toast.makeText(context, LocaleHelper.getString(context, R.string.reminder_allow_notifications), Toast.LENGTH_LONG).show()
+        }
         return false
     }
     if (timeMillis <= System.currentTimeMillis()) {
-        Toast.makeText(context, LocaleHelper.getString(context, R.string.reminder_past), Toast.LENGTH_SHORT).show()
+        if (notifyUser) {
+            Toast.makeText(context, LocaleHelper.getString(context, R.string.reminder_past), Toast.LENGTH_SHORT).show()
+        }
         return false
     }
 
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+    val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+    if (!canExact && notifyUser) {
         Toast.makeText(context, LocaleHelper.getString(context, R.string.reminder_exact_alarm_missing), Toast.LENGTH_LONG).show()
+        openExactAlarmSettings(context)
     }
 
     val intent = buildAlarmIntent(context, noteId, noteTitle, timeMillis)
@@ -73,12 +117,48 @@ fun scheduleAlarmAt(context: Context, noteId: String, noteTitle: String, timeMil
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+    if (canExact) {
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
     } else {
         alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
     }
     return true
+}
+
+/**
+ * Re-arms every future reminder and immediately delivers any that were missed
+ * while the device was off / the process was dead. AlarmManager drops alarms
+ * on reboot and after an app update — this is the safety net.
+ */
+suspend fun rescheduleAllReminders(context: Context) {
+    val dao = NoteDatabase.getDatabase(context).noteDao()
+    val notes = dao.getAllNotes().firstOrNull() ?: return
+    val now = System.currentTimeMillis()
+    val helper = NotificationHelper(context)
+    notes.filter { !it.isArchived }.forEach { note ->
+        val future = note.reminders.filter { it > now }
+        val missed = note.reminders.filter { it <= now }
+        future.forEach { time ->
+            scheduleAlarmAt(context, note.id, note.title, time, notifyUser = false)
+        }
+        if (missed.isNotEmpty()) {
+            helper.showReminderNotification(
+                noteId = note.id,
+                title = note.title,
+                text = note.text,
+                isList = note.isList,
+                noteType = note.noteType
+            )
+            dao.updateNote(
+                note.copy(
+                    reminders = future,
+                    isPinned = true,
+                    reminderText = future.minOrNull()?.let { formatAlarmText(it) }
+                )
+            )
+            helper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType)
+        }
+    }
 }
 
 /** Cancels a single scheduled alarm. */

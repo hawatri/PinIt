@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <!-- Simplified Chinese (zh-CN). Brand name "PinIt" is intentionally not translated. -->
 
     <string name="action_save">保存</string>
@@ -438,10 +438,10 @@
     <string name="backup_err_read_file">无法读取文件</string>
     <string name="signin_failed_code_reason">登录失败（代码 %1$d）：%2$s</string>
     <string name="unknown_error">未知</string>
-    <string name="changelog_1">设置中新增更多语言 — 西班牙语、法语、德语、意大利语、印地语、阿拉伯语、简体中文、日语、韩语、俄语、印尼语和葡萄牙语（巴西）。</string>
-    <string name="changelog_2">在设置中选择你的语言，或选择跟随系统以使用手机语言。</string>
-    <string name="changelog_3">所有屏幕、通知和微件都会跟随所选语言。</string>
-    <string name="changelog_4">若缺少翻译，仍会回退到英语。</string>
+    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
+    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
+    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
+    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
     <string name="label_removed_from_notes">已从 %2$d 条笔记移除标签 \"%1$s\"</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d 个已固定项目</item>

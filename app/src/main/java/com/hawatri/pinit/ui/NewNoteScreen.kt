@@ -118,6 +118,7 @@ fun NewNoteScreen(
     var colorHex by remember { mutableStateOf<String?>(null) }
     var isLocked by remember { mutableStateOf(false) }
     var labels by remember { mutableStateOf(listOf<String>()) }
+    var folder by remember { mutableStateOf("") }
     var showLabelsSheet by remember { mutableStateOf(false) }
 
     val undoHistory = remember { ArrayDeque<String>() }
@@ -145,7 +146,8 @@ fun NewNoteScreen(
             noteType = com.hawatri.pinit.data.NoteType.TEXT,
             colorHex = colorHex,
             isLocked = isLocked,
-            labels = labels
+            labels = labels,
+            folder = folder
         )
 
         if (existing != null) viewModel.updateNote(noteToPersist) else viewModel.addNote(noteToPersist)
@@ -209,6 +211,7 @@ fun NewNoteScreen(
                 colorHex = existingNote.colorHex
                 isLocked = existingNote.isLocked
                 labels = existingNote.labels
+                folder = existingNote.folder
                 isInitialized = true
             }
         }
@@ -678,7 +681,10 @@ fun NewNoteScreen(
             currentLabels = labels,
             allExistingLabels = allLabels,
             onLabelsChange = { labels = it; saveOrUpdateNote() },
-            onDismiss = { showLabelsSheet = false }
+            onDismiss = { showLabelsSheet = false },
+            currentFolder = folder,
+            allExistingFolders = remember(notesList) { notesList.map { it.folder }.filter { it.isNotBlank() }.distinct() },
+            onFolderChange = { folder = it; saveOrUpdateNote() }
         )
     }
 }

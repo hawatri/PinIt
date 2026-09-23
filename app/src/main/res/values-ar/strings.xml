@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="action_save">حفظ</string>
     <string name="action_cancel">إلغاء</string>
     <string name="action_delete">حذف</string>
@@ -412,10 +412,10 @@
     <string name="backup_err_read_file">تعذّرت قراءة الملف</string>
     <string name="signin_failed_code_reason">فشل تسجيل الدخول (الرمز %1$d): %2$s</string>
     <string name="unknown_error">غير معروف</string>
-    <string name="changelog_1">المزيد من اللغات في الإعدادات — الإسبانية والفرنسية والألمانية والإيطالية والهندية والعربية والصينية المبسطة واليابانية والكورية والروسية والإندونيسية والبرتغالية البرازيلية.</string>
-    <string name="changelog_2">اختر لغتك في الإعدادات، أو الوضع الافتراضي للنظام لاتباع الهاتف.</string>
-    <string name="changelog_3">كل الشاشات والإشعارات والأدوات تتبع اللغة التي تختارها.</string>
-    <string name="changelog_4">تبقى الإنجليزية احتياطيًا إن نقصت ترجمة.</string>
+    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
+    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
+    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
+    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
     <string name="label_removed_from_notes">أُزيل التصنيف \"%1$s\" من %2$d ملاحظة</string>
     <plurals name="plural_pinned_items">
         <item quantity="zero">لا عناصر مثبّتة</item>

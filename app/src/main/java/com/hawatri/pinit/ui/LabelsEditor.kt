@@ -11,7 +11,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,10 +35,15 @@ fun LabelsEditorSheet(
     currentLabels: List<String>,
     allExistingLabels: List<String>,
     onLabelsChange: (List<String>) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    currentFolder: String = "",
+    allExistingFolders: List<String> = emptyList(),
+    onFolderChange: ((String) -> Unit)? = null
 ) {
     var inputText by remember { mutableStateOf("") }
     var workingLabels by remember(currentLabels) { mutableStateOf(currentLabels.toSet()) }
+    var workingFolder by remember(currentFolder) { mutableStateOf(currentFolder) }
+    var folderInput by remember { mutableStateOf("") }
 
     val visibleLabels = remember(allExistingLabels, workingLabels, inputText) {
         val all = (allExistingLabels + workingLabels).distinct()
@@ -76,6 +84,7 @@ fun LabelsEditorSheet(
                                 workingLabels + trimmed
                             } else workingLabels
                             onLabelsChange(finalSet.toList())
+                            onFolderChange?.invoke(workingFolder)
                             onDismiss()
                         }.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -92,6 +101,88 @@ fun LabelsEditorSheet(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
+
+                if (onFolderChange != null) {
+                    val folders = remember(allExistingFolders, workingFolder) {
+                        (allExistingFolders + listOfNotNull(workingFolder.takeIf { it.isNotBlank() }))
+                            .distinct()
+                    }
+                    val canCreateFolder = folderInput.trim().isNotBlank() &&
+                        folders.none { it.equals(folderInput.trim(), ignoreCase = true) }
+                    Text(
+                        text = stringResource(R.string.folder_section),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable { workingFolder = "" }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.Folder, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Text(stringResource(R.string.folder_none), modifier = Modifier.weight(1f), fontSize = 16.sp)
+                        Icon(
+                            if (workingFolder.isBlank()) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked,
+                            null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    folders.forEach { name ->
+                        val selected = workingFolder.equals(name, ignoreCase = true)
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable { workingFolder = name }
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Filled.Folder, null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(20.dp))
+                            Text(name, modifier = Modifier.weight(1f), fontSize = 16.sp)
+                            Icon(
+                                if (selected) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked,
+                                null,
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextField(
+                            value = folderInput,
+                            onValueChange = { folderInput = it },
+                            placeholder = { Text(stringResource(R.string.folder_create_hint), fontSize = 15.sp) },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (canCreateFolder) {
+                            TextButton(onClick = {
+                                workingFolder = folderInput.trim()
+                                folderInput = ""
+                            }) {
+                                Text(stringResource(R.string.folder_create))
+                            }
+                        }
+                    }
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.labels_section),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
 
                 // Search / new-label input
                 Row(

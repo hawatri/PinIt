@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -69,6 +71,7 @@ fun UnbackedChangesBanner(
     var lastModified by remember { mutableLongStateOf(AppPreferences.getLastModifiedAt(context)) }
     var lastBackup by remember { mutableLongStateOf(AppPreferences.getLastBackupAt(context)) }
     var remindersEnabled by remember { mutableStateOf(AppPreferences.isBackupRemindersEnabled(context)) }
+    var dismissedModified by remember { mutableLongStateOf(AppPreferences.getBannerDismissedModifiedAt(context)) }
 
     // Cheap polling — banner is mounted only on Home, prefs reads are O(1).
     LaunchedEffect(Unit) {
@@ -76,11 +79,15 @@ fun UnbackedChangesBanner(
             lastModified = AppPreferences.getLastModifiedAt(context)
             lastBackup = AppPreferences.getLastBackupAt(context)
             remindersEnabled = AppPreferences.isBackupRemindersEnabled(context)
+            dismissedModified = AppPreferences.getBannerDismissedModifiedAt(context)
             delay(2_000)
         }
     }
 
-    val hasUnbackedChanges = remindersEnabled && lastModified > 0L && lastModified > lastBackup
+    val hasUnbackedChanges = remindersEnabled &&
+        lastModified > 0L &&
+        lastModified > lastBackup &&
+        lastModified > dismissedModified
     val signedIn = remember(syncState) { GoogleAuthManager.currentAccount(context) != null }
     val isBackingUp = syncState is BackupSyncManager.State.Working
 
@@ -100,12 +107,12 @@ fun UnbackedChangesBanner(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp),
+                .padding(bottom = 12.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = warnContainer),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Column(modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.CloudOff,
@@ -117,8 +124,21 @@ fun UnbackedChangesBanner(
                     Text(
                         text = stringResource(R.string.banner_unbacked_title),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = warnContent
+                        color = warnContent,
+                        modifier = Modifier.weight(1f)
                     )
+                    IconButton(
+                        onClick = {
+                            AppPreferences.setBannerDismissedModifiedAt(context, lastModified)
+                            dismissedModified = lastModified
+                        }
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.action_dismiss),
+                            tint = warnContent
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(

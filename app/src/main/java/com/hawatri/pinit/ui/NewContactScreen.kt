@@ -82,6 +82,7 @@ fun NewContactScreen(
     var isLocked by remember { mutableStateOf(false) }
     var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
+    var folder by remember { mutableStateOf("") }
     var showLabelsSheet by remember { mutableStateOf(false) }
     var reminders by remember { mutableStateOf(listOf<Long>()) }
     var showReminderMenu by remember { mutableStateOf(false) }
@@ -108,6 +109,7 @@ fun NewContactScreen(
                 isLocked = existing.isLocked
                 colorHex = existing.colorHex
                 labels = existing.labels
+                folder = existing.folder
                 reminders = existing.reminders
                 isInitialized = true
             }
@@ -129,6 +131,7 @@ fun NewContactScreen(
             colorHex = colorHex,
             isLocked = isLocked,
             labels = labels,
+            folder = folder,
             reminderText = reminders.minOrNull()?.let { formatAlarmText(it) },
             reminders = reminders
         )
@@ -345,7 +348,10 @@ fun NewContactScreen(
             currentLabels = labels,
             allExistingLabels = allLabels,
             onLabelsChange = { labels = it; if (name.isNotBlank() || phoneNumber.isNotBlank()) save() },
-            onDismiss = { showLabelsSheet = false }
+            onDismiss = { showLabelsSheet = false },
+            currentFolder = folder,
+            allExistingFolders = remember(notesList) { notesList.map { it.folder }.filter { it.isNotBlank() }.distinct() },
+            onFolderChange = { folder = it; if (name.isNotBlank() || phoneNumber.isNotBlank()) save() }
         )
     }
 

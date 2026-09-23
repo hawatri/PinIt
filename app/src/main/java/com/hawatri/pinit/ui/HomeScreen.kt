@@ -97,6 +97,7 @@ fun HomeScreen(
     val notificationHelper = remember(context) { NotificationHelper(context) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedLabel by remember { mutableStateOf<String?>(null) }
+    var selectedFolder by remember { mutableStateOf<String?>(null) }
     var showSortMenu by remember { mutableStateOf(false) }
     // Persisted manual order — list of note ids the user dragged into shape. Empty
     // means "never reordered" so we fall back to NEWEST_FIRST.
@@ -132,6 +133,7 @@ fun HomeScreen(
             showFabMenu -> showFabMenu = false
             showBulkLabelsSheet -> showBulkLabelsSheet = false
             selectedBottomTab == 2 && selectedLabel != null -> selectedLabel = null
+            selectedBottomTab == 2 && selectedFolder != null -> selectedFolder = null
             selectedBottomTab != 0 -> selectedBottomTab = 0
             else -> {
                 val now = System.currentTimeMillis()
@@ -483,16 +485,23 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                if (selectedBottomTab == 0 && !isSelectionMode && !reorderMode) {
+                    UnbackedChangesBanner(onSignInClick = onNavigateToSignIn)
+                }
+
                 val displayNotes = when (selectedBottomTab) {
                     1 -> allNotes.filter { it.isPinned && !it.isArchived }
-                    2 -> if (selectedLabel != null)
-                            allNotes.filter { !it.isArchived && selectedLabel in it.labels }
-                         else emptyList()
+                    2 -> when {
+                        selectedFolder != null -> allNotes.filter { !it.isArchived && it.folder == selectedFolder }
+                        selectedLabel != null -> allNotes.filter { !it.isArchived && selectedLabel in it.labels }
+                        else -> emptyList()
+                    }
                     else -> allNotes.filter { !it.isArchived }
                 }.filter { note ->
                     if (searchQuery.isBlank()) true
                     else note.title.contains(searchQuery, ignoreCase = true) ||
-                         note.text.contains(searchQuery, ignoreCase = true)
+                         note.text.contains(searchQuery, ignoreCase = true) ||
+                         note.folder.contains(searchQuery, ignoreCase = true)
                 }.let { list ->
                     when (sortOrder) {
                         SortOrder.NEWEST_FIRST -> list.sortedByDescending { it.timestamp }
@@ -518,7 +527,7 @@ fun HomeScreen(
                 }
 
                 androidx.compose.animation.AnimatedContent(
-                    targetState = selectedBottomTab to selectedLabel,
+                    targetState = Triple(selectedBottomTab, selectedLabel, selectedFolder),
                     transitionSpec = {
                         // Issue #1: a fade-only exit left the outgoing content sitting at
                         // center while the new content slid in only `fullWidth/6` — the
@@ -538,22 +547,27 @@ fun HomeScreen(
                         enter.togetherWith(exit)
                     },
                     label = "tab_content"
-                ) { (animTab, animLabel) ->
+                ) { (animTab, animLabel, animFolder) ->
                 // Each panel computes its OWN filtered/sorted list keyed on the lambda's
                 // (tab, label), not the outer `displayNotes`. Without this, the outgoing
                 // panel re-reads the new tab's data the instant `selectedBottomTab` flips
                 // and snaps to the new content before the slide even begins — producing
                 // the "tab loads twice, once without animation then again with" flicker.
-                val panelNotes = remember(animTab, animLabel, allNotes, searchQuery, sortOrder, manualOrder) {
+                val panelNotes = remember(animTab, animLabel, animFolder, allNotes, searchQuery, sortOrder, manualOrder) {
                     val base = when (animTab) {
                         1 -> allNotes.filter { it.isPinned && !it.isArchived }
-                        2 -> if (animLabel != null) allNotes.filter { !it.isArchived && animLabel in it.labels } else emptyList()
+                        2 -> when {
+                            animFolder != null -> allNotes.filter { !it.isArchived && it.folder == animFolder }
+                            animLabel != null -> allNotes.filter { !it.isArchived && animLabel in it.labels }
+                            else -> emptyList()
+                        }
                         else -> allNotes.filter { !it.isArchived }
                     }
                     val filtered = base.filter { note ->
                         if (searchQuery.isBlank()) true
                         else note.title.contains(searchQuery, ignoreCase = true) ||
-                             note.text.contains(searchQuery, ignoreCase = true)
+                             note.text.contains(searchQuery, ignoreCase = true) ||
+                             note.folder.contains(searchQuery, ignoreCase = true)
                     }
                     when (sortOrder) {
                         SortOrder.NEWEST_FIRST -> filtered.sortedByDescending { it.timestamp }
@@ -567,8 +581,15 @@ fun HomeScreen(
                     }
                 }
                 when {
-                    // Labels tab — no label selected: show label browser
-                    animTab == 2 && animLabel == null -> {
+                    // Labels tab — nothing selected: show folders + labels
+                    animTab == 2 && animLabel == null && animFolder == null -> {
+                        val allFolders = remember(allNotes) {
+                            allNotes.filter { !it.isArchived && it.folder.isNotBlank() }
+                                .groupingBy { it.folder }
+                                .eachCount()
+                                .entries
+                                .sortedByDescending { it.value }
+                        }
                         val allLabels = remember(allNotes) {
                             allNotes.filter { !it.isArchived }
                                 .flatMap { it.labels }
@@ -577,12 +598,68 @@ fun HomeScreen(
                                 .entries
                                 .sortedByDescending { it.value }
                         }
-                        LabelBrowser(
-                            labelCounts = allLabels,
-                            onLabelClick = { selectedLabel = it },
-                            onRename = { old, nu -> viewModel.renameLabel(old, nu) },
-                            onDelete = { name -> deleteLabelWithUndo(name) }
-                        )
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            if (allFolders.isNotEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.folder_section),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                LabelBrowser(
+                                    labelCounts = allFolders,
+                                    onLabelClick = { selectedFolder = it },
+                                    onRename = { old, nu -> viewModel.renameFolder(old, nu) },
+                                    onDelete = { name ->
+                                        val affected = viewModel.notes.value.filter { it.folder == name }
+                                        viewModel.deleteFolder(name)
+                                        scope.launch {
+                                            val result = snackbarHostState.showSnackbar(
+                                                context.getString(R.string.folder_removed, name),
+                                                actionLabel = context.getString(R.string.action_undo),
+                                                duration = SnackbarDuration.Short
+                                            )
+                                            if (result == SnackbarResult.ActionPerformed) {
+                                                affected.forEach { viewModel.updateNote(it) }
+                                            }
+                                        }
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                            Text(
+                                text = stringResource(R.string.labels_section),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            LabelBrowser(
+                                labelCounts = allLabels,
+                                onLabelClick = { selectedLabel = it },
+                                onRename = { old, nu -> viewModel.renameLabel(old, nu) },
+                                onDelete = { name -> deleteLabelWithUndo(name) }
+                            )
+                        }
+                    }
+                    // Labels tab — folder selected
+                    animTab == 2 && animFolder != null -> {
+                        Column {
+                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { selectedFolder = null }) { Icon(Icons.Filled.ArrowBack, stringResource(R.string.action_back)) }
+                            Text(animFolder, style = MaterialTheme.typography.titleMedium)
+                        }
+                        if (panelNotes.isNotEmpty()) {
+                            NotesGrid(notes = panelNotes, selectedNoteIds = selectedNoteIds, isSelectionMode = isSelectionMode,
+                                onNoteClick = { id -> if (isSelectionMode) selectedNoteIds = if (id in selectedNoteIds) selectedNoteIds - id else selectedNoteIds + id else allNotes.find { it.id == id }?.let { handleNoteClick(it) } },
+                                onNoteLongClick = { id -> selectedNoteIds = selectedNoteIds + id },
+                                onPinClick = { note -> runWithNotifPermission { viewModel.togglePin(note); if (!note.isPinned) notificationHelper.pinNoteToNotification(note.id, note.title, note.text, note.isList, note.noteType) else notificationHelper.unpinNoteFromNotification(note.id) } },
+                                onCopyClick = { text -> val cb = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; cb.setPrimaryClip(android.content.ClipData.newPlainText("", text)); android.widget.Toast.makeText(context, context.getString(R.string.msg_copied), android.widget.Toast.LENGTH_SHORT).show() },
+                                onToggleAllClick = { note -> val g = Gson(); val items = try { g.fromJson(note.text, Array<ChecklistItemData>::class.java).toList() } catch (e: Exception) { emptyList() }; val all = items.isNotEmpty() && items.all { it.isChecked }; val n = note.copy(text = g.toJson(items.map { it.copy(isChecked = !all) })); viewModel.updateNote(n); if (n.isPinned) notificationHelper.pinNoteToNotification(n.id, n.title, n.text, true) }
+                            )
+                        } else {
+                            EmptyStateView(icon = Icons.Filled.Folder, message = stringResource(R.string.folder_empty, animFolder))
+                        }
+                        }
                     }
                     // Labels tab — label selected: show filtered notes
                     animTab == 2 && animLabel != null -> {
@@ -730,25 +807,14 @@ fun HomeScreen(
                 )
             }
 
-            // Unbacked-changes warning — sits just above the post-update banner.
-            // Persistent (re-shows on every Home composition while there are unsaved
-            // changes), unlike the one-time post-update card.
-            UnbackedChangesBanner(
-                onSignInClick = onNavigateToSignIn,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 96.dp)
-            )
-
             // Post-update banner — sits above the bottom nav AND above the FAB
             // so the + button never covers it. Drawn last in the Box so its
             // z-order is on top of everything else on Home. Auto-dismisses after
-            // first view (× tap or "Show Full Changelog" tap). When the unbacked-
-            // changes banner is also visible, this floats above it.
+            // first view (× tap or "Show Full Changelog" tap).
             PostUpdateBanner(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 320.dp)
+                    .padding(bottom = 96.dp)
             )
 
             // Stale-backup nag dialog: if last successful backup is >14 days old
@@ -1168,13 +1234,27 @@ fun NoteCard(
                 }
             }
 
-            // Label chips
-            if (note.labels.isNotEmpty()) {
+            // Folder + label chips
+            if (note.folder.isNotBlank() || note.labels.isNotEmpty()) {
                 androidx.compose.foundation.layout.FlowRow(
                     modifier = Modifier.padding(top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    if (note.folder.isNotBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            modifier = Modifier.padding(0.dp)
+                        ) {
+                            Text(
+                                text = note.folder,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
                     note.labels.forEach { label ->
                         Surface(
                             shape = RoundedCornerShape(50),

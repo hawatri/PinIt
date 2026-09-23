@@ -66,6 +66,7 @@ fun NewQRScreen(
     var isLocked by remember { mutableStateOf(false) }
     var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
+    var folder by remember { mutableStateOf("") }
     var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
@@ -85,6 +86,7 @@ fun NewQRScreen(
                 isLocked = existing.isLocked
                 colorHex = existing.colorHex
                 labels = existing.labels
+                folder = existing.folder
                 scanningActive = false
                 savedToGalleryAsked = true
                 isInitialized = true
@@ -145,7 +147,8 @@ fun NewQRScreen(
             noteType = NoteType.QR,
             colorHex = colorHex,
             isLocked = isLocked,
-            labels = labels
+            labels = labels,
+            folder = folder
         )
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
@@ -390,7 +393,10 @@ fun NewQRScreen(
             currentLabels = labels,
             allExistingLabels = allLabels,
             onLabelsChange = { labels = it; if (scannedValue != null) save() },
-            onDismiss = { showLabelsSheet = false }
+            onDismiss = { showLabelsSheet = false },
+            currentFolder = folder,
+            allExistingFolders = remember(notesList) { notesList.map { it.folder }.filter { it.isNotBlank() }.distinct() },
+            onFolderChange = { folder = it; if (scannedValue != null) save() }
         )
     }
 }

@@ -48,6 +48,7 @@ data class Note(
     val colorHex: String? = null,
     val isLocked: Boolean = false,
     val labels: List<String> = emptyList(),
+    val folder: String = "",
     val timestamp: Long = System.currentTimeMillis(),
     val reminderText: String? = null,
     val reminders: List<Long> = emptyList()

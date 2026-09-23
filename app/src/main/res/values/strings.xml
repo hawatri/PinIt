@@ -34,6 +34,9 @@
     <string name="action_uncheck_all">Uncheck all</string>
     <string name="action_clear">Clear</string>
     <string name="action_more">More</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_new_note">New note</string>
+    <string name="action_new_list">New list</string>
 
     <!-- Home / navigation -->
     <string name="tab_home">Home</string>
@@ -210,6 +213,10 @@
     <string name="notif_toggle_pin">Toggle Pin</string>
 
     <string name="notif_channel_pinned">Pinned Notes</string>
+    <string name="notif_channel_reminders">Reminders</string>
+    <string name="notif_channel_reminders_desc">Heads-up alerts when a scheduled reminder or pin is due</string>
+    <string name="notif_quick_add_title">Quick add</string>
+    <string name="notif_quick_add_body">Tap to pin a new note from the shade</string>
     <string name="notif_add_item">Add Item</string>
     <string name="notif_audio_recording">Audio recording</string>
 
@@ -468,10 +475,26 @@ Create one in PinIt first.</string>
     <string name="backup_err_read_file">Couldn\'t read file</string>
     <string name="signin_failed_code_reason">Sign-in failed (code %1$d): %2$s</string>
     <string name="unknown_error">unknown</string>
-    <string name="changelog_1">More languages in Settings — Spanish, French, German, Italian, Hindi, Arabic, Simplified Chinese, Japanese, Korean, Russian, Indonesian, and Brazilian Portuguese.</string>
-    <string name="changelog_2">Pick yours in Settings, or choose System default to follow your phone.</string>
-    <string name="changelog_3">Every screen, notification and widget follows the language you choose.</string>
-    <string name="changelog_4">English is still the fallback if a translation is missing.</string>
+    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
+    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
+    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
+    <string name="changelog_4">Pinned notifications show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
+    <string name="folder_section">Folders</string>
+    <string name="labels_section">Labels</string>
+    <string name="folder_none">No folder</string>
+    <string name="folder_create">Create folder</string>
+    <string name="folder_create_hint">New folder name</string>
+    <string name="folder_empty">No notes in \"%1$s\"</string>
+    <string name="folder_removed">Folder \"%1$s\" removed from notes</string>
+    <string name="settings_notifications">Notifications &amp; reminders</string>
+    <string name="settings_quick_add_title">Quick-add notification</string>
+    <string name="settings_quick_add_sub">Keep a New note / New list shortcut in the shade</string>
+    <string name="settings_lockscreen_note">Pinned notes and reminders show on the lock screen so you can open or act on them without unlocking first. Android no longer supports home-screen widgets on the lock screen.</string>
+    <string name="settings_exact_alarms_title">Allow exact alarms</string>
+    <string name="settings_exact_alarms_sub">Required for reminders to fire at the time you pick</string>
+    <string name="settings_battery_title">App battery settings</string>
+    <string name="settings_battery_sub">Turn off battery restrictions so reminders survive overnight</string>
+    <string name="reminder_will_pin">When it\'s due, this note will stay pinned until you unpin it</string>
     <string name="label_removed_from_notes">Label \"%1$s\" removed from %2$d notes</string>
     <!-- Plurals -->
     <plurals name="plural_pinned_items">

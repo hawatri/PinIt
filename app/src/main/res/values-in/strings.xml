@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <!-- Indonesian (id / values-in). Brand name "PinIt" is intentionally not translated. -->
 
     <string name="action_save">Simpan</string>
@@ -438,10 +438,10 @@ Buat dulu di PinIt.</string>
     <string name="backup_err_read_file">Tidak dapat membaca file</string>
     <string name="signin_failed_code_reason">Gagal masuk (kode %1$d): %2$s</string>
     <string name="unknown_error">tidak diketahui</string>
-    <string name="changelog_1">Lebih banyak bahasa di Setelan — Spanyol, Prancis, Jerman, Italia, Hindi, Arab, Tionghoa Sederhana, Jepang, Korea, Rusia, Indonesia, dan Portugis (Brasil).</string>
-    <string name="changelog_2">Pilih bahasa di Setelan, atau Default sistem agar mengikuti ponsel.</string>
-    <string name="changelog_3">Setiap layar, notifikasi, dan widget mengikuti bahasa yang Anda pilih.</string>
-    <string name="changelog_4">Inggris tetap cadangan jika terjemahan hilang.</string>
+    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
+    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
+    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
+    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
     <string name="label_removed_from_notes">Label \"%1$s\" dihapus dari %2$d catatan</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d item disematkan</item>

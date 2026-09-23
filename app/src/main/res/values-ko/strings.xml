@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <!-- Korean (ko). Brand name "PinIt" is intentionally not translated. -->
 
     <string name="action_save">저장</string>
@@ -438,10 +438,10 @@
     <string name="backup_err_read_file">파일을 읽을 수 없음</string>
     <string name="signin_failed_code_reason">로그인 실패(코드 %1$d): %2$s</string>
     <string name="unknown_error">알 수 없음</string>
-    <string name="changelog_1">설정에 언어 추가 — 스페인어, 프랑스어, 독일어, 이탈리아어, 힌디어, 아랍어, 중국어 간체, 일본어, 한국어, 러시아어, 인도네시아어, 포르투갈어(브라질).</string>
-    <string name="changelog_2">설정에서 언어를 고르거나 시스템 기본값으로 휴대전화 언어를 따르세요.</string>
-    <string name="changelog_3">모든 화면, 알림, 위젯이 선택한 언어를 따릅니다.</string>
-    <string name="changelog_4">번역이 없으면 영어가 대체로 사용됩니다.</string>
+    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
+    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
+    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
+    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
     <string name="label_removed_from_notes">라벨 \"%1$s\"이(가) 메모 %2$d개에서 제거됨</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">고정된 항목 %d개</item>

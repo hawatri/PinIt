@@ -100,6 +100,7 @@ fun NewListScreen(
     var colorHex by remember { mutableStateOf<String?>(null) }
     var isLocked by remember { mutableStateOf(false) }
     var labels by remember { mutableStateOf(listOf<String>()) }
+    var folder by remember { mutableStateOf("") }
     var showLabelsSheet by remember { mutableStateOf(false) }
 
     val notesList by viewModel.notes.collectAsState()
@@ -123,6 +124,7 @@ fun NewListScreen(
                 colorHex = existingNote.colorHex
                 isLocked = existingNote.isLocked
                 labels = existingNote.labels
+                folder = existingNote.folder
                 isInitialized = true
             }
         }
@@ -154,6 +156,7 @@ fun NewListScreen(
             colorHex = colorHex,
             isLocked = isLocked,
             labels = labels,
+            folder = folder,
             reminderText = reminders.minOrNull()?.let { formatAlarmText(it) },
             reminders = reminders
         )
@@ -568,7 +571,10 @@ fun NewListScreen(
             currentLabels = labels,
             allExistingLabels = allLabels,
             onLabelsChange = { labels = it; saveList() },
-            onDismiss = { showLabelsSheet = false }
+            onDismiss = { showLabelsSheet = false },
+            currentFolder = folder,
+            allExistingFolders = remember(notesList) { notesList.map { it.folder }.filter { it.isNotBlank() }.distinct() },
+            onFolderChange = { folder = it; saveList() }
         )
     }
 }

@@ -48,6 +48,7 @@ fun SettingsScreen(
     val syncState by BackupSyncManager.state.collectAsState()
     val signedIn = remember { GoogleAuthManager.currentAccount(context) != null }
     var remindersEnabled by remember { mutableStateOf(AppPreferences.isBackupRemindersEnabled(context)) }
+    var quickAddEnabled by remember { mutableStateOf(AppPreferences.isQuickAddNotificationEnabled(context)) }
     val currentLanguage = AppLanguage.fromTag(AppPreferences.getLanguageTag(context))
     // Recompute on each sync state change so a successful backup clears the warning.
     val hasUnbackedChanges by remember(syncState) {
@@ -191,6 +192,47 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            SettingsSection(title = stringResource(R.string.settings_notifications)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    BackupReminderToggle(
+                        enabled = quickAddEnabled,
+                        title = stringResource(R.string.settings_quick_add_title),
+                        subtitle = stringResource(R.string.settings_quick_add_sub),
+                        onToggle = {
+                            quickAddEnabled = it
+                            AppPreferences.setQuickAddNotificationEnabled(context, it)
+                            com.hawatri.pinit.util.NotificationHelper(context).refreshQuickAdd()
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.settings_lockscreen_note),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    BackupActionButton(
+                        title = stringResource(R.string.settings_exact_alarms_title),
+                        subtitle = stringResource(R.string.settings_exact_alarms_sub),
+                        icon = Icons.Filled.Alarm,
+                        enabled = true,
+                        primary = false,
+                        onClick = { com.hawatri.pinit.util.openExactAlarmSettings(context) }
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    BackupActionButton(
+                        title = stringResource(R.string.settings_battery_title),
+                        subtitle = stringResource(R.string.settings_battery_sub),
+                        icon = Icons.Filled.BatterySaver,
+                        enabled = true,
+                        primary = false,
+                        onClick = { com.hawatri.pinit.util.openAppNotificationSettings(context) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // About
             SettingsSection(title = stringResource(R.string.settings_about)) {
                 Row(
@@ -200,7 +242,20 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(stringResource(R.string.settings_version), color = MaterialTheme.colorScheme.onSurface)
-                    Text("1.0", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        remember {
+                            try {
+                                val info = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                    context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+                                } else {
+                                    @Suppress("DEPRECATION")
+                                    context.packageManager.getPackageInfo(context.packageName, 0)
+                                }
+                                "${info.versionName}"
+                            } catch (_: Exception) { "1.3.0" }
+                        },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Row(
                     modifier = Modifier
@@ -212,7 +267,7 @@ fun SettingsScreen(
                                 putExtra(
                                     Intent.EXTRA_TEXT,
                                     context.getString(R.string.report_issue_body) + "\n\n" +
-                                        "----\nApp version: 1.0\n"
+                                        "----\nApp version: 1.3.0\n"
                                 )
                             }
                             try {
@@ -388,7 +443,9 @@ private fun BackupActionButton(
 @Composable
 private fun BackupReminderToggle(
     enabled: Boolean,
-    onToggle: (Boolean) -> Unit
+    onToggle: (Boolean) -> Unit,
+    title: String = stringResource(R.string.backup_reminders_title),
+    subtitle: String = stringResource(R.string.backup_reminders_sub)
 ) {
     Row(
         modifier = Modifier
@@ -406,13 +463,13 @@ private fun BackupReminderToggle(
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                stringResource(R.string.backup_reminders_title),
+                title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                stringResource(R.string.backup_reminders_sub),
+                subtitle,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

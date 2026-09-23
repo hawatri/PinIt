@@ -69,6 +69,7 @@ fun NewAudioScreen(
     var isLocked by remember { mutableStateOf(false) }
     var colorHex by remember { mutableStateOf<String?>(null) }
     var labels by remember { mutableStateOf(listOf<String>()) }
+    var folder by remember { mutableStateOf("") }
     var showLabelsSheet by remember { mutableStateOf(false) }
     var currentNoteId by remember(noteId) { mutableStateOf(noteId ?: UUID.randomUUID().toString()) }
 
@@ -130,6 +131,7 @@ fun NewAudioScreen(
                 isLocked = existing.isLocked
                 colorHex = existing.colorHex
                 labels = existing.labels
+                folder = existing.folder
                 try {
                     val data = gson.fromJson(existing.text, AudioNoteData::class.java)
                     currentFilePath = data.path
@@ -242,7 +244,8 @@ fun NewAudioScreen(
             noteType = NoteType.AUDIO,
             colorHex = colorHex,
             isLocked = isLocked,
-            labels = labels
+            labels = labels,
+            folder = folder
         )
         if (existing != null) viewModel.updateNote(note) else viewModel.addNote(note)
         return currentNoteId
@@ -471,7 +474,10 @@ fun NewAudioScreen(
             currentLabels = labels,
             allExistingLabels = allLabels,
             onLabelsChange = { labels = it; if (currentFilePath != null) save() },
-            onDismiss = { showLabelsSheet = false }
+            onDismiss = { showLabelsSheet = false },
+            currentFolder = folder,
+            allExistingFolders = remember(notesList) { notesList.map { it.folder }.filter { it.isNotBlank() }.distinct() },
+            onFolderChange = { folder = it; if (currentFilePath != null) save() }
         )
     }
 }

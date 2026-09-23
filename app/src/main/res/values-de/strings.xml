@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="action_save">Speichern</string>
     <string name="action_cancel">Abbrechen</string>
     <string name="action_delete">Löschen</string>
@@ -412,10 +412,10 @@ Erstelle zuerst eine in PinIt.</string>
     <string name="backup_err_read_file">Datei konnte nicht gelesen werden</string>
     <string name="signin_failed_code_reason">Anmeldung fehlgeschlagen (Code %1$d): %2$s</string>
     <string name="unknown_error">unbekannt</string>
-    <string name="changelog_1">Weitere Sprachen in den Einstellungen — Spanisch, Französisch, Deutsch, Italienisch, Hindi, Arabisch, vereinfachtes Chinesisch, Japanisch, Koreanisch, Russisch, Indonesisch und Portugiesisch (Brasilien).</string>
-    <string name="changelog_2">Wähle deine Sprache in den Einstellungen oder Systemstandard, um dem Telefon zu folgen.</string>
-    <string name="changelog_3">Alle Bildschirme, Benachrichtigungen und Widgets folgen der gewählten Sprache.</string>
-    <string name="changelog_4">Englisch bleibt der Fallback, wenn eine Übersetzung fehlt.</string>
+    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
+    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
+    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
+    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
     <string name="label_removed_from_notes">Label \"%1$s\" von %2$d Notizen entfernt</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d angehefteter Eintrag</item>

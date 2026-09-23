@@ -98,6 +98,34 @@ class PinItViewModel(
             if (changed) markDirty()
         }
     }
+
+    fun renameFolder(oldName: String, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isBlank() || trimmed == oldName) return
+        viewModelScope.launch {
+            var changed = false
+            notes.value.forEach { note ->
+                if (note.folder == oldName) {
+                    dao.updateNote(note.copy(folder = trimmed))
+                    changed = true
+                }
+            }
+            if (changed) markDirty()
+        }
+    }
+
+    fun deleteFolder(name: String) {
+        viewModelScope.launch {
+            var changed = false
+            notes.value.forEach { note ->
+                if (note.folder == name) {
+                    dao.updateNote(note.copy(folder = ""))
+                    changed = true
+                }
+            }
+            if (changed) markDirty()
+        }
+    }
 }
 
 // Factory to tell Android how to create our ViewModel with the NoteDao dependency

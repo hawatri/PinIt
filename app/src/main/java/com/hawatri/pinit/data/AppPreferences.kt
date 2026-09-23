@@ -24,6 +24,8 @@ object AppPreferences {
     private const val KEY_STALE_DIALOG_SUPPRESSED_FOREVER = "stale_dialog_suppressed_forever"
     private const val KEY_BACKUP_REMINDERS_ENABLED = "backup_reminders_enabled"
     private const val KEY_LANGUAGE = "language_tag"
+    private const val KEY_QUICK_ADD_NOTIFICATION = "quick_add_notification"
+    private const val KEY_BANNER_DISMISSED_MODIFIED_AT = "banner_dismissed_modified_at"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -169,5 +171,27 @@ object AppPreferences {
 
     fun setLanguageTag(context: Context, tag: String) {
         prefs(context).edit().putString(KEY_LANGUAGE, tag).apply()
+    }
+
+    /**
+     * Persistent shade shortcut (New note / New list). Off by default so we
+     * don't add another ongoing notification without the user asking for it.
+     */
+    fun isQuickAddNotificationEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_QUICK_ADD_NOTIFICATION, false)
+
+    fun setQuickAddNotificationEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_QUICK_ADD_NOTIFICATION, enabled).apply()
+    }
+
+    /**
+     * lastModifiedAt value at the moment the user dismissed the Home backup
+     * banner. The banner stays hidden until a newer local edit arrives.
+     */
+    fun getBannerDismissedModifiedAt(context: Context): Long =
+        prefs(context).getLong(KEY_BANNER_DISMISSED_MODIFIED_AT, 0L)
+
+    fun setBannerDismissedModifiedAt(context: Context, modifiedAt: Long) {
+        prefs(context).edit().putLong(KEY_BANNER_DISMISSED_MODIFIED_AT, modifiedAt).apply()
     }
 }

@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="action_save">सहेजें</string>
     <string name="action_cancel">रद्द करें</string>
     <string name="action_delete">हटाएँ</string>
@@ -412,10 +412,10 @@
     <string name="backup_err_read_file">फ़ाइल नहीं पढ़ सके</string>
     <string name="signin_failed_code_reason">साइन इन विफल (कोड %1$d): %2$s</string>
     <string name="unknown_error">अज्ञात</string>
-    <string name="changelog_1">सेटिंग में और भाषाएँ — स्पैनिश, फ़्रेंच, जर्मन, इतालवी, हिंदी, अरबी, सरलीकृत चीनी, जापानी, कोरियाई, रूसी, इंडोनेशियाई और ब्राज़ीलियाई पुर्तगाली।</string>
-    <string name="changelog_2">सेटिंग में अपनी भाषा चुनें, या फ़ोन के अनुसार सिस्टम डिफ़ॉल्ट।</string>
-    <string name="changelog_3">हर स्क्रीन, सूचना और विजेट आपकी चुनी भाषा का पालन करते हैं।</string>
-    <string name="changelog_4">अनुवाद न हो तो अंग्रेज़ी फ़ॉलबैक रहती है।</string>
+    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
+    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
+    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
+    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
     <string name="label_removed_from_notes">लेबल \"%1$s\" %2$d नोट से हटाया गया</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d पिन किया आइटम</item>
