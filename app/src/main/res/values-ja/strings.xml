@@ -296,6 +296,7 @@
     <string name="language_system_default">システムのデフォルト</string>
     <string name="privacy">プライバシー</string>
     <string name="report_an_issue">問題を報告</string>
+    <string name="privacy_policy">プライバシーポリシー</string>
     <string name="msg_no_mail_app">メールアプリがインストールされていません</string>
 
     <string name="backup_take_online">オンラインバックアップ</string>

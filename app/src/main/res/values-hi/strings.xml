@@ -273,6 +273,7 @@
     <string name="language_system_default">सिस्टम डिफ़ॉल्ट</string>
     <string name="privacy">गोपनीयता</string>
     <string name="report_an_issue">समस्या रिपोर्ट करें</string>
+    <string name="privacy_policy">गोपनीयता नीति</string>
     <string name="msg_no_mail_app">कोई मेल ऐप इंस्टॉल नहीं</string>
     <string name="backup_take_online">ऑनलाइन बैकअप लें</string>
     <string name="backup_take_offline">ऑफ़लाइन बैकअप लें</string>

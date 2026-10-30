@@ -320,6 +320,7 @@ Créez-en une dans PinIt d\'abord.</string>
     <string name="privacy">Confidentialité</string>
 
     <string name="report_an_issue">Signaler un problème</string>
+    <string name="privacy_policy">Politique de confidentialité</string>
     <string name="msg_no_mail_app">Aucune appli mail installée</string>
 
     <!-- Backup -->

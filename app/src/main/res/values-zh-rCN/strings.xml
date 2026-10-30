@@ -296,6 +296,7 @@
     <string name="language_system_default">跟随系统</string>
     <string name="privacy">隐私</string>
     <string name="report_an_issue">报告问题</string>
+    <string name="privacy_policy">隐私政策</string>
     <string name="msg_no_mail_app">未安装邮件应用</string>
 
     <string name="backup_take_online">在线备份</string>

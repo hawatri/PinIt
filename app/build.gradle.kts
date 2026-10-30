@@ -20,8 +20,8 @@ android {
         applicationId = "com.hawatri.pinit"
         minSdk = 29
         targetSdk = 36
-        versionCode = 221
-        versionName = "1.3.1"
+        versionCode = 230
+        versionName = "1.4.0-beta1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

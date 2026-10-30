@@ -296,6 +296,7 @@
     <string name="language_system_default">시스템 기본값</string>
     <string name="privacy">개인정보</string>
     <string name="report_an_issue">문제 신고</string>
+    <string name="privacy_policy">개인정보처리방침</string>
     <string name="msg_no_mail_app">메일 앱이 설치되지 않음</string>
 
     <string name="backup_take_online">온라인 백업</string>

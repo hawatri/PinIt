@@ -273,6 +273,7 @@ Erstelle zuerst eine in PinIt.</string>
     <string name="language_system_default">Systemstandard</string>
     <string name="privacy">Datenschutz</string>
     <string name="report_an_issue">Problem melden</string>
+    <string name="privacy_policy">Datenschutzerklärung</string>
     <string name="msg_no_mail_app">Keine Mail-App installiert</string>
     <string name="backup_take_online">Online-Sicherung erstellen</string>
     <string name="backup_take_offline">Offline-Sicherung erstellen</string>

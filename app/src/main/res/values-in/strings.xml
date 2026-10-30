@@ -296,6 +296,7 @@ Buat dulu di PinIt.</string>
     <string name="language_system_default">Default sistem</string>
     <string name="privacy">Privasi</string>
     <string name="report_an_issue">Laporkan masalah</string>
+    <string name="privacy_policy">Kebijakan privasi</string>
     <string name="msg_no_mail_app">Tidak ada aplikasi email terpasang</string>
 
     <string name="backup_take_online">Cadangan daring</string>

@@ -273,6 +273,7 @@
     <string name="language_system_default">الوضع الافتراضي للنظام</string>
     <string name="privacy">الخصوصية</string>
     <string name="report_an_issue">الإبلاغ عن مشكلة</string>
+    <string name="privacy_policy">سياسة الخصوصية</string>
     <string name="msg_no_mail_app">لا يوجد تطبيق بريد مثبت</string>
     <string name="backup_take_online">نسخ احتياطي عبر الإنترنت</string>
     <string name="backup_take_offline">نسخ احتياطي دون اتصال</string>

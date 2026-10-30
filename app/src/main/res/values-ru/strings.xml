@@ -273,6 +273,7 @@
     <string name="language_system_default">Как в системе</string>
     <string name="privacy">Конфиденциальность</string>
     <string name="report_an_issue">Сообщить о проблеме</string>
+    <string name="privacy_policy">Политика конфиденциальности</string>
     <string name="msg_no_mail_app">Почтовое приложение не установлено</string>
     <string name="backup_take_online">Создать онлайн-копию</string>
     <string name="backup_take_offline">Создать офлайн-копию</string>

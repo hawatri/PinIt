@@ -273,6 +273,7 @@ Creane una prima in PinIt.</string>
     <string name="language_system_default">Predefinito di sistema</string>
     <string name="privacy">Privacy</string>
     <string name="report_an_issue">Segnala un problema</string>
+    <string name="privacy_policy">Informativa sulla privacy</string>
     <string name="msg_no_mail_app">Nessuna app di posta installata</string>
     <string name="backup_take_online">Esegui backup online</string>
     <string name="backup_take_offline">Esegui backup offline</string>
