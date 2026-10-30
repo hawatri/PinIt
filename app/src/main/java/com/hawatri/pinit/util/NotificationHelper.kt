@@ -130,7 +130,7 @@ class NotificationHelper(private val context: Context) {
         )
 
         val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_stat_pinit)
             .setContentTitle(displayTitle)
             .setOngoing(true)
             .setAutoCancel(false)
@@ -475,7 +475,7 @@ class NotificationHelper(private val context: Context) {
 
         val count = activePins.size
         val summaryNotification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_stat_pinit)
             .setContentTitle(s(R.string.app_name))
             .setContentText(quantity(R.plurals.plural_pinned_items, count))
             .setGroup(GROUP_KEY)
@@ -498,7 +498,7 @@ class NotificationHelper(private val context: Context) {
             return
         }
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_stat_pinit)
             .setContentTitle(s(R.string.notif_quick_add_title))
             .setContentText(s(R.string.notif_quick_add_body))
             .setOngoing(true)
@@ -553,7 +553,7 @@ class NotificationHelper(private val context: Context) {
         val content = reminderBody(text, isList, noteType)
 
         val notification = NotificationCompat.Builder(context, reminderChannelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_stat_pinit)
             .setContentTitle(displayTitle)
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))

@@ -475,10 +475,10 @@ Create one in PinIt first.</string>
     <string name="backup_err_read_file">Couldn\'t read file</string>
     <string name="signin_failed_code_reason">Sign-in failed (code %1$d): %2$s</string>
     <string name="unknown_error">unknown</string>
-    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
-    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
-    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
-    <string name="changelog_4">Pinned notifications show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
+    <string name="changelog_1">The notification icon now shows the PinIt pin in the status bar instead of a blank square.</string>
+    <string name="changelog_2">App List shows all your installed apps again on Android 11 and newer.</string>
+    <string name="changelog_3">Saving a list you opened from a notification takes you back to Home, and pinned lists update right away when you edit them.</string>
+    <string name="changelog_4">Thanks to everyone who reported these on GitHub!</string>
     <string name="folder_section">Folders</string>
     <string name="labels_section">Labels</string>
     <string name="folder_none">No folder</string>

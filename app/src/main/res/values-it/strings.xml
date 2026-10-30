@@ -412,10 +412,10 @@ Creane una prima in PinIt.</string>
     <string name="backup_err_read_file">Impossibile leggere il file</string>
     <string name="signin_failed_code_reason">Accesso non riuscito (codice %1$d): %2$s</string>
     <string name="unknown_error">sconosciuto</string>
-    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
-    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
-    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
-    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
+    <string name="changelog_1">L\'icona di notifica ora mostra la puntina di PinIt nella barra di stato invece di un quadrato vuoto.</string>
+    <string name="changelog_2">L\'elenco app mostra di nuovo tutte le app installate su Android 11 e versioni successive.</string>
+    <string name="changelog_3">Salvare un elenco aperto da una notifica ti riporta alla Home, e gli elenchi fissati si aggiornano subito quando li modifichi.</string>
+    <string name="changelog_4">Grazie a tutti quelli che hanno segnalato questi problemi su GitHub!</string>
     <string name="label_removed_from_notes">Etichetta \"%1$s\" rimossa da %2$d note</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d elemento fissato</item>

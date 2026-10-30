@@ -80,9 +80,14 @@ fun PinItApp(
         }
     }
 
+    // `notes` is a key only so we can wait for the DB to load. Without this guard,
+    // every save on the opened screen re-emits `notes`, re-runs the effect and pushes
+    // the same edit screen again — Save/Back then appear to do nothing (issue #13).
+    var handledOpenNoteLaunch by remember { mutableStateOf(-1L) }
     LaunchedEffect(widgetOpenNoteId, notes, launchGeneration) {
-        if (widgetOpenNoteId != null) {
+        if (widgetOpenNoteId != null && handledOpenNoteLaunch != launchGeneration) {
             val note = notes.find { it.id == widgetOpenNoteId } ?: return@LaunchedEffect
+            handledOpenNoteLaunch = launchGeneration
             val route = when {
                 note.noteType == NoteType.LIST || note.isList -> "new_list?noteId=${note.id}"
                 note.noteType == NoteType.QR -> "new_qr?noteId=${note.id}"

@@ -475,10 +475,10 @@ Crie uma no PinIt primeiro.</string>
     <string name="backup_err_read_file">Não foi possível ler o arquivo</string>
     <string name="signin_failed_code_reason">Falha ao entrar (código %1$d): %2$s</string>
     <string name="unknown_error">desconhecido</string>
-    <string name="changelog_1">Lembretes agora sobrevivem à reinicialização e às atualizações, disparam um alerta e fixam a nota até você desafixar.</string>
-    <string name="changelog_2">Toque numa notificação fixada para editar. O atalho de adição rápida fica em Configurações → Notificações.</string>
-    <string name="changelog_3">Pastas para receitas, viagens, filmes e mais — escolha uma ao salvar. O banner de backup tem um × e não cobre mais o menu +.</string>
-    <string name="changelog_4">Notas fixadas aparecem na tela de bloqueio. Alarmes exatos e bateria ficam a um toque se os lembretes falhavam.</string>
+    <string name="changelog_1">O ícone de notificação agora mostra o alfinete do PinIt na barra de status, em vez de um quadrado vazio.</string>
+    <string name="changelog_2">A Lista de apps volta a mostrar todos os seus apps instalados no Android 11 e mais recentes.</string>
+    <string name="changelog_3">Salvar uma lista aberta pela notificação leva você de volta ao início, e listas fixadas são atualizadas na hora quando você as edita.</string>
+    <string name="changelog_4">Obrigado a todos que relataram esses problemas no GitHub!</string>
     <string name="folder_section">Pastas</string>
     <string name="labels_section">Marcadores</string>
     <string name="folder_none">Sem pasta</string>

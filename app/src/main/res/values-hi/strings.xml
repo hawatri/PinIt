@@ -412,10 +412,10 @@
     <string name="backup_err_read_file">फ़ाइल नहीं पढ़ सके</string>
     <string name="signin_failed_code_reason">साइन इन विफल (कोड %1$d): %2$s</string>
     <string name="unknown_error">अज्ञात</string>
-    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
-    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
-    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
-    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
+    <string name="changelog_1">स्टेटस बार में नोटिफ़िकेशन आइकन अब खाली चौकोर की जगह PinIt का पिन दिखाता है।</string>
+    <string name="changelog_2">Android 11 और नए वर्ज़न पर ऐप सूची अब फिर से आपके सभी इंस्टॉल किए गए ऐप दिखाती है।</string>
+    <string name="changelog_3">नोटिफ़िकेशन से खोली गई सूची सेव करने पर अब आप होम पर लौट आते हैं, और पिन की गई सूचियाँ बदलाव करते ही अपडेट हो जाती हैं।</string>
+    <string name="changelog_4">GitHub पर ये समस्याएँ बताने वाले सभी लोगों का धन्यवाद!</string>
     <string name="label_removed_from_notes">लेबल \"%1$s\" %2$d नोट से हटाया गया</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d पिन किया आइटम</item>

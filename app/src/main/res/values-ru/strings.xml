@@ -412,10 +412,10 @@
     <string name="backup_err_read_file">Не удалось прочитать файл</string>
     <string name="signin_failed_code_reason">Ошибка входа (код %1$d): %2$s</string>
     <string name="unknown_error">неизвестно</string>
-    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
-    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
-    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
-    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
+    <string name="changelog_1">Значок уведомления в строке состояния теперь показывает булавку PinIt вместо пустого квадрата.</string>
+    <string name="changelog_2">Список приложений снова показывает все установленные приложения на Android 11 и новее.</string>
+    <string name="changelog_3">Сохранение списка, открытого из уведомления, возвращает на главный экран, а закреплённые списки обновляются сразу после изменения.</string>
+    <string name="changelog_4">Спасибо всем, кто сообщил об этих ошибках на GitHub!</string>
     <string name="label_removed_from_notes">Метка «%1$s» удалена с %2$d заметок</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d закреплённый элемент</item>

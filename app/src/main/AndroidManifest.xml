@@ -19,6 +19,16 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
+    <!-- Android 11+ package visibility: without this, queryIntentActivities in
+         NewAppListScreen only returns a handful of system apps (issue #8).
+         Scoped to launcher activities so we avoid QUERY_ALL_PACKAGES. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".PinItApplication"
         android:allowBackup="true"

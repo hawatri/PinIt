@@ -167,6 +167,10 @@ fun NewListScreen(
             viewModel.addNote(note)
         }
         currentNoteId = idToUse
+        // Keep an already-pinned notification in sync with title/item edits (issue #13).
+        if (pinState && !isArchived) {
+            notificationHelper.pinNoteToNotification(idToUse, title, jsonText, isList = true, noteType = com.hawatri.pinit.data.NoteType.LIST)
+        }
         return idToUse
     }
 

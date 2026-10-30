@@ -468,10 +468,10 @@ Créez-en une dans PinIt d\'abord.</string>
     <string name="backup_err_read_file">Impossible de lire le fichier</string>
     <string name="signin_failed_code_reason">Échec de la connexion (code %1$d) : %2$s</string>
     <string name="unknown_error">inconnu</string>
-    <string name="changelog_1">Reminders now survive reboot and app updates, fire a heads-up alert, and pin the note until you unpin it.</string>
-    <string name="changelog_2">Tap a pinned notification to edit the note. Optional Quick-add shortcut lives in Settings → Notifications.</string>
-    <string name="changelog_3">Folders for recipes, travel, movies and more — pick one when you save a note. Backup banner has an × and no longer covers the + menu.</string>
-    <string name="changelog_4">Pinned notes and reminders show on the lock screen. Exact-alarm and battery settings are one tap away if reminders were missing.</string>
+    <string name="changelog_1">L\'icône de notification affiche désormais l\'épingle PinIt dans la barre d\'état au lieu d\'un carré vide.</string>
+    <string name="changelog_2">La liste d\'applis affiche à nouveau toutes vos applis installées sur Android 11 et versions ultérieures.</string>
+    <string name="changelog_3">Enregistrer une liste ouverte depuis une notification vous ramène à l\'accueil, et les listes épinglées se mettent à jour dès que vous les modifiez.</string>
+    <string name="changelog_4">Merci à tous ceux qui ont signalé ces problèmes sur GitHub !</string>
     <string name="label_removed_from_notes">Étiquette \"%1$s\" retirée de %2$d notes</string>
     <!-- Plurals -->
     <plurals name="plural_pinned_items">
