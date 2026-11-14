@@ -413,10 +413,10 @@
     <string name="backup_err_read_file">Не удалось прочитать файл</string>
     <string name="signin_failed_code_reason">Ошибка входа (код %1$d): %2$s</string>
     <string name="unknown_error">неизвестно</string>
-    <string name="changelog_1">Значок уведомления в строке состояния теперь показывает булавку PinIt вместо пустого квадрата.</string>
-    <string name="changelog_2">Список приложений снова показывает все установленные приложения на Android 11 и новее.</string>
-    <string name="changelog_3">Сохранение списка, открытого из уведомления, возвращает на главный экран, а закреплённые списки обновляются сразу после изменения.</string>
-    <string name="changelog_4">Спасибо всем, кто сообщил об этих ошибках на GitHub!</string>
+    <string name="changelog_1">Нажмите на заметку с PDF или ссылкой для предпросмотра: листайте все страницы PDF или смотрите веб-страницу прямо в PinIt.</string>
+    <string name="changelog_2">PinIt теперь сообщает о новой версии уведомлением и баннером на главном экране.</string>
+    <string name="changelog_3">Поворот экрана больше не останавливает и не теряет аудиозапись.</string>
+    <string name="changelog_4">Очень крупный системный шрифт больше не ломает интерфейс. Спасибо тестировщикам за отзывы!</string>
     <string name="label_removed_from_notes">Метка «%1$s» удалена с %2$d заметок</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d закреплённый элемент</item>
@@ -490,4 +490,15 @@
         <item quantity="many">Метка удалена с %d заметок</item>
         <item quantity="other">Метка удалена с %d заметок</item>
     </plurals>
+
+    <!-- Note preview + update alerts (1.4.0) -->
+    <string name="preview_pdf_error">Не удалось открыть этот PDF. Возможно, он перемещён, удалён или защищён.</string>
+    <string name="preview_link_error">Не удалось загрузить страницу. Проверьте подключение и попробуйте снова.</string>
+    <string name="action_retry">Повторить</string>
+    <string name="msg_no_app_to_open">Не найдено приложение, чтобы открыть это.</string>
+    <string name="notif_channel_updates">Обновления приложения</string>
+    <string name="update_available_title">Доступна новая версия PinIt</string>
+    <string name="update_available_text">Новая версия готова к установке. Нажмите, чтобы обновить.</string>
+    <string name="update_available_text_version">Версия %1$s готова к установке. Нажмите, чтобы обновить.</string>
+    <string name="action_update_now">Обновить сейчас</string>
 </resources>

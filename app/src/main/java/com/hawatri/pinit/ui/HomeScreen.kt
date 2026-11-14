@@ -811,11 +811,16 @@ fun HomeScreen(
             // so the + button never covers it. Drawn last in the Box so its
             // z-order is on top of everything else on Home. Auto-dismisses after
             // first view (× tap or "Show Full Changelog" tap).
-            PostUpdateBanner(
+            // Stacked so the "update available" card and the post-update
+            // banner can never sit on top of each other.
+            Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 96.dp)
-            )
+            ) {
+                UpdateAvailableBanner()
+                PostUpdateBanner()
+            }
 
             // Stale-backup nag dialog: if last successful backup is >14 days old
             // and the user hasn't dismissed forever, show a one-time prompt with

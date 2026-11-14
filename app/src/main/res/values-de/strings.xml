@@ -413,10 +413,10 @@ Erstelle zuerst eine in PinIt.</string>
     <string name="backup_err_read_file">Datei konnte nicht gelesen werden</string>
     <string name="signin_failed_code_reason">Anmeldung fehlgeschlagen (Code %1$d): %2$s</string>
     <string name="unknown_error">unbekannt</string>
-    <string name="changelog_1">Das Benachrichtigungssymbol zeigt in der Statusleiste jetzt die PinIt-Nadel statt eines leeren Quadrats.</string>
-    <string name="changelog_2">Die App-Liste zeigt unter Android 11 und neuer wieder alle installierten Apps.</string>
-    <string name="changelog_3">Wenn du eine aus einer Benachrichtigung geöffnete Liste speicherst, kehrst du zur Startseite zurück, und angeheftete Listen werden beim Bearbeiten sofort aktualisiert.</string>
-    <string name="changelog_4">Danke an alle, die diese Fehler auf GitHub gemeldet haben!</string>
+    <string name="changelog_1">Tippe auf eine PDF- oder Link-Notiz für eine Vorschau: blättere durch alle PDF-Seiten oder sieh die Webseite direkt in PinIt.</string>
+    <string name="changelog_2">PinIt sagt dir jetzt Bescheid, wenn eine neue Version verfügbar ist, per Benachrichtigung und Banner auf der Startseite.</string>
+    <string name="changelog_3">Das Drehen des Bildschirms stoppt oder verliert keine Audioaufnahme mehr.</string>
+    <string name="changelog_4">Sehr große Systemschriftgrößen bringen das Layout nicht mehr durcheinander. Danke an unsere Tester!</string>
     <string name="label_removed_from_notes">Label \"%1$s\" von %2$d Notizen entfernt</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d angehefteter Eintrag</item>
@@ -466,4 +466,15 @@ Erstelle zuerst eine in PinIt.</string>
         <item quantity="one">Label von %d Notiz entfernt</item>
         <item quantity="other">Label von %d Notizen entfernt</item>
     </plurals>
+
+    <!-- Note preview + update alerts (1.4.0) -->
+    <string name="preview_pdf_error">Dieses PDF konnte nicht geöffnet werden. Es wurde möglicherweise verschoben, gelöscht oder geschützt.</string>
+    <string name="preview_link_error">Diese Seite konnte nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="action_retry">Erneut versuchen</string>
+    <string name="msg_no_app_to_open">Keine App zum Öffnen gefunden.</string>
+    <string name="notif_channel_updates">App-Updates</string>
+    <string name="update_available_title">Neue Version von PinIt verfügbar</string>
+    <string name="update_available_text">Eine neuere Version ist bereit zur Installation. Tippe zum Aktualisieren.</string>
+    <string name="update_available_text_version">Version %1$s ist bereit zur Installation. Tippe zum Aktualisieren.</string>
+    <string name="action_update_now">Jetzt aktualisieren</string>
 </resources>

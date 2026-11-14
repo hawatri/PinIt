@@ -44,6 +44,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.hawatri.pinit.util.UpdateChecker.schedule(applicationContext)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         publishLaunch(intent)

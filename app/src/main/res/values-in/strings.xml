@@ -439,10 +439,10 @@ Buat dulu di PinIt.</string>
     <string name="backup_err_read_file">Tidak dapat membaca file</string>
     <string name="signin_failed_code_reason">Gagal masuk (kode %1$d): %2$s</string>
     <string name="unknown_error">tidak diketahui</string>
-    <string name="changelog_1">Ikon notifikasi kini menampilkan pin PinIt di bilah status, bukan kotak kosong.</string>
-    <string name="changelog_2">Daftar Aplikasi kembali menampilkan semua aplikasi terpasang di Android 11 dan yang lebih baru.</string>
-    <string name="changelog_3">Menyimpan daftar yang dibuka dari notifikasi kini mengembalikan Anda ke Beranda, dan daftar yang disematkan langsung diperbarui saat diedit.</string>
-    <string name="changelog_4">Terima kasih kepada semua yang melaporkan masalah ini di GitHub!</string>
+    <string name="changelog_1">Ketuk catatan PDF atau tautan untuk pratinjau: gulir semua halaman PDF atau lihat halaman web langsung di PinIt.</string>
+    <string name="changelog_2">PinIt kini memberi tahu saat versi baru tersedia, lewat notifikasi dan banner di Beranda.</string>
+    <string name="changelog_3">Memutar layar tidak lagi menghentikan atau menghilangkan rekaman audio.</string>
+    <string name="changelog_4">Ukuran font sistem yang sangat besar tidak lagi merusak tata letak. Terima kasih kepada para penguji!</string>
     <string name="label_removed_from_notes">Label \"%1$s\" dihapus dari %2$d catatan</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d item disematkan</item>
@@ -492,4 +492,15 @@ Buat dulu di PinIt.</string>
         <item quantity="one">Label dihapus dari %d catatan</item>
         <item quantity="other">Label dihapus dari %d catatan</item>
     </plurals>
+
+    <!-- Note preview + update alerts (1.4.0) -->
+    <string name="preview_pdf_error">PDF ini tidak dapat dibuka. Mungkin telah dipindahkan, dihapus, atau dilindungi.</string>
+    <string name="preview_link_error">Halaman ini tidak dapat dimuat. Periksa koneksi Anda dan coba lagi.</string>
+    <string name="action_retry">Coba lagi</string>
+    <string name="msg_no_app_to_open">Tidak ada aplikasi untuk membuka ini.</string>
+    <string name="notif_channel_updates">Pembaruan aplikasi</string>
+    <string name="update_available_title">Versi baru PinIt tersedia</string>
+    <string name="update_available_text">Versi yang lebih baru siap dipasang. Ketuk untuk memperbarui.</string>
+    <string name="update_available_text_version">Versi %1$s siap dipasang. Ketuk untuk memperbarui.</string>
+    <string name="action_update_now">Perbarui sekarang</string>
 </resources>

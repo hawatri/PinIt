@@ -20,8 +20,8 @@ android {
         applicationId = "com.hawatri.pinit"
         minSdk = 29
         targetSdk = 36
-        versionCode = 230
-        versionName = "1.4.0-beta1"
+        versionCode = 231
+        versionName = "1.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -135,6 +135,13 @@ dependencies {
 
     // Drag-to-reorder for LazyVerticalStaggeredGrid (manual sort mode)
     implementation("sh.calvin.reorderable:reorderable:2.4.0")
+
+    // Daily background check for a newer release (UpdateCheckWorker)
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // Play In-App Updates: asks Play whether this install has an update waiting.
+    // Play-installed copies must update through Play, so this is their update source.
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
 
     // Google Sign-In (Drive scope)
     implementation("com.google.android.gms:play-services-auth:21.2.0")

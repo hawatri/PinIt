@@ -413,10 +413,10 @@
     <string name="backup_err_read_file">फ़ाइल नहीं पढ़ सके</string>
     <string name="signin_failed_code_reason">साइन इन विफल (कोड %1$d): %2$s</string>
     <string name="unknown_error">अज्ञात</string>
-    <string name="changelog_1">स्टेटस बार में नोटिफ़िकेशन आइकन अब खाली चौकोर की जगह PinIt का पिन दिखाता है।</string>
-    <string name="changelog_2">Android 11 और नए वर्ज़न पर ऐप सूची अब फिर से आपके सभी इंस्टॉल किए गए ऐप दिखाती है।</string>
-    <string name="changelog_3">नोटिफ़िकेशन से खोली गई सूची सेव करने पर अब आप होम पर लौट आते हैं, और पिन की गई सूचियाँ बदलाव करते ही अपडेट हो जाती हैं।</string>
-    <string name="changelog_4">GitHub पर ये समस्याएँ बताने वाले सभी लोगों का धन्यवाद!</string>
+    <string name="changelog_1">PDF या लिंक नोट पर टैप करके उसका प्रीव्यू देखें: PDF के सभी पेज स्क्रॉल करें या वेब पेज PinIt के अंदर ही देखें।</string>
+    <string name="changelog_2">अब नया वर्शन आने पर PinIt आपको नोटिफ़िकेशन और होम पर बैनर से बताता है।</string>
+    <string name="changelog_3">स्क्रीन घुमाने से अब ऑडियो रिकॉर्डिंग रुकती या खोती नहीं है।</string>
+    <string name="changelog_4">बहुत बड़े सिस्टम फ़ॉन्ट साइज़ से अब लेआउट नहीं बिगड़ता। रिपोर्ट करने के लिए टेस्टर्स का धन्यवाद!</string>
     <string name="label_removed_from_notes">लेबल \"%1$s\" %2$d नोट से हटाया गया</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">%d पिन किया आइटम</item>
@@ -466,4 +466,15 @@
         <item quantity="one">%d नोट से लेबल हटाया गया</item>
         <item quantity="other">%d नोट से लेबल हटाया गया</item>
     </plurals>
+
+    <!-- Note preview + update alerts (1.4.0) -->
+    <string name="preview_pdf_error">यह PDF नहीं खुल सका। हो सकता है इसे हटाया, मिटाया या सुरक्षित किया गया हो।</string>
+    <string name="preview_link_error">यह पेज लोड नहीं हो सका। अपना कनेक्शन जाँचें और फिर से कोशिश करें।</string>
+    <string name="action_retry">फिर से कोशिश करें</string>
+    <string name="msg_no_app_to_open">इसे खोलने के लिए कोई ऐप नहीं मिला।</string>
+    <string name="notif_channel_updates">ऐप अपडेट</string>
+    <string name="update_available_title">PinIt का नया वर्शन उपलब्ध है</string>
+    <string name="update_available_text">एक नया वर्शन इंस्टॉल के लिए तैयार है। अपडेट करने के लिए टैप करें।</string>
+    <string name="update_available_text_version">वर्शन %1$s इंस्टॉल के लिए तैयार है। अपडेट करने के लिए टैप करें।</string>
+    <string name="action_update_now">अभी अपडेट करें</string>
 </resources>

@@ -21,6 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.hawatri.pinit.data.Note
 import com.hawatri.pinit.data.NoteDatabase
 import com.hawatri.pinit.data.NoteType
 import com.hawatri.pinit.data.ThemeMode
@@ -88,18 +89,7 @@ fun PinItApp(
         if (widgetOpenNoteId != null && handledOpenNoteLaunch != launchGeneration) {
             val note = notes.find { it.id == widgetOpenNoteId } ?: return@LaunchedEffect
             handledOpenNoteLaunch = launchGeneration
-            val route = when {
-                note.noteType == NoteType.LIST || note.isList -> "new_list?noteId=${note.id}"
-                note.noteType == NoteType.QR -> "new_qr?noteId=${note.id}"
-                note.noteType == NoteType.LINK -> "new_link?noteId=${note.id}"
-                note.noteType == NoteType.CONTACT -> "new_contact?noteId=${note.id}"
-                note.noteType == NoteType.LOCATION -> "new_location?noteId=${note.id}"
-                note.noteType == NoteType.APPLIST -> "new_app_list?noteId=${note.id}"
-                note.noteType == NoteType.IMAGE -> "new_image?noteId=${note.id}"
-                note.noteType == NoteType.PDF -> "new_pdf?noteId=${note.id}"
-                note.noteType == NoteType.AUDIO -> "new_audio?noteId=${note.id}"
-                else -> "new_note?noteId=${note.id}"
-            }
+            val route = editRouteFor(note)
             navController.navigate(route)
         }
     }
@@ -177,29 +167,7 @@ fun PinItApp(
     ) {
         composable("home") {
             HomeScreen(
-                onNoteClick = { note ->
-                    when {
-                        note.noteType == NoteType.LIST || note.isList ->
-                            navController.navigate("new_list?noteId=${note.id}")
-                        note.noteType == NoteType.QR ->
-                            navController.navigate("new_qr?noteId=${note.id}")
-                        note.noteType == NoteType.LINK ->
-                            navController.navigate("new_link?noteId=${note.id}")
-                        note.noteType == NoteType.CONTACT ->
-                            navController.navigate("new_contact?noteId=${note.id}")
-                        note.noteType == NoteType.LOCATION ->
-                            navController.navigate("new_location?noteId=${note.id}")
-                        note.noteType == NoteType.APPLIST ->
-                            navController.navigate("new_app_list?noteId=${note.id}")
-                        note.noteType == NoteType.IMAGE ->
-                            navController.navigate("new_image?noteId=${note.id}")
-                        note.noteType == NoteType.PDF ->
-                            navController.navigate("new_pdf?noteId=${note.id}")
-                        note.noteType == NoteType.AUDIO ->
-                            navController.navigate("new_audio?noteId=${note.id}")
-                        else -> navController.navigate("new_note?noteId=${note.id}")
-                    }
-                },
+                onNoteClick = { note -> navController.navigate(openRouteFor(note)) },
                 onNavigateToNewNote = { navController.navigate("new_note") },
                 onNavigateToNewList = { navController.navigate("new_list") },
                 onNavigateToNewLocation = { navController.navigate("new_location") },
@@ -348,30 +316,27 @@ fun PinItApp(
             )
         }
 
+        composable(
+            route = "preview?noteId={noteId}",
+            arguments = listOf(navArgument("noteId") { type = NavType.StringType; nullable = true; defaultValue = null })
+        ) { backStackEntry ->
+            NotePreviewScreen(
+                noteId = backStackEntry.arguments?.getString("noteId").orEmpty(),
+                onNavigateBack = { navController.popBackStack() },
+                // Swap preview for the editor so Back from the editor returns to the list.
+                onEdit = { note ->
+                    navController.navigate(editRouteFor(note)) {
+                        popUpTo("preview?noteId={noteId}") { inclusive = true }
+                    }
+                },
+                viewModel = sharedViewModel
+            )
+        }
+
         composable("archive") {
             ArchiveScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNoteClick = { note ->
-                    when {
-                        note.noteType == NoteType.LIST || note.isList ->
-                            navController.navigate("new_list?noteId=${note.id}")
-                        note.noteType == NoteType.QR ->
-                            navController.navigate("new_qr?noteId=${note.id}")
-                        note.noteType == NoteType.LINK ->
-                            navController.navigate("new_link?noteId=${note.id}")
-                        note.noteType == NoteType.CONTACT ->
-                            navController.navigate("new_contact?noteId=${note.id}")
-                        note.noteType == NoteType.LOCATION ->
-                            navController.navigate("new_location?noteId=${note.id}")
-                        note.noteType == NoteType.APPLIST ->
-                            navController.navigate("new_app_list?noteId=${note.id}")
-                        note.noteType == NoteType.IMAGE ->
-                            navController.navigate("new_image?noteId=${note.id}")
-                        note.noteType == NoteType.PDF ->
-                            navController.navigate("new_pdf?noteId=${note.id}")
-                        else -> navController.navigate("new_note?noteId=${note.id}")
-                    }
-                },
+                onNoteClick = { note -> navController.navigate(openRouteFor(note)) },
                 viewModel = sharedViewModel
             )
         }
@@ -392,4 +357,24 @@ fun PinItApp(
             )
         }
     }
+}
+
+/** Edit screen for a note, dispatched by type. */
+private fun editRouteFor(note: Note): String = when {
+    note.noteType == NoteType.LIST || note.isList -> "new_list?noteId=${note.id}"
+    note.noteType == NoteType.QR -> "new_qr?noteId=${note.id}"
+    note.noteType == NoteType.LINK -> "new_link?noteId=${note.id}"
+    note.noteType == NoteType.CONTACT -> "new_contact?noteId=${note.id}"
+    note.noteType == NoteType.LOCATION -> "new_location?noteId=${note.id}"
+    note.noteType == NoteType.APPLIST -> "new_app_list?noteId=${note.id}"
+    note.noteType == NoteType.IMAGE -> "new_image?noteId=${note.id}"
+    note.noteType == NoteType.PDF -> "new_pdf?noteId=${note.id}"
+    note.noteType == NoteType.AUDIO -> "new_audio?noteId=${note.id}"
+    else -> "new_note?noteId=${note.id}"
+}
+
+/** What tapping a card opens: PDFs and links get a read-only preview first, everything else goes straight to edit. */
+private fun openRouteFor(note: Note): String = when (note.noteType) {
+    NoteType.PDF, NoteType.LINK -> "preview?noteId=${note.id}"
+    else -> editRouteFor(note)
 }

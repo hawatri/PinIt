@@ -413,10 +413,10 @@
     <string name="backup_err_read_file">تعذّرت قراءة الملف</string>
     <string name="signin_failed_code_reason">فشل تسجيل الدخول (الرمز %1$d): %2$s</string>
     <string name="unknown_error">غير معروف</string>
-    <string name="changelog_1">تعرض أيقونة الإشعار الآن دبوس PinIt في شريط الحالة بدلًا من مربع فارغ.</string>
-    <string name="changelog_2">تعرض قائمة التطبيقات مجددًا جميع تطبيقاتك المثبتة على Android 11 والإصدارات الأحدث.</string>
-    <string name="changelog_3">حفظ قائمة فتحتها من إشعار يعيدك الآن إلى الشاشة الرئيسية، وتُحدَّث القوائم المثبتة فور تعديلها.</string>
-    <string name="changelog_4">شكرًا لكل من أبلغ عن هذه المشكلات على GitHub!</string>
+    <string name="changelog_1">انقر على ملاحظة PDF أو رابط لمعاينتها: تصفّح كل صفحات PDF أو شاهد صفحة الويب داخل PinIt.</string>
+    <string name="changelog_2">يخبرك PinIt الآن عند توفر إصدار جديد، عبر إشعار وشريط في الصفحة الرئيسية.</string>
+    <string name="changelog_3">لم يعد تدوير الشاشة يوقف التسجيل الصوتي أو يفقده.</string>
+    <string name="changelog_4">أحجام خطوط النظام الكبيرة جدًا لم تعد تفسد التصميم. شكرًا للمختبرين على الإبلاغ!</string>
     <string name="label_removed_from_notes">أُزيل التصنيف \"%1$s\" من %2$d ملاحظة</string>
     <plurals name="plural_pinned_items">
         <item quantity="zero">لا عناصر مثبّتة</item>
@@ -514,4 +514,15 @@
         <item quantity="many">أُزيل التصنيف من %d ملاحظة</item>
         <item quantity="other">أُزيل التصنيف من %d ملاحظة</item>
     </plurals>
+
+    <!-- Note preview + update alerts (1.4.0) -->
+    <string name="preview_pdf_error">تعذّر فتح ملف PDF هذا. ربما تم نقله أو حذفه أو حمايته.</string>
+    <string name="preview_link_error">تعذّر تحميل هذه الصفحة. تحقّق من اتصالك وحاول مرة أخرى.</string>
+    <string name="action_retry">إعادة المحاولة</string>
+    <string name="msg_no_app_to_open">لم يتم العثور على تطبيق لفتح هذا.</string>
+    <string name="notif_channel_updates">تحديثات التطبيق</string>
+    <string name="update_available_title">يتوفر إصدار جديد من PinIt</string>
+    <string name="update_available_text">إصدار أحدث جاهز للتثبيت. انقر للتحديث.</string>
+    <string name="update_available_text_version">الإصدار %1$s جاهز للتثبيت. انقر للتحديث.</string>
+    <string name="action_update_now">حدّث الآن</string>
 </resources>

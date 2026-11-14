@@ -469,10 +469,10 @@ Crea una en PinIt primero.</string>
     <string name="backup_err_read_file">No se pudo leer el archivo</string>
     <string name="signin_failed_code_reason">Error al iniciar sesión (código %1$d): %2$s</string>
     <string name="unknown_error">desconocido</string>
-    <string name="changelog_1">El icono de notificación ahora muestra el pin de PinIt en la barra de estado en lugar de un cuadrado vacío.</string>
-    <string name="changelog_2">La Lista de apps vuelve a mostrar todas tus apps instaladas en Android 11 y versiones posteriores.</string>
-    <string name="changelog_3">Guardar una lista abierta desde una notificación te devuelve al inicio, y las listas fijadas se actualizan al instante al editarlas.</string>
-    <string name="changelog_4">¡Gracias a todos los que reportaron estos problemas en GitHub!</string>
+    <string name="changelog_1">Toca una nota de PDF o enlace para previsualizarla: recorre todas las páginas del PDF o ve la página web dentro de PinIt.</string>
+    <string name="changelog_2">PinIt ahora te avisa cuando hay una nueva versión, con una notificación y un banner en Inicio.</string>
+    <string name="changelog_3">Girar la pantalla ya no detiene ni pierde una grabación de audio.</string>
+    <string name="changelog_4">Los tamaños de fuente del sistema muy grandes ya no rompen el diseño. ¡Gracias a los testers por avisarnos!</string>
     <string name="label_removed_from_notes">Etiqueta \"%1$s\" quitada de %2$d notas</string>
     <!-- Plurals -->
     <plurals name="plural_pinned_items">
@@ -535,4 +535,15 @@ Crea una en PinIt primero.</string>
         <item quantity="other">Etiqueta quitada de %d notas</item>
         <item quantity="many">Etiqueta quitada de %d notas</item>
     </plurals>
+
+    <!-- Note preview + update alerts (1.4.0) -->
+    <string name="preview_pdf_error">No se pudo abrir este PDF. Puede que se haya movido, eliminado o protegido.</string>
+    <string name="preview_link_error">No se pudo cargar esta página. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="action_retry">Reintentar</string>
+    <string name="msg_no_app_to_open">No se encontró ninguna app para abrir esto.</string>
+    <string name="notif_channel_updates">Actualizaciones de la app</string>
+    <string name="update_available_title">Nueva versión de PinIt disponible</string>
+    <string name="update_available_text">Hay una versión más reciente lista para instalar. Toca para actualizar.</string>
+    <string name="update_available_text_version">La versión %1$s está lista para instalar. Toca para actualizar.</string>
+    <string name="action_update_now">Actualizar ahora</string>
 </resources>

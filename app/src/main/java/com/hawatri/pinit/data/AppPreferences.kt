@@ -26,6 +26,8 @@ object AppPreferences {
     private const val KEY_LANGUAGE = "language_tag"
     private const val KEY_QUICK_ADD_NOTIFICATION = "quick_add_notification"
     private const val KEY_BANNER_DISMISSED_MODIFIED_AT = "banner_dismissed_modified_at"
+    private const val KEY_LAST_NOTIFIED_UPDATE = "last_notified_update"
+    private const val KEY_UPDATE_BANNER_DISMISSED = "update_banner_dismissed"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -193,5 +195,21 @@ object AppPreferences {
 
     fun setBannerDismissedModifiedAt(context: Context, modifiedAt: Long) {
         prefs(context).edit().putLong(KEY_BANNER_DISMISSED_MODIFIED_AT, modifiedAt).apply()
+    }
+
+    /** Identifier of the newest update we already posted a notification for, so each release notifies once. */
+    fun getLastNotifiedUpdate(context: Context): String? =
+        prefs(context).getString(KEY_LAST_NOTIFIED_UPDATE, null)
+
+    fun setLastNotifiedUpdate(context: Context, id: String) {
+        prefs(context).edit().putString(KEY_LAST_NOTIFIED_UPDATE, id).apply()
+    }
+
+    /** Identifier of the update whose Home banner the user closed with ×. */
+    fun getUpdateBannerDismissed(context: Context): String? =
+        prefs(context).getString(KEY_UPDATE_BANNER_DISMISSED, null)
+
+    fun setUpdateBannerDismissed(context: Context, id: String) {
+        prefs(context).edit().putString(KEY_UPDATE_BANNER_DISMISSED, id).apply()
     }
 }

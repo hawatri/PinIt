@@ -1,6 +1,10 @@
 package com.hawatri.pinit.ui
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
@@ -164,6 +168,18 @@ fun NewAudioScreen(
                 }
                 delay(200)
             }
+        }
+    }
+
+    // Rotating the screen recreates MainActivity, which disposes this screen and
+    // kills the MediaRecorder mid-take. Lock the current orientation for as long
+    // as a recording is running, then hand control back to the user/system.
+    DisposableEffect(state == RecordingState.RECORDING) {
+        val activity = if (state == RecordingState.RECORDING) context.findActivity() else null
+        val previous = activity?.requestedOrientation
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
+        onDispose {
+            if (activity != null && previous != null) activity.requestedOrientation = previous
         }
     }
 
@@ -480,6 +496,12 @@ fun NewAudioScreen(
             onFolderChange = { folder = it; if (currentFilePath != null) save() }
         )
     }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 private fun formatDuration(ms: Long): String {

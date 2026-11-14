@@ -476,10 +476,10 @@ Create one in PinIt first.</string>
     <string name="backup_err_read_file">Couldn\'t read file</string>
     <string name="signin_failed_code_reason">Sign-in failed (code %1$d): %2$s</string>
     <string name="unknown_error">unknown</string>
-    <string name="changelog_1">The notification icon now shows the PinIt pin in the status bar instead of a blank square.</string>
-    <string name="changelog_2">App List shows all your installed apps again on Android 11 and newer.</string>
-    <string name="changelog_3">Saving a list you opened from a notification takes you back to Home, and pinned lists update right away when you edit them.</string>
-    <string name="changelog_4">Thanks to everyone who reported these on GitHub!</string>
+    <string name="changelog_1">Tap a PDF or link note to preview it: scroll through every PDF page or see the web page right inside PinIt.</string>
+    <string name="changelog_2">PinIt now tells you when a new version is available, with a notification and a banner on Home.</string>
+    <string name="changelog_3">Rotating the screen no longer stops or loses an audio recording.</string>
+    <string name="changelog_4">Very large system font sizes no longer break layouts. Thanks to our testers for reporting these!</string>
     <string name="folder_section">Folders</string>
     <string name="labels_section">Labels</string>
     <string name="folder_none">No folder</string>
@@ -546,4 +546,15 @@ Create one in PinIt first.</string>
         <item quantity="one">Label removed from %d note</item>
         <item quantity="other">Label removed from %d notes</item>
     </plurals>
+
+    <!-- Note preview + update alerts (1.4.0) -->
+    <string name="preview_pdf_error">Could not open this PDF. It may have been moved, deleted, or protected.</string>
+    <string name="preview_link_error">Could not load this page. Check your connection and try again.</string>
+    <string name="action_retry">Retry</string>
+    <string name="msg_no_app_to_open">No app found to open this.</string>
+    <string name="notif_channel_updates">App updates</string>
+    <string name="update_available_title">New version of PinIt available</string>
+    <string name="update_available_text">A newer version is ready to install. Tap to update.</string>
+    <string name="update_available_text_version">Version %1$s is ready to install. Tap to update.</string>
+    <string name="action_update_now">Update now</string>
 </resources>

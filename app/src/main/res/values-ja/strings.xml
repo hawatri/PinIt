@@ -439,10 +439,10 @@
     <string name="backup_err_read_file">ファイルを読めませんでした</string>
     <string name="signin_failed_code_reason">サインイン失敗（コード %1$d）: %2$s</string>
     <string name="unknown_error">不明</string>
-    <string name="changelog_1">ステータスバーの通知アイコンが、空白の四角ではなく PinIt のピンで表示されるようになりました。</string>
-    <string name="changelog_2">Android 11 以降で、アプリリストにインストール済みのすべてのアプリが再び表示されます。</string>
-    <string name="changelog_3">通知から開いたリストを保存するとホームに戻り、固定したリストは編集するとすぐに更新されます。</string>
-    <string name="changelog_4">GitHub で問題を報告してくださった皆さん、ありがとうございます！</string>
+    <string name="changelog_1">PDF やリンクのメモをタップするとプレビューを表示。PDF の全ページをスクロールしたり、Web ページを PinIt 内で表示したりできます。</string>
+    <string name="changelog_2">新しいバージョンが出ると、通知とホームのバナーでお知らせするようになりました。</string>
+    <string name="changelog_3">画面を回転しても音声録音が止まったり消えたりしなくなりました。</string>
+    <string name="changelog_4">システムの文字サイズが非常に大きくてもレイアウトが崩れなくなりました。報告してくれたテスターの皆さん、ありがとう！</string>
     <string name="label_removed_from_notes">ラベル \"%1$s\" を %2$d 件のメモから削除しました</string>
     <plurals name="plural_pinned_items">
         <item quantity="one">ピン留め %d 件</item>
@@ -492,4 +492,15 @@
         <item quantity="one">%d 件のメモからラベルを削除</item>
         <item quantity="other">%d 件のメモからラベルを削除</item>
     </plurals>
+
+    <!-- Note preview + update alerts (1.4.0) -->
+    <string name="preview_pdf_error">このPDFを開けませんでした。移動、削除、または保護されている可能性があります。</string>
+    <string name="preview_link_error">このページを読み込めませんでした。接続を確認してもう一度お試しください。</string>
+    <string name="action_retry">再試行</string>
+    <string name="msg_no_app_to_open">これを開けるアプリが見つかりません。</string>
+    <string name="notif_channel_updates">アプリのアップデート</string>
+    <string name="update_available_title">PinIt の新しいバージョンがあります</string>
+    <string name="update_available_text">新しいバージョンをインストールできます。タップしてアップデート。</string>
+    <string name="update_available_text_version">バージョン %1$s をインストールできます。タップしてアップデート。</string>
+    <string name="action_update_now">今すぐアップデート</string>
 </resources>
